@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet">
+    <link href="theme.css" rel="stylesheet" />
+    <title>Minhas Propostas - Coordenador</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <aside class="sidebar">
+                    <div class="brand">
+                        <span class="brand-icon"></span>
+                        <span>{{ msg.tela.brand }}</span>
+                    </div>
+                <div class="menu">
+                    <div class="menu-item">{{ msg.tela.menu.desafios }}</div>
+                    <div class="menu-item active">{{ msg.tela.menu.minhasPropostas }}</div>
+                    <div class="menu-item">{{ msg.tela.menu.notificacoes }}</div>
+                </div>
+            </aside>
+            <div class="content">
+                <div class="tabbar">
+                    <span class="tab active">{{ msg.tela.tabs.todas }}</span>
+                    <span class="tab">{{ msg.tela.tabs.propostas }}</span>
+                    <span class="tab">{{ msg.tela.tabs.desafios }}</span>
+                </div>
+                <div class="search">
+                    <input type="text" :placeholder="msg.tela.search.placeholder">
+                    <button type="button">{{ msg.tela.search.button }}</button>
+                </div>
+                <div class="list cards-grid">
+                    <div class="proposal-card card" v-for="(proposal, index) in msg.minhasPropostas.proposals" :key="proposal.title">
+                        <div class="proposal-mark"></div>
+                        <div class="proposal-content card-body">
+                            <div>
+                                <h3>{{ proposal.title }}</h3>
+                                <p>{{ proposal.challenge }}</p>
+                            </div>
+                            <div class="proposal-actions">
+                                <span v-if="proposal.status === 'emAnalise'" class="status-pill analysis">{{ msg.tela.status.emAnalise }}</span>
+                                <span v-else-if="proposal.status === 'aprovada'" class="status-pill approved">{{ msg.tela.status.aceita }}</span>
+                                <span v-else class="status-pill rejected">{{ msg.tela.status.rejeitada }}</span>
+                                <a class="mini-btn" href="#">{{ msg.tela.buttons.verProposta }}</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            </div>
+    </div>
+    <script src="messages.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.messages) {
+                createApp({
+                    data() {
+                        return {
+                            msg: window.messages
+                        };
+                    }
+                }).mount('#app');
+
+                document.title = window.messages.minhasPropostas.title;
+            } else {
+                console.error('Messages not loaded');
+            }
+        });
+    </script>
+</body>
+</html>

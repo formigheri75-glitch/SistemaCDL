@@ -1,0 +1,528 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Seleção de Instituições</title>
+    <link href="theme.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        nav {
+            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, rgba(30, 41, 59, 0.6) 100%);
+            border-bottom: 1px solid var(--color-border);
+            padding: clamp(1rem, 2vw, 1.5rem) clamp(1.5rem, 3vw, 2rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: clamp(1rem, 2vw, 2rem);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.5rem, 1vw, 1rem);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-info) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: clamp(0.5rem, 1.5vw, 1.5rem);
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .container {
+            padding: clamp(1.5rem, 3vw, 2rem);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin-bottom: clamp(1.5rem, 3vw, 2rem);
+            color: var(--color-text-primary);
+        }
+
+        .search-section {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(1.5rem, 2vw, 2rem);
+            margin-bottom: clamp(2rem, 3vw, 2.5rem);
+        }
+
+        .search-box {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .search-input {
+            flex: 1;
+            min-width: 200px;
+            padding: clamp(0.75rem, 1.5vw, 1rem);
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            color: var(--color-text-primary);
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .search-button {
+            padding: clamp(0.75rem, 1.5vw, 1rem) clamp(1.5rem, 2vw, 2rem);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .search-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .filters {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+            margin-top: 1rem;
+        }
+
+        .filter-tag {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-tag.active {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .filter-tag:hover {
+            border-color: var(--color-primary);
+        }
+
+        .institutions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: clamp(1rem, 2vw, 1.5rem);
+        }
+
+        .institution-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(1.5rem, 2vw, 2rem);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .institution-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+        }
+
+        .institution-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .institution-name {
+            font-size: clamp(1rem, 2vw, 1.1rem);
+            font-weight: 700;
+            color: var(--color-text-primary);
+        }
+
+        .institution-badge {
+            background: var(--color-info-light);
+            color: var(--color-info);
+            padding: 0.25rem 0.75rem;
+            border-radius: 0.375rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .institution-description {
+            color: var(--color-text-secondary);
+            font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+            line-height: 1.5;
+        }
+
+        .institution-stats {
+            display: flex;
+            justify-content: space-around;
+            padding-top: 1rem;
+            border-top: 1px solid var(--color-border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+            font-weight: bold;
+            color: var(--color-primary);
+        }
+
+        .stat-label {
+            font-size: clamp(0.75rem, 1vw, 0.8rem);
+            color: var(--color-text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .institution-button {
+            padding: clamp(0.75rem, 1.5vw, 1rem);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .institution-button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: clamp(2rem, 4vw, 3rem);
+            color: var(--color-text-secondary);
+        }
+
+        .empty-state p {
+            font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            nav ul {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .institutions-grid {
+                grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            }
+        }
+
+        @media (max-width: 640px) {
+            nav {
+                padding: 1rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            nav a {
+                width: 100%;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .search-box {
+                flex-direction: column;
+            }
+
+            .search-input,
+            .search-button {
+                width: 100%;
+            }
+
+            .institutions-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .institution-card {
+            animation: fadeIn 0.6s ease;
+        }
+    </style>
+</head>
+<body class="tela-layout">
+    <div class="screen">
+        <div class="shell">
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <a href="index.html">Desafios</a>
+                </div>
+                <nav class="sidebar-menu">
+                    <a href="index.html" class="menu-item">Início</a>
+                    <a href="dashboard.html" class="menu-item">Dashboard</a>
+                    <a href="criaProblema.html" class="menu-item">Criar Problema</a>
+                    <a href="propostas.html" class="menu-item">Propostas</a>
+                </nav>
+            </aside>
+            <div class="content">
+                <div id="app">
+
+        <!-- Main Content -->
+        <div class="container">
+            <h1>{{ msg.selecaoInstituicoes.title }}</h1>
+
+            <!-- Search Section -->
+            <div class="search-section">
+                </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <script src="messages.js"></script>
+            <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script>
+                const { createApp } = Vue;
+
+                createApp({
+                    data() {
+                        return {
+                            msg: messages,
+                            searchQuery: '',
+                            selectedFilter: 'all',
+                            institutions: [
+                                {
+                                    /* Lines 460-466 omitted */
+                                    projects: 45
+                                },
+                                {
+                                    /* Lines 469-475 omitted */
+                                    projects: 67
+                                },
+                                {
+                                    /* Lines 478-484 omitted */
+                                    projects: 32
+                                },
+                                {
+                                    /* Lines 487-493 omitted */
+                                    projects: 52
+                                },
+                                {
+                                    /* Lines 496-502 omitted */
+                                    projects: 38
+                                },
+                                {/* Lines 505-512 omitted */}
+                            ]
+                        }
+                    },
+                    computed: {
+                        filteredInstitutions() {
+                            return this.institutions.filter(inst => {
+                                const matchesSearch = inst.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                                    inst.description.toLowerCase().includes(this.searchQuery.toLowerCase());
+                                const matchesFilter = this.selectedFilter === 'all' ||
+                                                    /* Lines 522-524 omitted */
+                                                    (this.selectedFilter === 'top' && inst.rating >= 4.7);
+                                return matchesSearch && matchesFilter;
+                            });
+                        }
+                    },
+                    methods: {
+                        performSearch() {
+                            // Search is already reactive through computed property
+                        },
+                        selectInstitution(id) {
+                            window.location.href = 'detalhesPropossta.html?institution=' + id;
+                        }
+                    }
+                }).mount('#app');
+            </script>
+        </body>
+        </html>
+        </div>
+    </div>
+
+    </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    msg: messages,
+                    searchQuery: '',
+                    selectedFilter: 'all',
+                    institutions: [
+                        {
+                            id: 1,
+                            name: 'Universidade Federal do Rio de Janeiro',
+                            type: 'public',
+                            description: 'Instituição líder em pesquisa e desenvolvimento de soluções inovadoras.',
+                            proposalsCount: 12,
+                            rating: 4.8,
+                            projects: 45
+                        },
+                        {
+                            id: 2,
+                            name: 'Universidade de São Paulo',
+                            type: 'public',
+                            description: 'Uma das maiores universidades do Brasil com excelência em tecnologia.',
+                            proposalsCount: 18,
+                            rating: 4.9,
+                            projects: 67
+                        },
+                        {
+                            id: 3,
+                            name: 'PUC-Rio',
+                            type: 'private',
+                            description: 'Pontifícia Universidade com programas inovadores de engenharia.',
+                            proposalsCount: 9,
+                            rating: 4.7,
+                            projects: 32
+                        },
+                        {
+                            id: 4,
+                            name: 'UNICAMP',
+                            type: 'public',
+                            description: 'Universidade com forte tradição em ciência e tecnologia.',
+                            proposalsCount: 15,
+                            rating: 4.8,
+                            projects: 52
+                        },
+                        {
+                            id: 5,
+                            name: 'Universidade Federal de Minas Gerais',
+                            type: 'public',
+                            description: 'UFMG - referência em educação superior e pesquisa científica.',
+                            proposalsCount: 11,
+                            rating: 4.6,
+                            projects: 38
+                        },
+                        {
+                            id: 6,
+                            name: 'FGV',
+                            type: 'private',
+                            description: 'Fundação Getulio Vargas - especializada em negócios e tecnologia.',
+                            proposalsCount: 8,
+                            rating: 4.7,
+                            projects: 28
+                        }
+                    ]
+                }
+            },
+            computed: {
+                filteredInstitutions() {
+                    return this.institutions.filter(inst => {
+                        const matchesSearch = inst.name.toLowerCase().includes(this.searchQuery.toLowerCase()) ||
+                                            inst.description.toLowerCase().includes(this.searchQuery.toLowerCase());
+                        const matchesFilter = this.selectedFilter === 'all' ||
+                                            (this.selectedFilter === 'public' && inst.type === 'public') ||
+                                            (this.selectedFilter === 'private' && inst.type === 'private') ||
+                                            (this.selectedFilter === 'top' && inst.rating >= 4.7);
+                        return matchesSearch && matchesFilter;
+                    });
+                }
+            },
+            methods: {
+                performSearch() {
+                    // Search is already reactive through computed property
+                },
+                selectInstitution(id) {
+                    window.location.href = 'detalhesPropossta.html?institution=' + id;
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+

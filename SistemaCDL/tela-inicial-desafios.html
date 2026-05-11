@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet">
+    <link href="theme.css" rel="stylesheet" />
+    <title>{{ msg.telaInicialDesafios.title }}</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <aside class="sidebar">
+                    <div class="brand">
+                        <span class="brand-icon"></span>
+                        <span>{{ msg.tela.brand }}</span>
+                    </div>
+                <div class="menu">
+                    <div class="menu-item active">{{ msg.tela.menu.desafios }}</div>
+                    <div class="menu-item">{{ msg.tela.menu.minhasPropostas }}</div>
+                    <div class="menu-item">{{ msg.tela.menu.notificacoes }}</div>
+                </div>
+            </aside>
+            <div class="content">
+                <div class="hero-stats">
+                    <div class="stat">
+                        <strong>5</strong>
+                        <span>{{ msg.telaInicialDesafios.stats.desafiosDisponiveis }}</span>
+                    </div>
+                    <div class="stat">
+                        <strong>10</strong>
+                        <span>{{ msg.telaInicialDesafios.stats.propostasEnviadas }}</span>
+                    </div>
+                    <div class="stat">
+                        <strong>2</strong>
+                        <span>{{ msg.telaInicialDesafios.stats.aprovadas }}</span>
+                    </div>
+                </div>
+                <div class="section-head">
+                    <h2>{{ msg.telaInicialDesafios.sectionTitle }}</h2>
+                    <a class="link-chip" href="#">{{ msg.tela.buttons.verTodos }}</a>
+                </div>
+                <div class="list cards-grid">
+                    <div class="challenge-card card" v-for="challenge in msg.telaInicialDesafios.challenges" :key="challenge.title">
+                        <div class="challenge-icon">{{ challenge.icon }}</div>
+                        <div class="challenge-body card-body">
+                            <h3>{{ challenge.title }}</h3>
+                            <p>{{ challenge.description }}</p>
+                            <div class="challenge-meta">{{ challenge.date }}</div>
+                        </div>
+                        <a class="mini-btn" href="#">{{ msg.tela.buttons.verDesafio }}</a>
+                    </div>
+                </div>
+            </div>
+            </div>
+    </div>
+</body>
+</html>
+
+<script>
+    const { createApp } = Vue;
+    
+    // Wait for messages to load before initializing Vue
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.messages) {
+            createApp({
+                data() {
+                    return {
+                        msg: window.messages
+                    };
+                }
+            }).mount('#app');
+
+                document.title = window.messages.telaInicialDesafios.title;
+        } else {
+            console.error('Messages not loaded');
+        }
+    });
+</script>

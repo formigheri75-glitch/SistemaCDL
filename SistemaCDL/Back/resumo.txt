@@ -1,0 +1,331 @@
+   
+   
+problemas de cada empresa
+detalhes dos problemas
+seleções de soluções xom ligação aos desafios de cada empresa
+notificações relacionadas a cada desafio da determinada empresa
+   
+
+    ------------------------------LOGIN-------------------------------
+
+    POST http://127.0.0.1:5000/login
+
+    {
+        "email": "email do usuario",
+        "senha": "senha do usuario"
+    }
+
+    vai retornar tokem de acesso
+
+    GET http://127.0.0.1:5000/me com o Authorization: Bearer 'tokem retornado anteriormente'
+
+
+
+    INSTITUIÇÃO
+
+    -GET - Listar todas as instituições
+    
+    GET /instituicoes
+
+    -GET - Obter instituição por ID
+
+    GET /instituicoes/<id>
+    
+
+    - POST - Criar instituição
+    
+    POST /instituicoes
+    Content-Type: application/json
+
+    {
+        "usuarioID": 1,
+        "nomeInstituicao": "Instituição X",
+        "cnpj": "12.345.678/0001-00",
+        "email": "contato@instituicao.com",
+        "celular": "(51) 99999-9999",
+        "cidade": "Caxias do Sul",
+        "estado": "RS",
+        "endereco": "Rua Exemplo, 123"
+    }
+    
+
+    USUÁRIO
+
+    - GET - Listar todos os usuários
+    
+    GET /usuarios
+    
+
+    - GET - Obter usuário por ID
+    
+    GET /usuarios/<id>
+    
+
+    - POST - Criar usuário
+    
+    POST /usuarios
+    Content-Type: application/json
+
+    {
+        "nome": "João Silva",
+        "email": "joao@example.com",
+        "senha": "senha123",
+        "tipoUsuario": "Admin",
+        "ativo": 1
+    }
+    
+
+    - PUT - Atualizar usuário
+    
+    PUT /usuarios/<id>
+    Content-Type: application/json
+
+    {
+        "nome": "João Silva Atualizado",
+        "email": "joao.novo@example.com",
+        "senha": "novaSenha123",
+        "tipoUsuario": "User",
+        "ativo": 1
+    }
+    
+
+    - DELETE - Deletar usuário
+    
+    DELETE /usuarios/<id>
+    
+
+
+
+    EMPRESA
+
+    - GET - Listar todas as empresas
+    
+    GET /empresas
+    
+
+    - GET - Obter empresa por ID
+    
+    GET /empresas/<id>
+    
+
+    POST - Criar empresa
+    
+    POST /empresas
+    Content-Type: application/json
+
+    {
+        "usuarioID": 1,
+        "razaoSocial": "Empresa XYZ LTDA",
+        "nomeFantasia": "Empresa XYZ",
+        "cnpj": "98.765.432/0001-10",
+        "email": "contato@empresa.com",
+        "celular": "(51) 98888-8888",
+        "cidade": "Caxias do Sul",
+        "estado": "RS",
+        "endereco": "Av. Principal, 456",
+        "areaAtuacao": "Tecnologia"
+    }
+    
+
+    - PUT - Atualizar empresa
+    
+    PUT /empresas/<id>
+    Content-Type: application/json
+
+    {
+        "usuarioID": 1,
+        "razaoSocial": "Empresa XYZ LTDA Atualizada",
+        "nomeFantasia": "Empresa XYZ",
+        "cnpj": "98.765.432/0001-10",
+        "email": "novo@empresa.com",
+        "celular": "(51) 98888-8888",
+        "cidade": "Caxias do Sul",
+        "estado": "RS",
+        "endereco": "Av. Principal, 456",
+        "areaAtuacao": "Tecnologia"
+    }
+    
+
+    - DELETE - Deletar empresa
+    
+    DELETE /empresas/<id>
+    
+
+ 
+
+    CONFIRMAÇÃO EMPRESA
+
+    - GET - Listar todas as confirmações
+    
+    GET /confirmacoes-empresa
+    
+
+    - GET - Obter confirmação por ID
+    
+    GET /confirmacoes-empresa/<id>
+    
+
+    - POST - Criar confirmação
+    
+    POST /confirmacoes-empresa
+    Content-Type: application/json
+
+    {
+        "empresaID": 1,
+        "nomeConfirmacao": "Confirmação Recebida"
+    }
+    
+
+
+    **DESAFIO**
+
+    - GET - Listar todos os desafios
+    
+    GET /desafios
+    
+
+    - GET - Obter desafio por ID
+    
+    GET /desafios/<id>
+    
+
+    - POST - Criar desafio
+    
+    POST /desafios
+    Content-Type: application/json
+
+    {
+        "empresaID": 1,
+        "titulo": "Sistema de Gestão de Inventário",
+        "descricao": "Desenvolver um sistema para gestão de inventário",
+        "areaConhecimento": "Software",
+        "nivelProblema": "Médio",
+        "statusDesafio": "Ativo",
+        "dataLimite": "2024-12-31"
+    }
+    
+
+    - PUT - Atualizar desafio
+    
+    PUT /desafios/<id>
+    Content-Type: application/json
+
+    {
+        "empresaID": 1,
+        "titulo": "Sistema de Gestão de Inventário v2",
+        "descricao": "Desenvolver um sistema para gestão de inventário",
+        "areaConhecimento": "Software",
+        "nivelProblema": "Alto",
+        "statusDesafio": "Ativo",
+        "dataLimite": "2024-12-31"
+    }
+    
+
+    - DELETE - Deletar desafio
+    
+    DELETE /desafios/<id>
+    
+
+    - GET - Listar todos os requisitos
+    
+    GET /requisitos
+    
+
+    - GET - Obter requisito por ID
+    
+    GET /requisitos/<id>
+    
+
+    - POST - Criar requisito
+    
+    POST /requisitos
+    Content-Type: application/json
+
+    {
+        "desafioID": 1,
+        "descricao": "O sistema deve ter autenticação de usuários"
+    }
+    
+
+
+    **DETALHE DESAFIO**
+
+    - GET - Listar todos os detalhes
+    
+    GET /detalhes-desafio
+    
+
+    - GET - Obter detalhe por ID
+    
+    GET /detalhes-desafio/<id>
+    
+
+    - POST - Criar detalhe
+    
+    POST /detalhes-desafio
+    Content-Type: application/json
+
+    {
+        "desafioID": 1,
+        "requisitoID": 1
+    }
+    
+
+    **PROPOSTA**
+
+    - GET - Listar todas as propostas
+    
+    GET /propostas
+    
+
+    - GET - Obter proposta por ID
+    
+    GET /propostas/<id>
+    
+
+    - POST - Criar proposta
+    
+    POST /propostas
+    Content-Type: application/json
+
+    {
+        "desafioID": 1,
+        "instituicaoID": 1,
+        "titulo": "Solução XYZ",
+        "descricao": "Nossa solução para o desafio...",
+        "nomeArquivo": "proposta.pdf",
+        "arquivo": "base64_encoded_file_content"
+    }
+    
+
+    **NOTIFICAÇÃO**
+
+    - GET - Listar todas as notificações
+    
+    GET /notificacoes
+    
+
+    - GET - Obter notificação por ID
+    
+    GET /notificacoes/<id>
+    
+
+    - POST - Criar notificação
+    
+    POST /notificacoes
+    Content-Type: application/json
+
+    {
+        "desafioID": 1,
+        "descricao": "Nova proposta recebida para o desafio",
+        "lista": "Notificações"
+    }
+    
+
+    - DELETE - Deletar notificação
+    
+    DELETE /notificacoes/<id>
+    
+    - Todas as datas são automaticamente registradas com a data/hora atual
+    - As senhas devem ser armazenadas de forma segura (considere usar hash)
+    - Implemente autenticação e validação mais robustas para produção

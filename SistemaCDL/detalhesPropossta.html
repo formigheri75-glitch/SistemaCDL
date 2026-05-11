@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detalhes da Proposta</title>
+    <link href="theme.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        nav {
+            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, rgba(30, 41, 59, 0.6) 100%);
+            border-bottom: 1px solid var(--color-border);
+            padding: clamp(1rem, 2vw, 1.5rem) clamp(1.5rem, 3vw, 2rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: clamp(1rem, 2vw, 2rem);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.5rem, 1vw, 1rem);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-info) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: clamp(0.5rem, 1.5vw, 1.5rem);
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .container {
+            padding: clamp(1.5rem, 3vw, 2rem);
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: clamp(1rem, 2vw, 2rem);
+            margin-bottom: clamp(2rem, 3vw, 2.5rem);
+            flex-wrap: wrap;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            color: var(--color-text-primary);
+        }
+
+        .institution-name {
+            color: var(--color-text-secondary);
+            font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+            margin-top: 0.5rem;
+        }
+
+        .status-badge {
+            padding: clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.5rem);
+            border-radius: 0.5rem;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.pending {
+            background: var(--color-warning-light);
+            color: var(--color-warning);
+        }
+
+        .content-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 320px;
+            gap: clamp(1.5rem, 2vw, 2rem);
+        }
+
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(1.5rem, 2vw, 2rem);
+        }
+
+        .detail-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(1.5rem, 2vw, 2rem);
+        }
+
+        .detail-card h2 {
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
+            margin-bottom: clamp(1rem, 1.5vw, 1.25rem);
+            color: var(--color-text-primary);
+        }
+
+        .detail-card p {
+            line-height: 1.6;
+            color: var(--color-text-secondary);
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+        }
+
+        .requirements-list {
+            list-style: none;
+            margin-top: 1rem;
+        }
+
+        .requirements-list li {
+            padding: 0.75rem 0;
+            padding-left: 1.75rem;
+            position: relative;
+            color: var(--color-text-secondary);
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+        }
+
+        .requirements-list li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: var(--color-success);
+            font-weight: bold;
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-top: 1rem;
+        }
+
+        .tag {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            color: var(--color-text-secondary);
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+        }
+
+        .sidebar {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(1rem, 2vw, 1.5rem);
+            height: fit-content;
+            position: sticky;
+            top: 20px;
+        }
+
+        .sidebar h3 {
+            font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+            margin-bottom: 1rem;
+            color: var(--color-text-primary);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .info-item {
+            padding: 1rem 0;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .info-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .info-label {
+            font-size: clamp(0.8rem, 1.5vw, 0.85rem);
+            color: var(--color-text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+        }
+
+        .info-value {
+            font-size: clamp(0.95rem, 1.5vw, 1.05rem);
+            color: var(--color-text-primary);
+            font-weight: 600;
+        }
+
+        .button-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+            margin-top: clamp(1.5rem, 2vw, 2rem);
+        }
+
+        button {
+            padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem);
+            border: none;
+            border-radius: 0.5rem;
+            font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-primary);
+            border: 1px solid var(--color-border);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            nav ul {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .content-wrapper {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                position: static;
+            }
+
+            .header {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 640px) {
+            nav {
+                padding: 1rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            nav a {
+                width: 100%;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .header {
+                flex-direction: column;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button {
+                width: 100%;
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .detail-card {
+            animation: fadeIn 0.6s ease;
+        }
+    </style>
+</head>
+<body class="tela-layout">
+    <div class="screen">
+        <div class="shell">
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <a href="index.html">Desafios</a>
+                </div>
+                <nav class="sidebar-menu">
+                    <a href="index.html" class="menu-item">Início</a>
+                    <a href="dashboard.html" class="menu-item">Dashboard</a>
+                    <a href="propostas.html" class="menu-item">Propostas</a>
+                    <a href="page4.html" class="menu-item">Desafios</a>
+                </nav>
+            </aside>
+            <div class="content">
+                <div id="app">
+                    <!-- Main Content -->
+                    <div class="container">
+            <div class="header">
+                <div>
+                    <h1>{{ msg.detalhesProposta.titulo }}</h1>
+                    <div class="institution-name">Universidade Federal do Rio de Janeiro</div>
+                </div>
+                <span class="status-badge pending">{{ msg.detalhesProposta.statusBadges.pendente }}</span>
+            </div>
+
+            <div class="content-wrapper">
+                <!-- Main Content -->
+                <div class="main-content">
+                    <!-- Proposal Description -->
+                    <div class="detail-card">
+                        <h2>{{ msg.detalhesProposta.descricao }}</h2>
+                        <p>
+                            Nossa equipe de desenvolvimento propõe uma solução completa de otimização baseada em técnicas 
+                            modernas de cache distribuído e query optimization. Utilizaremos Redis para caching e implementaremos 
+                            identificação automática de queries N+1.
+                        </p>
+                        <p style="margin-top: 1rem;">
+                            O projeto será desenvolvido em fases, começando com o diagnóstico completo do sistema atual, 
+                            seguido pela implementação de cache estratégico e otimizações de banco de dados.
+                        </p>
+                    </div>
+
+                    <!-- Implementation Plan -->
+                    <div class="detail-card">
+                        <h2>{{ msg.detalhesProposta.planImplementacao }}</h2>
+                        <ul class="requirements-list">
+                            <li>Fase 1: Diagnóstico e análise de performance (5 dias)</li>
+                            <li>Fase 2: Implementação de cache distribuído (10 dias)</li>
+                            <li>Fase 3: Otimização de queries (8 dias)</li>
+                            <li>Fase 4: Testes de carga e validação (5 dias)</li>
+                            <li>Fase 5: Documentação e treinamento (2 dias)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Expected Results -->
+                    <div class="detail-card">
+                        <h2>{{ msg.detalhesProposta.resultados }}</h2>
+                        <p>
+                            Com a implementação desta proposta, você pode esperar:
+                        </p>
+                        <ul class="requirements-list">
+                            <li>Redução de latência de 2s para <600ms (70% de melhora)</li>
+                            <li>Suporte para 10.000+ requisições simultâneas</li>
+                            <li>Taxa de acerto de cache de 85%+</li>
+                            <li>Redução de carga no banco de dados em 60%</li>
+                            <li>Sistema totalmente documentado e testado</li>
+                        </ul>
+                    </div>
+
+                    <!-- Technology Stack -->
+                    <div class="detail-card">
+                        <h2>{{ msg.detalhesProposta.stackTecnologico }}</h2>
+                        <div class="tags">
+                            <span class="tag">Node.js 18</span>
+                            <span class="tag">Redis</span>
+                            <span class="tag">PostgreSQL</span>
+                            <span class="tag">Docker</span>
+                            <span class="tag">Jest</span>
+                            <span class="tag">K6</span>
+                        </div>
+                    </div>
+
+                    <!-- Team Info -->
+                    <div class="detail-card">
+                        <h2>{{ msg.detalhesProposta.equipeProjeto }}</h2>
+                        <p>
+                            Esta proposta será desenvolvida por uma equipe de 3 especialistas em performance e backend:
+                        </p>
+                        <ul class="requirements-list">
+                            <li>1 Arquiteto de Software Sênior</li>
+                            <li>2 Desenvolvedores Backend Pleno</li>
+                            <li>Suporte de QA especializado em testes de performance</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Sidebar -->
+                <aside class="sidebar">
+                    <h3>Informações</h3>
+
+                    <div class="info-item">
+                        <div class="info-label">{{ msg.detalhesProposta.info.instituicao }}</div>
+                        <div class="info-value">UFRJ</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">{{ msg.detalhesProposta.info.avaliacao }}</div>
+                        <div class="info-value" style="color: var(--color-info);">4.8 / 5.0</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">{{ msg.detalhesProposta.info.prazoProposta }}</div>
+                        <div class="info-value">30 dias</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">{{ msg.detalhesProposta.info.dataProposta }}</div>
+                        <div class="info-value">8 May 2024</div>
+                    </div>
+
+                    <div class="info-item">
+                        <div class="info-label">{{ msg.detalhesProposta.info.status }}</div>
+                        <div class="info-value" style="color: var(--color-warning);">Pendente</div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" @click="acceptProposal">{{ msg.detalhesProposta.aceitar }}</button>
+                        <button class="btn-secondary" @click="goBack">{{ msg.detalhesProposta.voltar }}</button>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    msg: messages
+                }
+            },
+            methods: {
+                    acceptProposal() {
+                    alert(this.msg.detalhesProposta.sucesso);
+                    window.location.href = 'propostas.html';
+                },
+                goBack() {
+                    window.location.href = 'propostas.html';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+
