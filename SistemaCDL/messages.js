@@ -617,7 +617,18 @@ const messages = {
     // Page-specific strings (migrated from hardcoded HTML)
     pages: {
         login: {
-            homeTitle: 'Conectando empresas à inovação'
+            pageTitle: 'Login - Sistema de Desafios',
+            homeTitle: 'Conectando empresas à inovação',
+            homeSubtitle: 'Publique desafios e encontre soluções com instituições de ensino',
+            emailPlaceholder: 'seu@email.com',
+            passwordPlaceholder: 'Digite sua senha',
+            forgotPassword: 'Esqueceu sua senha?',
+            noAccountPrefix: 'Não tem conta?',
+            signUp: 'Cadastre-se',
+            modalTitle: 'Você deseja se cadastrar como',
+            modalDivider: 'ou',
+            modalEmpresa: 'Empresa',
+            modalInstituicao: 'Instituição de ensino'
         },
         detalhesPropossta: {
             informacoes: 'Informações'

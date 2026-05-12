@@ -25,35 +25,50 @@
                     </div>
                 </aside>
                 <div class="content">
-                    <div class="detail-hero">
-                        <div class="detail-top">
-                            <div class="detail-title">
-                                <h3>{{ msg.detalhesDesafio.challengeTitle }}</h3>
-                            </div>
-                            <span class="status">{{ msg.tela.status.dentroPrazo }}</span>
-                        </div>
-                        <div class="detail-intro">
-                            <div class="illustration"></div>
-                            <div>
-                                <p>{{ msg.detalhesDesafio.description }}</p>
-                                <p style="margin-top: 16px; color: var(--color-text-secondary);"><strong>{{ msg.detalhesDesafio.expectedOutcomeLabel }}:</strong> {{ msg.detalhesDesafio.expectedOutcome }}</p>
-                                <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 12px;">{{ msg.detalhesDesafio.submissionDateLabel }}: {{ msg.detalhesDesafio.submissionDate }}</p>
-                            </div>
-                        </div>
+                    <div v-if="error" style="color: var(--color-warning); padding: 1rem; margin: 1rem 0; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                        {{ error }}
                     </div>
-                    <div class="detail-grid">
-                        <div class="detail-box card">
-                            <h4>{{ msg.detalhesDesafio.requirements.title }}</h4>
-                            <ul>
-                                <li v-for="item in msg.detalhesDesafio.requirements.items" :key="item">{{ item }}</li>
-                            </ul>
-                        </div>
-                        <div class="detail-box card">
-                            <h4>{{ msg.detalhesDesafio.additionalInfo.title }}</h4>
-                            <p v-for="item in msg.detalhesDesafio.additionalInfo.items" :key="item" v-html="item"></p>
-                        </div>
+                    <div v-if="loading" style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">
+                        Carregando detalhes do desafio...
                     </div>
-                    <div class="detail-note">{{ msg.detalhesDesafio.note }}</div>
+                    <template v-if="!loading && desafio">
+                        <div class="detail-hero">
+                            <div class="detail-top">
+                                <div class="detail-title">
+                                    <h3>{{ desafio.titulo }}</h3>
+                                </div>
+                                <span class="status">{{ statusDesafio }}</span>
+                            </div>
+                            <div class="detail-intro">
+                                <div class="illustration"></div>
+                                <div>
+                                    <p>{{ desafio.descricao }}</p>
+                                    <p style="margin-top: 16px; color: var(--color-text-secondary);"><strong>Prazo:</strong> {{ desafio.dataLimiteFormatada }}</p>
+                                    <p style="font-size: 0.8rem; color: var(--color-text-muted); margin-top: 12px;">Criado em: {{ desafio.dataCriacaoFormatada }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="detail-grid">
+                            <div class="detail-box card">
+                                <h4>{{ msg.detalhesDesafio.requirements.title }}</h4>
+                                <ul v-if="requisitos.length > 0">
+                                    <li v-for="req in requisitos" :key="req.id">{{ req.descricao }}</li>
+                                </ul>
+                                <p v-else style="color: var(--color-text-secondary);">Nenhum requisito definido.</p>
+                            </div>
+                            <div class="detail-box card">
+                                <h4>Propostas recebidas ({{ propostas.length }})</h4>
+                                <div v-if="propostas.length > 0">
+                                    <div v-for="prop in propostas" :key="prop.id" style="padding: 0.5rem 0; border-bottom: 1px solid var(--color-border);">
+                                        <strong>{{ prop.titulo }}</strong><br>
+                                        <small>{{ prop.instituicao }} - {{ prop.dataEnvio }}</small>
+                                    </div>
+                                </div>
+                                <p v-else style="color: var(--color-text-secondary);">Nenhuma proposta recebida ainda.</p>
+                            </div>
+                        </div>
+                        <div class="detail-note">{{ msg.detalhesDesafio.note }}</div>
+                    </template>
                 </div>
             </div>
             </div>
@@ -64,19 +79,90 @@
 
 <script>
     const { createApp } = Vue;
+    const API_URL = 'http://localhost:5000';
+    
+    // Função para obter parâmetro da URL
+    function getQueryParam(name) {
+        const params = new URLSearchParams(window.location.search);
+        return params.get(name);
+    }
     
     // Wait for messages to load before initializing Vue
     document.addEventListener('DOMContentLoaded', function() {
         if (window.messages) {
+            const desafioId = getQueryParam('id');
+            
             createApp({
                 data() {
                     return {
-                        msg: window.messages
+                        msg: window.messages,
+                        desafio: null,
+                        requisitos: [],
+                        propostas: [],
+                        loading: true,
+                        error: null,
+                        desafioId: desafioId
                     };
+                },
+                computed: {
+                    statusDesafio() {
+                        if (!this.desafio) return this.msg.tela.status.dentroPrazo;
+                        // Verificar se está dentro do prazo
+                        if (this.desafio.dataLimite) {
+                            const hoje = new Date();
+                            const limite = new Date(this.desafio.dataLimite);
+                            return hoje <= limite ? this.msg.tela.status.dentroPrazo : 'Prazo encerrado';
+                        }
+                        return this.desafio.statusDesafio || this.msg.tela.status.dentroPrazo;
+                    }
+                },
+                methods: {
+                    async carregarDesafio() {
+                        if (!this.desafioId) {
+                            this.error = 'ID de desafio não fornecido';
+                            this.loading = false;
+                            return;
+                        }
+                        
+                        try {
+                            this.loading = true;
+                            const response = await fetch(`${API_URL}/desafios/${this.desafioId}`);
+                            if (!response.ok) throw new Error('Desafio não encontrado');
+                            
+                            const dados = await response.json();
+                            this.desafio = {
+                                ...dados,
+                                dataCriacaoFormatada: dados.dataCriacao ? new Date(dados.dataCriacao).toLocaleDateString('pt-BR') : 'Data não definida',
+                                dataLimiteFormatada: dados.dataLimite ? new Date(dados.dataLimite).toLocaleDateString('pt-BR') : 'Data não definida'
+                            };
+                            this.requisitos = dados.requisitos || [];
+                            this.propostas = dados.propostas || [];
+                            this.error = null;
+                        } catch (err) {
+                            console.error('Erro ao carregar desafio:', err);
+                            this.error = 'Erro ao carregar desafio. Usando dados de demonstração.';
+                            // Fallback para dados em messages.js
+                            this.desafio = {
+                                titulo: this.msg.detalhesDesafio.challengeTitle,
+                                descricao: this.msg.detalhesDesafio.description,
+                                dataCriacaoFormatada: this.msg.detalhesDesafio.submissionDate,
+                                dataLimiteFormatada: 'Data não definida'
+                            };
+                            this.requisitos = this.msg.detalhesDesafio.requirements.items.map((item, idx) => ({
+                                id: idx,
+                                descricao: item
+                            }));
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                },
+                mounted() {
+                    this.carregarDesafio();
                 }
             }).mount('#app');
 
-                document.title = window.messages.detalhesDesafio.title;
+            document.title = window.messages.detalhesDesafio.title;
         } else {
             console.error('Messages not loaded');
         }

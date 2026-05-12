@@ -1,11 +1,14 @@
 import pyodbc  # type: ignore
-from flask import Flask, jsonify, request # type: ignore
+from flask import Flask, jsonify, request, send_from_directory # type: ignore
 from datetime import datetime
+from pathlib import Path
 from werkzeug.security import generate_password_hash, check_password_hash # type: ignore
 from flask_jwt_extended import JWTManager,create_access_token,jwt_required,get_jwt_identity# type: ignore
 from flask_cors import CORS  # type: ignore
 
-app = Flask(__name__)
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+app = Flask(__name__, static_folder=str(BASE_DIR), static_url_path='')
 app.config['JSON_SORT_KEYS'] = False
 app.config["JWT_SECRET_KEY"] = "sua_chave_super_secreta"
 
@@ -14,17 +17,52 @@ CORS(app)
 
 dados_conexao = (
     "Driver={ODBC Driver 17 for SQL Server};"
-    "Server=DESKTOP-QAU7DEB;"
+    "Server=localhost\\SQLEXPRESS;"
     "Database=SistemaCDL;"
     "Trusted_Connection=yes;"
 )
 
-conexao = pyodbc.connect(dados_conexao)
-cursor = conexao.cursor()
+# Try to connect to database
+conexao = None
+cursor = None
+try:
+    conexao = pyodbc.connect(dados_conexao)
+    cursor = conexao.cursor()
+    print("✓ Conexão ao banco de dados estabelecida com sucesso!")
+except Exception as e:
+    print(f"✗ Erro ao conectar ao banco de dados: {e}")
 
 @app.route('/')
 def index():
-    return "Bem-vindo à API do Sistema CDL!"
+    return app.send_static_file('index.html')
+
+
+@app.route('/api/debug/status', methods=['GET'])
+def debug_status():
+    """Debug endpoint to check API and database status"""
+    status = {
+        "api": "online",
+        "database": "offline",
+        "users_count": 0,
+        "error": None
+    }
+    
+    try:
+        if cursor:
+            cursor.execute("SELECT COUNT(*) FROM Usuario")
+            count = cursor.fetchone()[0]
+            status["database"] = "online"
+            status["users_count"] = count
+            
+            # List users (for debug only)
+            cursor.execute("SELECT ID, Email FROM Usuario")
+            users = cursor.fetchall()
+            status["users"] = [{"id": u[0], "email": u[1]} for u in users]
+    except Exception as e:
+        status["database"] = "offline"
+        status["error"] = str(e)
+    
+    return jsonify(status), 200 if status["database"] == "online" else 500
 
 
 @app.route('/instituicoes', methods=['GET'])
@@ -106,42 +144,96 @@ def criar_instituicao():
 
 @app.route('/login', methods=['POST'])
 def login():
+    """Login endpoint - authenticate user with email and password"""
+    
+    if not cursor:
+        return jsonify({
+            "erro": "Banco de dados não disponível. Entre em contato com o administrador."
+        }), 503
 
-    dados = request.get_json()
+    try:
+        dados = request.get_json()
 
-    email = dados['email']
-    senha = dados['senha']
-
-    cursor.execute(
-        """
-        SELECT ID, Senha
-        FROM Usuario
-        WHERE Email = ?
-        """,
-        (email,)
-    )
-
-    usuario = cursor.fetchone()
-
-    if usuario:
-
-        usuario_id = usuario[0]
-        senha_hash = usuario[1]
-
-        if check_password_hash(senha_hash, senha):
-
-            token = create_access_token(
-                identity=str(usuario_id)
-            )
-
+        email = dados.get('email', '').strip()
+        senha = dados.get('senha', '').strip()
+        
+        if not email or not senha:
             return jsonify({
-                "mensagem": "Login realizado",
-                "token": token
-            }), 200
+                "erro": "Email e senha são obrigatórios"
+            }), 400
 
-    return jsonify({
-        "erro": "Email ou senha inválidos"
-    }), 401
+        cursor.execute(
+            """
+            SELECT ID, Senha
+            FROM Usuario
+            WHERE Email = ?
+            """,
+            (email,)
+        )
+
+        usuario = cursor.fetchone()
+
+        if usuario:
+            usuario_id = usuario[0]
+            senha_hash = usuario[1]
+
+            if check_password_hash(senha_hash, senha):
+                token = create_access_token(
+                    identity=str(usuario_id)
+                )
+
+                return jsonify({
+                    "mensagem": "Login realizado",
+                    "token": token
+                }), 200
+
+        return jsonify({
+            "erro": "Email ou senha inválidos"
+        }), 401
+    
+    except Exception as e:
+        print(f"Erro no login: {e}")
+        return jsonify({
+            "erro": f"Erro ao processar login: {str(e)}"
+        }), 500
+
+
+@app.route('/usuarios/register', methods=['POST'])
+def register_user():
+    """Register a new user (development/testing endpoint)"""
+    
+    if not cursor:
+        return jsonify({
+            "erro": "Banco de dados não disponível"
+        }), 503
+
+    try:
+        dados = request.get_json()
+        email = dados.get('email', '').strip()
+        senha = dados.get('senha', '').strip()
+        nome = dados.get('nome', 'Novo Usuário')
+        tipo = dados.get('tipo', 'instituicao')
+        
+        if not email or not senha:
+            return jsonify({"erro": "Email e senha são obrigatórios"}), 400
+        
+        # Hash da senha
+        senha_hash = generate_password_hash(senha)
+        
+        # Inserir usuário
+        cursor.execute("""
+            INSERT INTO Usuario (Nome, Email, Senha, TipoUsuario, DataCadastro, Ativo)
+            VALUES (?, ?, ?, ?, GETDATE(), 1)
+        """, (nome, email, senha_hash, tipo))
+        conexao.commit()
+        
+        print(f"✓ Usuário criado: {email}")
+        return jsonify({"mensagem": "Usuário criado com sucesso", "email": email}), 201
+    except Exception as e:
+        if conexao:
+            conexao.rollback()
+        print(f"✗ Erro ao registrar usuário: {e}")
+        return jsonify({"erro": str(e)}), 500
 
 @app.route('/me/desafios', methods=['GET'])
 @jwt_required()
@@ -615,6 +707,43 @@ def criar_proposta():
 
 
 
+@app.route('/desafios/completo', methods=['GET'])
+def obter_desafios_completo():
+    """Retorna desafios com dados da empresa"""
+    try:
+        cursor.execute("""
+            SELECT 
+                d.ID, d.Titulo, d.Descricao, d.AreaConhecimento,
+                d.NivelProblema, d.StatusDesafio, d.DataCriacao, d.DataLimite,
+                e.ID as empresaID, e.NomeFantasia as empresaNome
+            FROM Desafio d
+            LEFT JOIN Empresa e ON d.EmpresaID = e.ID
+            ORDER BY d.DataCriacao DESC
+        """)
+        desafios = cursor.fetchall()
+        
+        resultado = []
+        for des in desafios:
+            resultado.append({
+                "id": des[0],
+                "titulo": des[1],
+                "descricao": des[2],
+                "areaConhecimento": des[3],
+                "nivelProblema": des[4],
+                "statusDesafio": des[5],
+                "dataCriacao": str(des[6]) if des[6] else None,
+                "dataLimite": str(des[7]) if des[7] else None,
+                "empresa": {
+                    "id": des[8],
+                    "nome": des[9]
+                } if des[8] else None
+            })
+        return jsonify(resultado), 200
+    except Exception as e:
+        print(f"Erro ao obter desafios completo: {e}")
+        return jsonify({"erro": str(e)}), 500
+
+
 @app.route('/desafios', methods=['GET'])
 def obter_desafios():
     try:
@@ -641,14 +770,37 @@ def obter_desafios():
 
 @app.route('/desafios/<int:id>', methods=['GET'])
 def obter_desafio(id):
+    """Retorna desafio completo com requisitos e propostas"""
     try:
-        cursor.execute("SELECT * FROM Desafio WHERE ID = ?", id)
+        # Buscar desafio
+        cursor.execute("""
+            SELECT d.*, e.NomeFantasia as empresaNome
+            FROM Desafio d
+            LEFT JOIN Empresa e ON d.EmpresaID = e.ID
+            WHERE d.ID = ?
+        """, (id,))
         des = cursor.fetchone()
         
         if not des:
             return jsonify({"erro": "Desafio não encontrado"}), 404
         
-        return jsonify({
+        # Buscar requisitos
+        cursor.execute("""
+            SELECT ID, Descricao FROM Requisito WHERE DesafioID = ?
+        """, (id,))
+        requisitos = cursor.fetchall()
+        
+        # Buscar propostas
+        cursor.execute("""
+            SELECT p.ID, p.Titulo, p.DataEnvio, i.NomeInstituicao
+            FROM Proposta p
+            LEFT JOIN Instituicao i ON p.InstituicaoID = i.ID
+            WHERE p.DesafioID = ?
+            ORDER BY p.DataEnvio DESC
+        """, (id,))
+        propostas = cursor.fetchall()
+        
+        resultado = {
             "id": des[0],
             "empresaID": des[1],
             "titulo": des[2],
@@ -657,9 +809,15 @@ def obter_desafio(id):
             "nivelProblema": des[5],
             "statusDesafio": des[6],
             "dataCriacao": str(des[7]) if des[7] else None,
-            "dataLimite": str(des[8]) if des[8] else None
-        }), 200
+            "dataLimite": str(des[8]) if des[8] else None,
+            "empresaNome": des[9] if len(des) > 9 else None,
+            "requisitos": [{"id": r[0], "descricao": r[1]} for r in requisitos],
+            "propostas": [{"id": p[0], "titulo": p[1], "dataEnvio": str(p[2]) if p[2] else None, "instituicao": p[3]} for p in propostas]
+        }
+        
+        return jsonify(resultado), 200
     except Exception as e:
+        print(f"Erro ao obter desafio {id}: {e}")
         return jsonify({"erro": str(e)}), 500
 
 

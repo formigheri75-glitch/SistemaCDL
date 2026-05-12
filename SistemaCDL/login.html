@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
     <link href="theme.css" rel="stylesheet" />
-    <title>Login - Sistema de Desafios</title>
+    <title></title>
     <style>
         body {
             font-family: var(--font-family);
@@ -316,32 +316,32 @@
         <div class="left-section">
             <div class="logo"></div>
             <div class="left-content">
-                <h1 id="homeTitle">Conectando empresas à inovação</h1>
-                <p id="homeSubtitle">Publique desafios e encontre soluções com instituições de ensino</p>
+                <h1 id="homeTitle"></h1>
+                <p id="homeSubtitle"></p>
             </div>
         </div>
         <div class="right-section">
             <form class="form-card" onsubmit="handleLogin(event)">
-                <h2 id="loginTitle">Login</h2>
+                <h2 id="loginTitle"></h2>
                 
                 <div class="form-group">
-                    <label class="form-label" id="emailLabel">E-mail</label>
-                    <input type="email" class="form-input" id="email" placeholder="seu@email.com" required>
+                    <label class="form-label" id="emailLabel"></label>
+                    <input type="email" class="form-input" id="email" placeholder="" required>
                 </div>
                 
                 <div class="form-group">
-                    <label class="form-label" id="senhaLabel">Senha</label>
-                    <input type="password" class="form-input" id="senha" placeholder="Digite sua senha" required>
+                    <label class="form-label" id="senhaLabel"></label>
+                    <input type="password" class="form-input" id="senha" placeholder="" required>
                 </div>
                 
-                <button type="submit" class="submit-btn" id="entrarBtn">Entrar</button>
+                <button type="submit" class="submit-btn" id="entrarBtn"></button>
                 
                 <div class="form-links">
                     <div class="forgot-link">
-                        <a href="recuperaSenha.html" id="esqueceuLink">Esqueceu sua senha?</a>
+                        <a href="recuperaSenha.html" id="esqueceuLink"></a>
                     </div>
                     <div class="signup-link">
-                        <span id="naoTemConta">Não tem conta? <a href="javascript:void(0)" onclick="openModal()" id="cadastreLink">Cadastre-se</a></span>
+                        <span id="naoTemConta"></span>
                     </div>
                 </div>
             </form>
@@ -351,11 +351,11 @@
     <!-- Modal -->
     <div class="modal-overlay" id="modal">
         <div class="modal-content">
-            <h2 id="modalTitle">Você deseja se cadastrar como</h2>
+            <h2 id="modalTitle"></h2>
             <div class="modal-buttons">
-                <a href="cadastroEmpresa.html" class="modal-btn empresa" id="modalEmpresa">Empresa</a>
-                <div class="modal-divider">ou</div>
-                <a href="cadastroInstituicao.html" class="modal-btn instituicao" id="modalInstituicao">Instituição de ensino</a>
+                <a href="cadastroEmpresa.html" class="modal-btn empresa" id="modalEmpresa"></a>
+                <div class="modal-divider" id="modalDivider"></div>
+                <a href="cadastroInstituicao.html" class="modal-btn instituicao" id="modalInstituicao"></a>
             </div>
         </div>
     </div>
@@ -366,18 +366,22 @@
         
         function updateTexts() {
             if (typeof messages !== 'undefined') {
-                document.getElementById('homeTitle').textContent = messages.home.title;
-                document.getElementById('homeSubtitle').textContent = messages.home.subtitle;
+                document.title = messages.pages.login.pageTitle;
+                document.getElementById('homeTitle').textContent = messages.pages.login.homeTitle;
+                document.getElementById('homeSubtitle').textContent = messages.pages.login.homeSubtitle;
                 document.getElementById('loginTitle').textContent = messages.login.title;
                 document.getElementById('emailLabel').textContent = messages.login.email;
                 document.getElementById('senhaLabel').textContent = messages.login.senha;
                 document.getElementById('entrarBtn').textContent = messages.login.entrar;
-                document.getElementById('esqueceuLink').textContent = messages.home.recuperaSenha.title;
+                document.getElementById('email').placeholder = messages.pages.login.emailPlaceholder;
+                document.getElementById('senha').placeholder = messages.pages.login.passwordPlaceholder;
+                document.getElementById('esqueceuLink').textContent = messages.pages.login.forgotPassword;
                 const naoTemSpan = document.getElementById('naoTemConta');
-                naoTemSpan.innerHTML = messages.login.naoTem + ' <a href="javascript:void(0)" onclick="openModal()" id="cadastreLink">' + messages.login.criar + '</a>';
-                document.getElementById('modalTitle').textContent = messages.login.modal.title;
-                document.getElementById('modalEmpresa').textContent = messages.login.modal.empresa;
-                document.getElementById('modalInstituicao').textContent = messages.login.modal.instituicao;
+                naoTemSpan.innerHTML = messages.pages.login.noAccountPrefix + ' <a href="javascript:void(0)" onclick="openModal()" id="cadastreLink">' + messages.pages.login.signUp + '</a>';
+                document.getElementById('modalTitle').textContent = messages.pages.login.modalTitle;
+                document.getElementById('modalDivider').textContent = messages.pages.login.modalDivider;
+                document.getElementById('modalEmpresa').textContent = messages.pages.login.modalEmpresa;
+                document.getElementById('modalInstituicao').textContent = messages.pages.login.modalInstituicao;
             }
         }
 
@@ -416,7 +420,7 @@
                     
                     // Redirect to challenges page
                     setTimeout(() => {
-                        window.location.href = 'page4.html';
+                        window.location.href = 'tela-inicial-desafios.html';
                     }, 1000);
                 } else {
                     // Show error message
@@ -427,7 +431,7 @@
                 alert(messages.login.connectionError + ' ' + API_BASE_URL);
             } finally {
                 // Reset button state
-                submitBtn.textContent = 'Entrar';
+                submitBtn.textContent = messages.login.entrar;
                 submitBtn.disabled = false;
             }
         }

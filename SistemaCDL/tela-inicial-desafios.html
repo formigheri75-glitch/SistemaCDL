@@ -26,15 +26,15 @@
             <div class="content">
                 <div class="hero-stats">
                     <div class="stat">
-                        <strong>5</strong>
+                        <strong>{{ stats.total }}</strong>
                         <span>{{ msg.telaInicialDesafios.stats.desafiosDisponiveis }}</span>
                     </div>
                     <div class="stat">
-                        <strong>10</strong>
+                        <strong>{{ stats.propostas }}</strong>
                         <span>{{ msg.telaInicialDesafios.stats.propostasEnviadas }}</span>
                     </div>
                     <div class="stat">
-                        <strong>2</strong>
+                        <strong>{{ stats.aprovadas }}</strong>
                         <span>{{ msg.telaInicialDesafios.stats.aprovadas }}</span>
                     </div>
                 </div>
@@ -42,16 +42,25 @@
                     <h2>{{ msg.telaInicialDesafios.sectionTitle }}</h2>
                     <a class="link-chip" href="#">{{ msg.tela.buttons.verTodos }}</a>
                 </div>
-                <div class="list cards-grid">
-                    <div class="challenge-card card" v-for="challenge in msg.telaInicialDesafios.challenges" :key="challenge.title">
+                <div v-if="error" style="color: var(--color-warning); padding: 1rem; margin: 1rem 0; background: rgba(245, 158, 11, 0.1); border-radius: 8px;">
+                    {{ error }}
+                </div>
+                <div v-if="loading" style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">
+                    Carregando desafios...
+                </div>
+                <div class="list cards-grid" v-if="!loading && challenges.length > 0">
+                    <div class="challenge-card card" v-for="challenge in challenges" :key="challenge.id">
                         <div class="challenge-icon">{{ challenge.icon }}</div>
                         <div class="challenge-body card-body">
                             <h3>{{ challenge.title }}</h3>
                             <p>{{ challenge.description }}</p>
                             <div class="challenge-meta">{{ challenge.date }}</div>
                         </div>
-                        <a class="mini-btn" href="#">{{ msg.tela.buttons.verDesafio }}</a>
+                        <a class="mini-btn" :href="`tela-detalhes-desafio.html?id=${challenge.id}`">{{ msg.tela.buttons.verDesafio }}</a>
                     </div>
+                </div>
+                <div v-if="!loading && challenges.length === 0" style="padding: 2rem; text-align: center; color: var(--color-text-secondary);">
+                    Nenhum desafio disponível no momento.
                 </div>
             </div>
             </div>
@@ -61,6 +70,7 @@
 
 <script>
     const { createApp } = Vue;
+    const API_URL = 'http://localhost:5000';
     
     // Wait for messages to load before initializing Vue
     document.addEventListener('DOMContentLoaded', function() {
@@ -68,12 +78,54 @@
             createApp({
                 data() {
                     return {
-                        msg: window.messages
+                        msg: window.messages,
+                        challenges: [],
+                        loading: true,
+                        error: null
                     };
+                },
+                computed: {
+                    stats() {
+                        return {
+                            total: this.challenges.length,
+                            propostas: 0,
+                            aprovadas: 0
+                        };
+                    }
+                },
+                methods: {
+                    async carregarDesafios() {
+                        try {
+                            this.loading = true;
+                            const response = await fetch(`${API_URL}/desafios/completo`);
+                            if (!response.ok) throw new Error('Erro ao buscar desafios');
+                            
+                            const dados = await response.json();
+                            this.challenges = dados.map(d => ({
+                                id: d.id,
+                                title: d.titulo,
+                                description: d.descricao,
+                                date: d.dataCriacao ? new Date(d.dataCriacao).toLocaleDateString('pt-BR') : 'Data não definida',
+                                icon: '🎯',
+                                empresa: d.empresa
+                            }));
+                            this.error = null;
+                        } catch (err) {
+                            console.error('Erro ao carregar desafios:', err);
+                            this.error = 'Erro ao carregar desafios. Tentando com dados de demonstração...';
+                            // Fallback para dados em messages.js
+                            this.challenges = window.messages.telaInicialDesafios.challenges || [];
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                },
+                mounted() {
+                    this.carregarDesafios();
                 }
             }).mount('#app');
 
-                document.title = window.messages.telaInicialDesafios.title;
+            document.title = window.messages.telaInicialDesafios.title;
         } else {
             console.error('Messages not loaded');
         }
