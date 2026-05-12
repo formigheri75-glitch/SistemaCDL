@@ -421,6 +421,10 @@ body.common-layout button {
     font-size: 1.2rem;
 }
 
+.brand-icon::before {
+    content: '✦';
+}
+
 .menu {
     display: grid;
     gap: 8px;
@@ -789,6 +793,10 @@ body.common-layout button {
     color: #60a5fa;
 }
 
+.challenge-icon:empty::before {
+    content: '🎯';
+}
+
 .challenge-body h3 {
     font-size: 1rem;
     font-weight: 700;
@@ -1050,6 +1058,22 @@ main {
     margin-bottom: 0.5rem;
 }
 
+.stat-box:nth-child(1) .stat-icon::before {
+    content: '📊';
+}
+
+.stat-box:nth-child(2) .stat-icon::before {
+    content: '🏁';
+}
+
+.stat-box:nth-child(3) .stat-icon::before {
+    content: '⏳';
+}
+
+.stat-box:nth-child(4) .stat-icon::before {
+    content: '👥';
+}
+
 .stat-value {
     font-size: 2rem; 
     font-weight: bold; 
@@ -1118,6 +1142,22 @@ main {
 
 .activity-icon {
     font-size: 1.5rem;
+}
+
+.activity:nth-child(1) .activity-icon::before {
+    content: '🆕';
+}
+
+.activity:nth-child(2) .activity-icon::before {
+    content: '💬';
+}
+
+.activity:nth-child(3) .activity-icon::before {
+    content: '✅';
+}
+
+.activity:nth-child(4) .activity-icon::before {
+    content: '👤';
 }
 
 .activity-content {

@@ -34,7 +34,12 @@ except Exception as e:
 
 @app.route('/')
 def index():
-    return app.send_static_file('index.html')
+    return app.send_static_file('login.html')
+
+
+@app.route('/debug')
+def debug_page():
+    return app.send_static_file('debug.html')
 
 
 @app.route('/api/debug/status', methods=['GET'])
