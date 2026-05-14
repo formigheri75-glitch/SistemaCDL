@@ -1,7 +1,0 @@
-Flask
-gunicorn
-pyodbc
-flask-cors
-datetime
-werkzeug.security
-flask_jwt_extended
