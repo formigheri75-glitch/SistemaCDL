@@ -1,65 +1,30 @@
-# Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
-# More GitHub Actions for Azure: https://github.com/Azure/actions
-
-name: Build and deploy ASP.Net Core app to Azure Web App - SistemaCDL
+name: Deploy Python app to Azure
 
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
 
 jobs:
-  build:
-    runs-on: windows-latest
-    permissions:
-      contents: read #This is required for actions/checkout
+  build-and-deploy:
+    runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Set up .NET Core
-        uses: actions/setup-dotnet@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          dotnet-version: '8.x'
+          python-version: '3.11'
 
-      - name: Build with dotnet
-        run: dotnet build --configuration Release
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
 
-      - name: dotnet publish
-        run: dotnet publish -c Release -o "${{env.DOTNET_ROOT}}/myapp"
-
-      - name: Upload artifact for deployment job
-        uses: actions/upload-artifact@v4
-        with:
-          name: .net-app
-          path: ${{env.DOTNET_ROOT}}/myapp
-
-  deploy:
-    runs-on: windows-latest
-    needs: build
-    permissions:
-      id-token: write #This is required for requesting the JWT
-      contents: read #This is required for actions/checkout
-
-    steps:
-      - name: Download artifact from build job
-        uses: actions/download-artifact@v4
-        with:
-          name: .net-app
-      
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F1FB18BFFB0E4C20ADD5D505AB05A912 }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_F882C25AC30247DDB9D7565EEE9BF2F3 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5C2BC9D7268440B39C90C0F3FB26474E }}
-
-      - name: Deploy to Azure Web App
-        id: deploy-to-webapp
+      - name: Deploy to Azure
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'SistemaCDL'
-          slot-name: 'Production'
-          package: .
-          
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+    
