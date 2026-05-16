@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Debug | Sistema de Desafios</title>
+    <style>
+        body { 
+            background: var(--color-bg-primary); 
+            color: var(--color-text-primary); 
+            font-family: var(--font-family);
+        }
+        .nav { 
+            background: var(--color-bg-tertiary); 
+            border-bottom: 1px solid var(--color-border);
+            position: sticky; 
+            top: 0; 
+            z-index: 50; 
+            padding: 0.5rem 0;
+        }
+        .nav-content { 
+            max-width: 80rem; 
+            margin: 0 auto; 
+            padding: 0 1rem; 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            height: 4rem;
+        }
+        .nav-title { 
+            font-size: 1.5rem; 
+            font-weight: bold; 
+            background: linear-gradient(to right, var(--color-primary), var(--color-info)); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent; 
+            cursor: pointer;
+        }
+        .nav-links { 
+            display: flex; 
+            gap: 0.5rem;
+        }
+        .nav-links a { 
+            padding: 0.5rem 1rem; 
+            border-radius: 0.5rem; 
+            text-decoration: none; 
+            color: var(--color-text-muted); 
+            font-weight: 500; 
+            transition: all 0.2s;
+        }
+        .nav-links a:hover { 
+            background: var(--color-primary-light);
+            color: var(--color-primary);
+        }
+        main { 
+            max-width: 56rem; 
+            margin: 0 auto; 
+            padding: 3rem 1rem;
+        }
+        .hero { 
+            text-align: center; 
+            margin-bottom: 3rem;
+        }
+        .hero h1 { 
+            font-size: 3rem; 
+            font-weight: bold; 
+            margin-bottom: 1rem; 
+            background: linear-gradient(to right, var(--color-primary), var(--color-info), var(--color-primary)); 
+            -webkit-background-clip: text; 
+            background-clip: text; 
+            -webkit-text-fill-color: transparent;
+        }
+        .hero p { 
+            font-size: 1.25rem; 
+            color: var(--color-text-secondary);
+        }
+        .page-links {
+            background: var(--color-bg-secondary);
+            border-radius: 0.75rem;
+            padding: 2rem;
+            border: 1px solid var(--color-border);
+            margin-bottom: 2rem;
+        }
+        .page-links h2 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+            color: var(--color-info);
+        }
+        .page-links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+        .page-link {
+            display: block;
+            padding: 1rem;
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            background: rgba(255, 255, 255, 0.03);
+            color: var(--color-text-primary);
+            text-decoration: none;
+            transition: all 0.2s;
+        }
+        .page-link:hover {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.12);
+        }
+        .page-link strong {
+            display: block;
+            margin-bottom: 0.35rem;
+        }
+        .page-link span {
+            color: var(--color-text-secondary);
+            font-size: 0.9rem;
+        }
+        .button-center { 
+            text-align: center;
+        }
+        .button { 
+            display: inline-block; 
+            background: linear-gradient(to right, var(--color-error), #dc2626); 
+            color: white; 
+            font-weight: bold; 
+            padding: 1rem 2rem; 
+            border-radius: 0.5rem; 
+            text-decoration: none; 
+            transition: all 0.3s;
+        }
+        .button:hover { 
+            transform: scale(1.05);
+        }
+        .button:active { 
+            transform: scale(0.95);
+        }
+        footer { 
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg-primary);
+            margin-top: 5rem;
+        }
+        footer p { max-width: 80rem; margin: 0 auto; padding: 2rem 1rem; text-align: center; color: #6b7280; font-size: 0.875rem; }
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            main { padding: 1.5rem 1rem; }
+        }
+    </style>
+</head>
+<body class="common-layout">
+    <div id="app"></div>
+
+    <script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+        
+        const HomePage = {
+            template: `
+            <div>
+                <div class="hero">
+                    <h1>{{ msg.home.title }}</h1>
+                    <p>{{ msg.home.subtitle }}</p>
+                </div>
+                
+                <div class="page-links">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h2 style="margin: 0;">Páginas de teste e telas</h2>
+                        <button @click="openAllPages" style="padding: 0.75rem 1.5rem; background: linear-gradient(135deg, var(--color-success) 0%, #059669); color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: bold; font-size: 0.9rem; transition: all 0.3s;" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                            Abrir todas as páginas
+                        </button>
+                    </div>
+                    <div class="page-links-grid">
+                        <a class="page-link" href="CadastroEmpresa.html"><strong>{{ msg.home.cadastroEmpresa.title }}</strong><span>{{ msg.home.cadastroEmpresa.description }}</span></a>
+                        <a class="page-link" href="CadastroInstituicao.html"><strong>{{ msg.home.cadastroInstituicao.title }}</strong><span>{{ msg.home.cadastroInstituicao.description }}</span></a>
+                        <a class="page-link" href="dashboard.html"><strong>{{ msg.home.dashboard.title }}</strong><span>{{ msg.home.dashboard.description }}</span></a>
+                        <a class="page-link" href="RecuperaSenha.html"><strong>{{ msg.home.recuperaSenha.title }}</strong><span>{{ msg.home.recuperaSenha.description }}</span></a>
+                        <a class="page-link" href="empresaDashboard.html"><strong>{{ msg.home.empresaDashboard.title }}</strong><span>{{ msg.home.empresaDashboard.description }}</span></a>
+                        <a class="page-link" href="criaProblema.html"><strong>{{ msg.home.criaProblema.title }}</strong><span>{{ msg.home.criaProblema.description }}</span></a>
+                        <a class="page-link" href="detalhesProblema.html"><strong>{{ msg.home.detalhesProblema.title }}</strong><span>{{ msg.home.detalhesProblema.description }}</span></a>
+                        <a class="page-link" href="propostas.html"><strong>{{ msg.home.propostasRecebidas.title }}</strong><span>{{ msg.home.propostasRecebidas.description }}</span></a>
+                        <a class="page-link" href="selecaoInstituicoes.html"><strong>{{ msg.home.selecaoInstituicoes.title }}</strong><span>{{ msg.home.selecaoInstituicoes.description }}</span></a>
+                        <a class="page-link" href="detalhesPropossta.html"><strong>{{ msg.home.detalhesProposta.title }}</strong><span>{{ msg.home.detalhesProposta.description }}</span></a>
+                        <a class="page-link" href="page4.html"><strong>{{ msg.page4.title }}</strong><span>{{ msg.page4.notificacoes }}</span></a>
+                        <a class="page-link" href="tela-inicial-desafios.html"><strong>{{ msg.telaInicialDesafios.title }}</strong><span>{{ msg.telaInicialDesafios.sectionTitle }}</span></a>
+                        <a class="page-link" href="tela-detalhes-desafio.html"><strong>{{ msg.detalhesDesafio.title }}</strong><span>{{ msg.detalhesDesafio.note }}</span></a>
+                        <a class="page-link" href="tela-minhas-propostas.html"><strong>{{ msg.minhasPropostas.title }}</strong><span></span></a>
+                        <a class="page-link" href="tela-notificacoes-desafios.html"><strong>{{ msg.notificacoesDesafios.title }}</strong><span></span></a>
+                        <a class="page-link" href="tela-notificacoes-propostas.html"><strong>{{ msg.notificacoesPropostas.title }}</strong><span></span></a>
+                        <a class="page-link" href="tela-notificacoes-todas.html"><strong>{{ msg.notificacoesTodas.title }}</strong><span></span></a>
+                        <a class="page-link" href="DetalhesDesafio.html"><strong>{{ msg.detalhesDesafio.title }}</strong><span>Versão clássica da tela</span></a>
+                    </div>
+                </div>
+                
+                <div class="button-center">
+                    <a href="login.html" class="button">{{ msg.home.botaoEntrar }}</a>
+                </div>
+            </div>
+            `,
+            data() {
+                return {
+                    msg: messages
+                }
+            },
+            methods: {
+                openAllPages() {
+                    const pages = [
+                        'CadastroEmpresa.html',
+                        'CadastroInstituicao.html',
+                        'dashboard.html',
+                        'RecuperaSenha.html',
+                        'empresaDashboard.html',
+                        'criaProblema.html',
+                        'detalhesProblema.html',
+                        'propostas.html',
+                        'selecaoInstituicoes.html',
+                        'detalhesPropossta.html',
+                        'page4.html',
+                        'tela-inicial-desafios.html',
+                        'tela-detalhes-desafio.html',
+                        'tela-minhas-propostas.html',
+                        'tela-notificacoes-desafios.html',
+                        'tela-notificacoes-propostas.html',
+                        'tela-notificacoes-todas.html',
+                        'DetalhesDesafio.html'
+                    ];
+                    pages.forEach(page => {
+                        window.open(page, '_blank');
+                    });
+                }
+            }
+        };
+
+        const App = {
+            template: `
+            <div style="min-height: 100vh; background: #0f172a;">
+                <nav class="nav">
+                    <div class="nav-content">
+                        <div class="nav-title" @click="goLogin">{{ msg.nav.brand }}</div>
+                        <div class="nav-links">
+                            <a href="login.html">Login</a>
+                            <a href="debug.html">Debug</a>
+                            <a href="dashboard.html">{{ msg.nav.dashboard }}</a>
+                            <a href="CadastroEmpresa.html">{{ msg.nav.empresa }}</a>
+                            <a href="CadastroInstituicao.html">{{ msg.nav.instituicao }}</a>
+                            <a href="RecuperaSenha.html">{{ msg.nav.recuperarSenha }}</a>
+                        </div>
+                    </div>
+                </nav>
+                
+                <main>
+                    <component :is="currentComponent" />
+                </main>
+                
+                <footer>
+                    <p>{{ msg.footer }}</p>
+                </footer>
+            </div>
+            `,
+            components: {
+                HomePage
+            },
+            data() {
+                return {
+                    currentComponent: 'HomePage',
+                    msg: messages
+                }
+            },
+            methods: {
+                goLogin() {
+                    window.location.href = 'login.html';
+                }
+            }
+        };
+
+        createApp(App).mount('#app');
+    </script>
+</body>
+</html>

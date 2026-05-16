@@ -1,0 +1,541 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Criar Problema</title>
+    <link href="theme.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        }
+
+        nav {
+            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, rgba(30, 41, 59, 0.6) 100%);
+            border-bottom: 1px solid var(--color-border);
+            padding: clamp(1rem, 2vw, 1.5rem) clamp(1.5rem, 3vw, 2rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: clamp(1rem, 2vw, 2rem);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.5rem, 1vw, 1rem);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-info) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: clamp(0.5rem, 1.5vw, 1.5rem);
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .container {
+            padding: clamp(1.5rem, 3vw, 2rem);
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin-bottom: clamp(1.5rem, 3vw, 2rem);
+            color: var(--color-text-primary);
+        }
+
+        .form-wrapper {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(2rem, 3vw, 2.5rem);
+        }
+
+        .form-group {
+            margin-bottom: clamp(1.5rem, 2vw, 2rem);
+        }
+
+        label {
+            display: block;
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            font-weight: 600;
+            margin-bottom: 0.75rem;
+            color: var(--color-text-primary);
+        }
+
+        input[type="text"],
+        input[type="email"],
+        input[type="date"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: clamp(0.75rem, 1.5vw, 1rem);
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            color: var(--color-text-primary);
+            font-size: clamp(0.9rem, 1.5vw, 1rem);
+            transition: all 0.3s ease;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 120px;
+            font-family: inherit;
+        }
+
+        input[type="text"]:focus,
+        input[type="email"]:focus,
+        input[type="date"]:focus,
+        input[type="number"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: clamp(1rem, 2vw, 1.5rem);
+        }
+
+        .form-row .form-group {
+            margin-bottom: 0;
+        }
+
+        .requirements-section {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            padding: clamp(1rem, 2vw, 1.5rem);
+            margin-top: 1rem;
+        }
+
+        .requirement-item {
+            display: flex;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            align-items: center;
+        }
+
+        .requirement-item input[type="text"] {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-remove {
+            background: var(--color-error);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-remove:hover {
+            background: var(--color-error-dark);
+        }
+
+        .btn-add-requirement {
+            background: var(--color-info);
+            color: white;
+            border: none;
+            padding: clamp(0.5rem, 1vw, 0.75rem) clamp(1rem, 2vw, 1.5rem);
+            border-radius: 0.375rem;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.3s ease;
+            margin-top: 0.75rem;
+        }
+
+        .btn-add-requirement:hover {
+            background: var(--color-info-dark);
+        }
+
+        .button-group {
+            display: flex;
+            gap: clamp(0.75rem, 2vw, 1rem);
+            margin-top: clamp(2rem, 3vw, 2.5rem);
+            flex-wrap: wrap;
+        }
+
+        button.btn-submit,
+        button.btn-cancel {
+            padding: clamp(0.75rem, 2vw, 1rem) clamp(2rem, 3vw, 2.5rem);
+            border: none;
+            border-radius: 0.5rem;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        button.btn-submit {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button.btn-submit:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        button.btn-cancel {
+            background: var(--color-bg-tertiary);
+            color: var(--color-text-secondary);
+            border: 1px solid var(--color-border);
+            flex: 1;
+            min-width: 150px;
+        }
+
+        button.btn-cancel:hover {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        .alert {
+            padding: clamp(1rem, 2vw, 1.25rem);
+            border-radius: 0.5rem;
+            margin-bottom: clamp(1rem, 2vw, 1.5rem);
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            animation: slideDown 0.3s ease;
+        }
+
+        .alert.success {
+            background: var(--color-success-light);
+            border: 1px solid var(--color-success);
+            color: var(--color-success);
+        }
+
+        .alert.error {
+            background: var(--color-error-light);
+            border: 1px solid var(--color-error);
+            color: var(--color-error);
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @media (max-width: 1024px) {
+            nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            nav ul {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 640px) {
+            nav {
+                padding: 1rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            nav a {
+                width: 100%;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .form-wrapper {
+                padding: 1.5rem;
+            }
+
+            .button-group {
+                flex-direction: column;
+            }
+
+            button.btn-submit,
+            button.btn-cancel {
+                width: 100%;
+                min-width: unset;
+            }
+        }
+    </style>
+</head>
+<body class="tela-layout">
+    <div class="screen">
+        <div class="shell">
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <a href="index.html">Desafios</a>
+                </div>
+                <nav class="sidebar-menu">
+                    <a href="index.html" class="menu-item">Início</a>
+                    <a href="dashboard.html" class="menu-item">Dashboard</a>
+                    <a href="criaProblema.html" class="menu-item active">Criar Problema</a>
+                    <a href="propostas.html" class="menu-item">Propostas</a>
+                </nav>
+            </aside>
+            <div class="content">
+                <div id="app">
+
+        <!-- Main Content -->
+        <div class="container">
+            <h1>{{ msg.criaProblema.title }}</h1>
+
+            <div class="form-wrapper">
+                <div v-if="showAlert" :class="['alert', alertType]">
+                    {{ alertMessage }}
+                </div>
+
+                <form @submit.prevent="submitForm">
+                    <!-- Title -->
+                    <div class="form-group">
+                        <label for="title">{{ msg.criaProblema.titulo }}</label>
+                        <input 
+                            type="text" 
+                            id="title" 
+                            v-model="form.title"
+                            :placeholder="msg.criaProblema.tituloPlaceholder"
+                            required
+                        />
+                    </div>
+
+                    <!-- Description -->
+                    <div class="form-group">
+                        <label for="description">{{ msg.criaProblema.descricao }}</label>
+                        <textarea 
+                            id="description" 
+                            v-model="form.description"
+                            :placeholder="msg.criaProblema.descricaoPlaceholder"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <!-- Expected Result -->
+                    <div class="form-group">
+                        <label for="expectedResult">{{ msg.criaProblema.resultado }}</label>
+                        <textarea 
+                            id="expectedResult" 
+                            v-model="form.expectedResult"
+                            :placeholder="msg.criaProblema.resultadoPlaceholder"
+                            required
+                        ></textarea>
+                    </div>
+
+                    <!-- Deadline -->
+                    <div class="form-group">
+                        <label for="deadline">{{ msg.criaProblema.deadline }}</label>
+                        <input 
+                            type="number" 
+                            id="deadline" 
+                            v-model.number="form.deadline"
+                            min="1"
+                            max="365"
+                            placeholder="30"
+                            required
+                        />
+                    </div>
+
+                    <!-- Category and Priority -->
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="category">{{ msg.criaProblema.categoria }}</label>
+                            <select id="category" v-model="form.category" required>
+                                <option value="">{{ msg.criaProblema.seleccionarCategoria }}</option>
+                                <option value="backend">{{ msg.criaProblema.categorias.backend }}</option>
+                                <option value="frontend">{{ msg.criaProblema.categorias.frontend }}</option>
+                                <option value="mobile">{{ msg.criaProblema.categorias.mobile }}</option>
+                                <option value="devops">{{ msg.criaProblema.categorias.devops }}</option>
+                                <option value="data">{{ msg.criaProblema.categorias.data }}</option>
+                                <option value="design">{{ msg.criaProblema.categorias.design }}</option>
+                                <option value="other">{{ msg.criaProblema.categorias.outro }}</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="priority">{{ msg.criaProblema.prioridade }}</label>
+                            <select id="priority" v-model="form.priority" required>
+                                <option value="">{{ msg.criaProblema.seleccionarPrioridade }}</option>
+                                <option value="low">{{ msg.criaProblema.prioridades.baixa }}</option>
+                                <option value="medium">{{ msg.criaProblema.prioridades.media }}</option>
+                                <option value="high">{{ msg.criaProblema.prioridades.alta }}</option>
+                                <option value="critical">{{ msg.criaProblema.prioridades.critica }}</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Technologies -->
+                    <div class="form-group">
+                        <label for="technologies">{{ msg.criaProblema.tecnologias }}</label>
+                        <input 
+                            type="text" 
+                            id="technologies" 
+                            v-model="form.technologies"
+                            :placeholder="msg.criaProblema.tecnologiasPlaceholder"
+                        />
+                    </div>
+
+                    <!-- Requirements -->
+                    <div class="form-group">
+                        <label>{{ msg.criaProblema.requisitos }}</label>
+                        <div class="requirements-section">
+                            <div v-for="(req, index) in form.requirements" :key="index" class="requirement-item">
+                                <input 
+                                    type="text" 
+                                    v-model="form.requirements[index]"
+                                    placeholder="Ex: Suportar 10000 requisições/segundo"
+                                />
+                                <button 
+                                    type="button" 
+                                    class="btn-remove"
+                                    @click="removeRequirement(index)"
+                                >
+                                    {{ msg.criaProblema.remover }}
+                                </button>
+                            </div>
+                            <button 
+                                type="button" 
+                                class="btn-add-requirement"
+                                @click="addRequirement"
+                            >
+                                {{ msg.criaProblema.adicionarRequisito }}
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Buttons -->
+                    <div class="button-group">
+                        <button type="submit" class="btn-submit">{{ msg.criaProblema.publicar }}</button>
+                        <button type="button" class="btn-cancel" @click="cancelForm">{{ msg.criaProblema.cancelar }}</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+<script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    msg: messages,
+                    form: {
+                        title: '',
+                        description: '',
+                        expectedResult: '',
+                        deadline: '',
+                        category: '',
+                        priority: '',
+                        technologies: '',
+                        requirements: ['']
+                    },
+                    showAlert: false,
+                    alertMessage: '',
+                    alertType: 'success'
+                }
+            },
+            methods: {
+                addRequirement() {
+                    this.form.requirements.push('');
+                },
+                removeRequirement(index) {
+                    this.form.requirements.splice(index, 1);
+                },
+                submitForm() {
+                    if (!this.form.title || !this.form.description || !this.form.expectedResult || !this.form.category || !this.form.priority || !this.form.deadline) {
+                        this.alertMessage = this.msg.criaProblema.erro;
+                        this.alertType = 'error';
+                        this.showAlert = true;
+                        return;
+                    }
+
+                    this.alertMessage = this.msg.criaProblema.sucesso;
+                    this.alertType = 'success';
+                    this.showAlert = true;
+
+                    setTimeout(() => {
+                        window.location.href = 'empresaDashboard.html';
+                    }, 1500);
+                },
+                cancelForm() {
+                    window.location.href = 'empresaDashboard.html';
+                }
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+

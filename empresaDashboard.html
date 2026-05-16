@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Empresa</title>
+    <link href="theme.css" rel="stylesheet" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            overflow-x: hidden;
+        }
+
+        nav {
+            background: linear-gradient(135deg, var(--color-bg-secondary) 0%, rgba(30, 41, 59, 0.6) 100%);
+            border-bottom: 1px solid var(--color-border);
+            padding: clamp(1rem, 2vw, 1.5rem) clamp(1.5rem, 3vw, 2rem);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: clamp(1rem, 2vw, 2rem);
+        }
+
+        .nav-brand {
+            display: flex;
+            align-items: center;
+            gap: clamp(0.5rem, 1vw, 1rem);
+            text-decoration: none;
+            font-weight: bold;
+            font-size: clamp(1.1rem, 2vw, 1.3rem);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-info) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: clamp(0.5rem, 1.5vw, 1.5rem);
+            align-items: center;
+        }
+
+        nav a {
+            color: var(--color-text-secondary);
+            text-decoration: none;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            font-weight: 500;
+            padding: 0.5rem 1rem;
+            border-radius: 0.375rem;
+            transition: all 0.3s ease;
+        }
+
+        nav a:hover {
+            color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .container {
+            padding: clamp(1.5rem, 3vw, 2rem);
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            margin-bottom: clamp(1rem, 2vw, 1.5rem);
+            color: var(--color-text-primary);
+        }
+
+        h2 {
+            font-size: clamp(1.3rem, 3vw, 1.8rem);
+            margin-bottom: clamp(1rem, 2vw, 1.5rem);
+            color: var(--color-text-primary);
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: clamp(1rem, 2vw, 1.5rem);
+            margin-bottom: clamp(2rem, 3vw, 2.5rem);
+        }
+
+        .stat-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(1.5rem, 2vw, 2rem);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-4px);
+        }
+
+        .stat-number {
+            font-size: clamp(2rem, 4vw, 2.8rem);
+            font-weight: bold;
+            color: var(--color-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: clamp(0.85rem, 1.5vw, 1rem);
+            color: var(--color-text-secondary);
+        }
+
+        /* Problems Section */
+        .problems-section {
+            margin-bottom: clamp(2rem, 3vw, 2.5rem);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: clamp(1rem, 2vw, 1.5rem);
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .problems-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: clamp(1rem, 2vw, 1.5rem);
+        }
+
+        .problem-card {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(1.5rem, 2vw, 2rem);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .problem-card:hover {
+            border-color: var(--color-primary);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+        }
+
+        .problem-title {
+            font-size: clamp(1rem, 2vw, 1.1rem);
+            font-weight: 600;
+            color: var(--color-text-primary);
+            margin-bottom: 0.75rem;
+        }
+
+        .problem-description {
+            font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+            color: var(--color-text-secondary);
+            margin-bottom: 1rem;
+            line-height: 1.5;
+        }
+
+        .problem-stats {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--color-border);
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: clamp(1rem, 2vw, 1.2rem);
+            font-weight: bold;
+            color: var(--color-primary);
+        }
+
+        .stat-name {
+            font-size: clamp(0.75rem, 1.5vw, 0.85rem);
+            color: var(--color-text-muted);
+        }
+
+        .problem-actions {
+            display: flex;
+            gap: 0.75rem;
+        }
+
+        button {
+            padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem);
+            border: none;
+            border-radius: 0.5rem;
+            font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            color: white;
+            flex: 1;
+        }
+
+        .btn-primary:hover {
+            transform: scale(1.05);
+            box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+        }
+
+        .btn-secondary {
+            background: var(--color-bg-tertiary);
+            color: var(--color-primary);
+            border: 1px solid var(--color-primary);
+            flex: 1;
+        }
+
+        .btn-secondary:hover {
+            background: rgba(59, 130, 246, 0.1);
+        }
+
+        .btn-new-problem {
+            background: linear-gradient(135deg, var(--color-success) 0%, var(--color-success-dark) 100%);
+            color: white;
+            padding: clamp(0.75rem, 2vw, 1rem) clamp(1.5rem, 3vw, 2rem);
+        }
+
+        .btn-new-problem:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 16px rgba(16, 185, 129, 0.3);
+        }
+
+        /* Subscriptions Section */
+        .subscriptions-section {
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.75rem;
+            padding: clamp(1.5rem, 2vw, 2rem);
+        }
+
+        .subscription-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .subscription-item {
+            background: var(--color-bg-tertiary);
+            border: 1px solid var(--color-border);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            text-align: center;
+            font-size: clamp(0.85rem, 1.5vw, 0.95rem);
+            color: var(--color-text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .subscription-item:hover {
+            border-color: var(--color-primary);
+            background: rgba(59, 130, 246, 0.05);
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            nav {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            nav ul {
+                width: 100%;
+                flex-wrap: wrap;
+            }
+
+            .stats-grid {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        @media (max-width: 640px) {
+            nav {
+                padding: 1rem;
+            }
+
+            nav ul {
+                flex-direction: column;
+                gap: 0.5rem;
+                width: 100%;
+            }
+
+            nav a {
+                width: 100%;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .section-header {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .btn-new-problem {
+                width: 100%;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .problems-list {
+                grid-template-columns: 1fr;
+            }
+
+            .problem-actions {
+                flex-direction: column;
+            }
+
+            .subscription-list {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .stat-card {
+            animation: fadeIn 0.6s ease;
+        }
+    </style>
+</head>
+<body class="tela-layout">
+    <div class="screen">
+        <div class="shell">
+            <aside class="sidebar">
+                <div class="sidebar-brand">
+                    <a href="index.html">Desafios</a>
+                </div>
+                <nav class="sidebar-menu">
+                    <a href="index.html" class="menu-item">Início</a>
+                    <a href="dashboard.html" class="menu-item active">Dashboard</a>
+                    <a href="criaProblema.html" class="menu-item">Criar Problema</a>
+                    <a href="propostas.html" class="menu-item">Propostas</a>
+                </nav>
+            </aside>
+            <div class="content">
+                <div id="app">
+
+        <!-- Main Content -->
+        <div class="container">
+            <h1>{{ msg.empresaDashboard.title }}</h1>
+
+            <!-- Statistics -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">4</div>
+                    <div class="stat-label">{{ msg.empresaDashboard.stats.problemas }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">20</div>
+                    <div class="stat-label">{{ msg.empresaDashboard.stats.solucoes }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">7</div>
+                    <div class="stat-label">{{ msg.empresaDashboard.stats.selecionadas }}</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number">3</div>
+                    <div class="stat-label">{{ msg.empresaDashboard.stats.implementadas }}</div>
+                </div>
+            </div>
+
+            <!-- Problems Section -->
+            <div class="problems-section">
+                <div class="section-header">
+                    <h2>{{ msg.empresaDashboard.meusproblemas }}</h2>
+                    <a href="criaProblema.html" class="btn-new-problem">{{ msg.empresaDashboard.novoProblema }}</a>
+                </div>
+
+                <div class="problems-list">
+                    <!-- Problem 1 -->
+                    <div class="problem-card">
+                        <div class="problem-title">{{ msg.criaProblema.tituloPlaceholder }}</div>
+                        <div class="problem-description">
+                            Uma descrição breve do problema que a empresa enfrenta e que busca solução.
+                        </div>
+                        <div class="problem-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">20</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.detalhes }}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">30 dias</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.prazo }}</div>
+                            </div>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="detalhesProblema.html" class="btn-primary">{{ msg.empresaDashboard.detalhes }}</a>
+                            <a href="propostas.html" class="btn-secondary">{{ msg.empresaDashboard.verPropostas }}</a>
+                        </div>
+                    </div>
+
+                    <!-- Problem 2 -->
+                    <div class="problem-card">
+                        <div class="problem-title">Otimização de API</div>
+                        <div class="problem-description">
+                            Melhorar performance e escalabilidade da API REST atual.
+                        </div>
+                        <div class="problem-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">15</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.detalhes }}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">20 dias</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.prazo }}</div>
+                            </div>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="detalhesProblema.html" class="btn-primary">{{ msg.empresaDashboard.detalhes }}</a>
+                            <a href="propostas.html" class="btn-secondary">{{ msg.empresaDashboard.verPropostas }}</a>
+                        </div>
+                    </div>
+
+                    <!-- Problem 3 -->
+                    <div class="problem-card">
+                        <div class="problem-title">Sistema de Autenticação</div>
+                        <div class="problem-description">
+                            Implementar sistema seguro de autenticação e autorização.
+                        </div>
+                        <div class="problem-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">12</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.detalhes }}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">45 dias</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.prazo }}</div>
+                            </div>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="detalhesProblema.html" class="btn-primary">{{ msg.empresaDashboard.detalhes }}</a>
+                            <a href="propostas.html" class="btn-secondary">{{ msg.empresaDashboard.verPropostas }}</a>
+                        </div>
+                    </div>
+
+                    <!-- Problem 4 -->
+                    <div class="problem-card">
+                        <div class="problem-title">Interface Mobile</div>
+                        <div class="problem-description">
+                            Redesenhar aplicação mobile para melhor experiência do usuário.
+                        </div>
+                        <div class="problem-stats">
+                            <div class="stat-item">
+                                <div class="stat-value">25</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.detalhes }}</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="stat-value">60 dias</div>
+                                <div class="stat-name">{{ msg.empresaDashboard.prazo }}</div>
+                            </div>
+                        </div>
+                        <div class="problem-actions">
+                            <a href="detalhesProblema.html" class="btn-primary">{{ msg.empresaDashboard.detalhes }}</a>
+                            <a href="propostas.html" class="btn-secondary">{{ msg.empresaDashboard.verPropostas }}</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Subscriptions Section -->
+            <div class="subscriptions-section">
+                <h2>{{ msg.empresaDashboard.subscrições }}</h2>
+                <div class="subscription-list">
+                    <div class="subscription-item">UFRJ</div>
+                    <div class="subscription-item">USP</div>
+                    <div class="subscription-item">UNICAMP</div>
+                    <div class="subscription-item">PUC-RJ</div>
+                    <div class="subscription-item">UFMG</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        createApp({
+            data() {
+                return {
+                    msg: messages
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
+
