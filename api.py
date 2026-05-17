@@ -917,6 +917,143 @@ def deletar_notificacao(id):
 
 
 # =========================
+# CONFIRMAÇÕES EMPRESA
+# =========================
+
+@app.route('/confirmacoes-empresa', methods=['GET'])
+def obter_confirmacoes_empresa():
+
+    try:
+
+        response = supabase.table("confirmacaoempresa") \
+            .select("*") \
+            .order("id") \
+            .execute()
+
+        return jsonify(response.data), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
+@app.route('/confirmacoes-empresa/<int:id>', methods=['GET'])
+def obter_confirmacao_empresa(id):
+
+    try:
+
+        response = supabase.table("confirmacaoempresa") \
+            .select("*") \
+            .eq("id", id) \
+            .execute()
+
+        confirmacoes = response.data
+
+        if len(confirmacoes) == 0:
+
+            return jsonify({
+                "erro": "Confirmação não encontrada"
+            }), 404
+
+        return jsonify(confirmacoes[0]), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
+@app.route('/confirmacoes-empresa', methods=['POST'])
+def criar_confirmacao_empresa():
+
+    try:
+
+        dados = request.get_json()
+
+        nova_confirmacao = {
+
+            "empresaid": dados.get('empresaID'),
+            "nomeconfirmacao": dados.get('nomeConfirmacao')
+
+        }
+
+        response = supabase.table("confirmacaoempresa") \
+            .insert(nova_confirmacao) \
+            .execute()
+
+        return jsonify({
+
+            "mensagem": "Confirmação criada com sucesso",
+            "dados": response.data
+
+        }), 201
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
+@app.route('/confirmacoes-empresa/<int:id>', methods=['PUT'])
+def atualizar_confirmacao_empresa(id):
+
+    try:
+
+        dados = request.get_json()
+
+        dados_atualizados = {
+
+            "empresaid": dados.get('empresaID'),
+            "nomeconfirmacao": dados.get('nomeConfirmacao')
+
+        }
+
+        response = supabase.table("confirmacaoempresa") \
+            .update(dados_atualizados) \
+            .eq("id", id) \
+            .execute()
+
+        return jsonify({
+
+            "mensagem": "Confirmação atualizada com sucesso",
+            "dados": response.data
+
+        }), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
+@app.route('/confirmacoes-empresa/<int:id>', methods=['DELETE'])
+def deletar_confirmacao_empresa(id):
+
+    try:
+
+        response = supabase.table("confirmacaoempresa") \
+            .delete() \
+            .eq("id", id) \
+            .execute()
+
+        return jsonify({
+
+            "mensagem": "Confirmação deletada com sucesso",
+            "dados": response.data
+
+        }), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+# =========================
 # ERROS
 # =========================
 
