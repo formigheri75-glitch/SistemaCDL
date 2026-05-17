@@ -1,4 +1,5 @@
 from flask import Flask, jsonify, request # type: ignore
+from flask_cors import CORS
 from flask_jwt_extended import ( # type: ignore
     JWTManager,
     create_access_token,
@@ -21,7 +22,7 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
-
+CORS(app)
 app.config["JWT_SECRET_KEY"] = "sua_chave_super_secreta"
 app.config["JSON_SORT_KEYS"] = False
 
