@@ -1,38 +1,54 @@
 from flask import Flask, jsonify, request # type: ignore
-from datetime import datetime
-from werkzeug.security import generate_password_hash, check_password_hash # type: ignore
 from flask_jwt_extended import ( # type: ignore
     JWTManager,
     create_access_token,
     jwt_required,
     get_jwt_identity
 )
-
+from werkzeug.security import ( # type: ignore
+    generate_password_hash,
+    check_password_hash
+)
 from dotenv import load_dotenv # type: ignore
+from supabase import create_client, Client # type: ignore
 
-import psycopg2
-import psycopg2.extras
 import os
+
+# =========================
+# CONFIGURAÇÕES
+# =========================
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL")
-
 app = Flask(__name__)
 
-app.config['JSON_SORT_KEYS'] = False
 app.config["JWT_SECRET_KEY"] = "sua_chave_super_secreta"
+app.config["JSON_SORT_KEYS"] = False
 
 jwt = JWTManager(app)
 
+# =========================
+# SUPABASE
+# =========================
 
-def get_connection():
-    return psycopg2.connect(DATABASE_URL)
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+supabase: Client = create_client(
+    SUPABASE_URL,
+    SUPABASE_KEY
+)
+
+# =========================
+# HOME
+# =========================
 
 @app.route('/')
 def index():
-    return "Bem-vindo à API do Sistema CDL!"
+
+    return jsonify({
+        "mensagem": "Bem-vindo à API do Sistema CDL!"
+    })
 
 
 # =========================
@@ -46,49 +62,44 @@ def login():
 
         dados = request.get_json()
 
-        email = dados['email']
-        senha = dados['senha']
+        email = dados.get('email')
+        senha = dados.get('senha')
 
-        conexao = get_connection()
+        response = supabase.table("usuario") \
+            .select("id, senha") \
+            .eq("email", email) \
+            .execute()
 
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
+        usuarios = response.data
+
+        if len(usuarios) == 0:
+
+            return jsonify({
+                "erro": "Email ou senha inválidos"
+            }), 401
+
+        usuario = usuarios[0]
+
+        if usuario["senha"] != senha:
+
+            return jsonify({
+                "erro": "Email ou senha inválidos"
+            }), 401
+
+        token = create_access_token(
+            identity=str(usuario["id"])
         )
 
-        cursor.execute("""
-            SELECT id, senha
-            FROM usuario
-            WHERE email = %s
-        """, (email,))
-
-        usuario = cursor.fetchone()
-
-        cursor.close()
-        conexao.close()
-
-        if usuario:
-
-            if check_password_hash(usuario["senha"], senha):
-
-                token = create_access_token(
-                    identity=str(usuario["id"])
-                )
-
-                return jsonify({
-                    "mensagem": "Login realizado",
-                    "token": token
-                }), 200
-
         return jsonify({
-            "erro": "Email ou senha inválidos"
-        }), 401
+            "mensagem": "Login realizado",
+            "token": token
+        }), 200
 
     except Exception as e:
 
         return jsonify({
             "erro": str(e)
         }), 500
-
 
 # =========================
 # ME
@@ -102,34 +113,20 @@ def me():
 
         usuario_id = get_jwt_identity()
 
-        conexao = get_connection()
+        response = supabase.table("usuario") \
+            .select("id, nome, email, tipousuario") \
+            .eq("id", usuario_id) \
+            .execute()
 
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
+        usuarios = response.data
 
-        cursor.execute("""
-            SELECT
-                id,
-                nome,
-                email,
-                tipousuario
-            FROM usuario
-            WHERE id = %s
-        """, (usuario_id,))
-
-        usuario = cursor.fetchone()
-
-        cursor.close()
-        conexao.close()
-
-        if usuario is None:
+        if len(usuarios) == 0:
 
             return jsonify({
                 "erro": "Usuário não encontrado"
             }), 404
 
-        return jsonify(usuario), 200
+        return jsonify(usuarios[0]), 200
 
     except Exception as e:
 
@@ -139,7 +136,7 @@ def me():
 
 
 # =========================
-# USUARIOS
+# USUÁRIOS
 # =========================
 
 @app.route('/usuarios', methods=['GET'])
@@ -147,24 +144,12 @@ def obter_usuarios():
 
     try:
 
-        conexao = get_connection()
+        response = supabase.table("usuario") \
+            .select("*") \
+            .order("id") \
+            .execute()
 
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM usuario
-            ORDER BY id
-        """)
-
-        usuarios = cursor.fetchall()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify(usuarios), 200
+        return jsonify(response.data), 200
 
     except Exception as e:
 
@@ -178,30 +163,20 @@ def obter_usuario(id):
 
     try:
 
-        conexao = get_connection()
+        response = supabase.table("usuario") \
+            .select("*") \
+            .eq("id", id) \
+            .execute()
 
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
+        usuarios = response.data
 
-        cursor.execute("""
-            SELECT *
-            FROM usuario
-            WHERE id = %s
-        """, (id,))
-
-        usuario = cursor.fetchone()
-
-        cursor.close()
-        conexao.close()
-
-        if not usuario:
+        if len(usuarios) == 0:
 
             return jsonify({
                 "erro": "Usuário não encontrado"
             }), 404
 
-        return jsonify(usuario), 200
+        return jsonify(usuarios[0]), 200
 
     except Exception as e:
 
@@ -217,42 +192,25 @@ def criar_usuario():
 
         dados = request.get_json()
 
-        nome = dados['nome']
-        email = dados['email']
-        senha = dados['senha']
+        senha_hash = generate_password_hash(
+            dados.get('senha')
+        )
 
-        senha_hash = generate_password_hash(senha)
+        novo_usuario = {
+            "nome": dados.get('nome'),
+            "email": dados.get('email'),
+            "senha": senha_hash,
+            "tipousuario": "Usuario",
+            "ativo": True
+        }
 
-        conexao = get_connection()
-
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            INSERT INTO usuario
-            (
-                nome,
-                email,
-                senha,
-                tipousuario,
-                datacadastro,
-                ativo
-            )
-            VALUES (%s, %s, %s, %s, NOW(), %s)
-        """, (
-            nome,
-            email,
-            senha_hash,
-            'Usuario',
-            True
-        ))
-
-        conexao.commit()
-
-        cursor.close()
-        conexao.close()
+        response = supabase.table("usuario") \
+            .insert(novo_usuario) \
+            .execute()
 
         return jsonify({
-            "mensagem": "Usuário criado com sucesso"
+            "mensagem": "Usuário criado com sucesso",
+            "dados": response.data
         }), 201
 
     except Exception as e:
@@ -269,43 +227,27 @@ def atualizar_usuario(id):
 
         dados = request.get_json()
 
-        conexao = get_connection()
+        dados_atualizados = {
+            "nome": dados.get('nome'),
+            "email": dados.get('email'),
+            "tipousuario": dados.get('tipousuario'),
+            "ativo": dados.get('ativo')
+        }
 
-        cursor = conexao.cursor()
+        if dados.get('senha'):
 
-        cursor.execute("""
-            UPDATE usuario
-            SET
-                nome = %s,
-                email = %s,
-                senha = %s,
-                tipousuario = %s,
-                ativo = %s
-            WHERE id = %s
-        """, (
-            dados.get('nome'),
-            dados.get('email'),
-            dados.get('senha'),
-            dados.get('tipousuario'),
-            dados.get('ativo'),
-            id
-        ))
+            dados_atualizados["senha"] = generate_password_hash(
+                dados.get('senha')
+            )
 
-        conexao.commit()
-
-        linhas = cursor.rowcount
-
-        cursor.close()
-        conexao.close()
-
-        if linhas == 0:
-
-            return jsonify({
-                "erro": "Usuário não encontrado"
-            }), 404
+        response = supabase.table("usuario") \
+            .update(dados_atualizados) \
+            .eq("id", id) \
+            .execute()
 
         return jsonify({
-            "mensagem": "Usuário atualizado com sucesso"
+            "mensagem": "Usuário atualizado com sucesso",
+            "dados": response.data
         }), 200
 
     except Exception as e:
@@ -320,30 +262,14 @@ def deletar_usuario(id):
 
     try:
 
-        conexao = get_connection()
-
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            DELETE FROM usuario
-            WHERE id = %s
-        """, (id,))
-
-        conexao.commit()
-
-        linhas = cursor.rowcount
-
-        cursor.close()
-        conexao.close()
-
-        if linhas == 0:
-
-            return jsonify({
-                "erro": "Usuário não encontrado"
-            }), 404
+        response = supabase.table("usuario") \
+            .delete() \
+            .eq("id", id) \
+            .execute()
 
         return jsonify({
-            "mensagem": "Usuário deletado com sucesso"
+            "mensagem": "Usuário deletado com sucesso",
+            "dados": response.data
         }), 200
 
     except Exception as e:
@@ -362,24 +288,12 @@ def obter_empresas():
 
     try:
 
-        conexao = get_connection()
+        response = supabase.table("empresa") \
+            .select("*") \
+            .order("id") \
+            .execute()
 
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM empresa
-            ORDER BY id
-        """)
-
-        empresas = cursor.fetchall()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify(empresas), 200
+        return jsonify(response.data), 200
 
     except Exception as e:
 
@@ -395,52 +309,26 @@ def criar_empresa():
 
         dados = request.get_json()
 
-        conexao = get_connection()
+        nova_empresa = {
+            "razaosocial": dados.get('razaosocial'),
+            "nomefantasia": dados.get('nomefantasia'),
+            "cnpj": dados.get('cnpj'),
+            "email": dados.get('email'),
+            "celular": dados.get('celular'),
+            "cidade": dados.get('cidade'),
+            "estado": dados.get('estado'),
+            "endereco": dados.get('endereco'),
+            "areaatuacao": dados.get('areaatuacao'),
+            "senha": dados.get('senha')
+        }
 
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            INSERT INTO empresa
-            (
-                razaosocial,
-                nomefantasia,
-                cnpj,
-                email,
-                celular,
-                cidade,
-                estado,
-                endereco,
-                areaatuacao,
-                datacadastro,
-                senha
-            )
-            VALUES
-            (
-                %s, %s, %s, %s, %s,
-                %s, %s, %s, %s,
-                NOW(),
-                %s
-            )
-        """, (
-            dados.get('razaosocial'),
-            dados.get('nomefantasia'),
-            dados.get('cnpj'),
-            dados.get('email'),
-            dados.get('celular'),
-            dados.get('cidade'),
-            dados.get('estado'),
-            dados.get('endereco'),
-            dados.get('areaatuacao'),
-            dados.get('senha')
-        ))
-
-        conexao.commit()
-
-        cursor.close()
-        conexao.close()
+        response = supabase.table("empresa") \
+            .insert(nova_empresa) \
+            .execute()
 
         return jsonify({
-            "mensagem": "Empresa criada com sucesso"
+            "mensagem": "Empresa criada com sucesso",
+            "dados": response.data
         }), 201
 
     except Exception as e:
@@ -451,7 +339,7 @@ def criar_empresa():
 
 
 # =========================
-# INSTITUICOES
+# INSTITUIÇÕES
 # =========================
 
 @app.route('/instituicoes', methods=['GET'])
@@ -459,24 +347,12 @@ def obter_instituicoes():
 
     try:
 
-        conexao = get_connection()
+        response = supabase.table("instituicao") \
+            .select("*") \
+            .order("id") \
+            .execute()
 
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM instituicao
-            ORDER BY id
-        """)
-
-        instituicoes = cursor.fetchall()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify(instituicoes), 200
+        return jsonify(response.data), 200
 
     except Exception as e:
 
@@ -496,48 +372,24 @@ def criar_instituicao():
             dados.get('senha')
         )
 
-        conexao = get_connection()
+        nova_instituicao = {
+            "nomeinstituicao": dados.get('nomeinstituicao'),
+            "cnpj": dados.get('cnpj'),
+            "email": dados.get('email'),
+            "celular": dados.get('celular'),
+            "cidade": dados.get('cidade'),
+            "estado": dados.get('estado'),
+            "endereco": dados.get('endereco'),
+            "senha": senha_hash
+        }
 
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            INSERT INTO instituicao
-            (
-                nomeinstituicao,
-                cnpj,
-                email,
-                celular,
-                cidade,
-                estado,
-                endereco,
-                datacadastro,
-                senha
-            )
-            VALUES
-            (
-                %s, %s, %s, %s,
-                %s, %s, %s,
-                NOW(),
-                %s
-            )
-        """, (
-            dados.get('nomeinstituicao'),
-            dados.get('cnpj'),
-            dados.get('email'),
-            dados.get('celular'),
-            dados.get('cidade'),
-            dados.get('estado'),
-            dados.get('endereco'),
-            senha_hash
-        ))
-
-        conexao.commit()
-
-        cursor.close()
-        conexao.close()
+        response = supabase.table("instituicao") \
+            .insert(nova_instituicao) \
+            .execute()
 
         return jsonify({
-            "mensagem": "Instituição criada com sucesso"
+            "mensagem": "Instituição criada com sucesso",
+            "dados": response.data
         }), 201
 
     except Exception as e:
@@ -548,348 +400,7 @@ def criar_instituicao():
 
 
 # =========================
-# DESAFIOS
-# =========================
-
-@app.route('/desafios', methods=['GET'])
-def obter_desafios():
-
-    try:
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM desafio
-            ORDER BY id
-        """)
-
-        desafios = cursor.fetchall()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify(desafios), 200
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-@app.route('/desafios', methods=['POST'])
-def criar_desafio():
-
-    try:
-
-        dados = request.get_json()
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            INSERT INTO desafio
-            (
-                empesaid,
-                titulo,
-                descricao,
-                areaconhecimento,
-                nivelproblema,
-                statusdesafio,
-                datacriacao,
-                datalimite
-            )
-            VALUES
-            (
-                %s, %s, %s, %s,
-                %s, %s,
-                NOW(),
-                %s
-            )
-        """, (
-            dados.get('empresaid'),
-            dados.get('titulo'),
-            dados.get('descricao'),
-            dados.get('areaconhecimento'),
-            dados.get('nivelproblema'),
-            dados.get('statusdesafio'),
-            dados.get('datalimite')
-        ))
-
-        conexao.commit()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify({
-            "mensagem": "Desafio criado com sucesso"
-        }), 201
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-# =========================
-# PROPOSTAS
-# =========================
-
-@app.route('/propostas', methods=['GET'])
-def obter_propostas():
-
-    try:
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM proposta
-            ORDER BY id
-        """)
-
-        propostas = cursor.fetchall()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify(propostas), 200
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-@app.route('/propostas', methods=['POST'])
-def criar_proposta():
-
-    try:
-
-        dados = request.get_json()
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            INSERT INTO proposta
-            (
-                desafioid,
-                instituicaoid,
-                titulo,
-                descricao,
-                nomearquivo,
-                arquivo,
-                dataenvio
-            )
-            VALUES
-            (
-                %s, %s, %s,
-                %s, %s, %s,
-                NOW()
-            )
-        """, (
-            dados.get('desafioid'),
-            dados.get('instituicaoid'),
-            dados.get('titulo'),
-            dados.get('descricao'),
-            dados.get('nomearquivo'),
-            dados.get('arquivo')
-        ))
-
-        conexao.commit()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify({
-            "mensagem": "Proposta criada com sucesso"
-        }), 201
-
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-# =========================
-# REQUISITOS
-# =========================
-
-@app.route('/requisitos', methods=['GET'])
-def obter_requisitos():
-
-    try:
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM requisito
-            ORDER BY id
-        """)
-
-        requisitos = cursor.fetchall()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify(requisitos), 200
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-@app.route('/requisitos', methods=['POST'])
-def criar_requisito():
-
-    try:
-
-        dados = request.get_json()
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            INSERT INTO requisito
-            (
-                desafioid,
-                descricao
-            )
-            VALUES
-            (
-                %s,
-                %s
-            )
-        """, (
-            dados.get('desafioid'),
-            dados.get('descricao')
-        ))
-
-        conexao.commit()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify({
-            "mensagem": "Requisito criado com sucesso"
-        }), 201
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-# =========================
-# NOTIFICACOES
-# =========================
-
-@app.route('/notificacoes', methods=['GET'])
-def obter_notificacoes():
-
-    try:
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor(
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-
-        cursor.execute("""
-            SELECT *
-            FROM notificacao
-            ORDER BY id
-        """)
-
-        notificacoes = cursor.fetchall()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify(notificacoes), 200
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-@app.route('/notificacoes', methods=['POST'])
-def criar_notificacao():
-
-    try:
-
-        dados = request.get_json()
-
-        conexao = get_connection()
-
-        cursor = conexao.cursor()
-
-        cursor.execute("""
-            INSERT INTO notificacao
-            (
-                desafioid,
-                descricao,
-                lista,
-                datanotificacao
-            )
-            VALUES
-            (
-                %s,
-                %s,
-                %s,
-                NOW()
-            )
-        """, (
-            dados.get('desafioid'),
-            dados.get('descricao'),
-            dados.get('lista')
-        ))
-
-        conexao.commit()
-
-        cursor.close()
-        conexao.close()
-
-        return jsonify({
-            "mensagem": "Notificação criada com sucesso"
-        }), 201
-
-    except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
-
-
-# =========================
-# ERROR HANDLERS
+# ERROS
 # =========================
 
 @app.errorhandler(404)
@@ -909,7 +420,7 @@ def internal_error(error):
 
 
 # =========================
-# START
+# EXECUÇÃO
 # =========================
 
 if __name__ == '__main__':
