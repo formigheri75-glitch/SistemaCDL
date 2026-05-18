@@ -153,7 +153,7 @@
         }
     </style>
 </head>
-<body>
+<body class="auth-layout">
     <div id="app"></div>
 
     <script src="messages.js"></script>
@@ -163,74 +163,82 @@
 
         const App = {
             template: `
-            <div style="min-height: 100vh; background: #0f172a;">
-                <nav class="nav">
-                    <div class="nav-content">
-                        <div class="nav-title" @click="goHome">{{ msg.nav.brand }}</div>
-                        <div class="nav-links">
-                            <a href="index.html">{{ msg.nav.home }}</a>
-                            <a href="dashboard.html">{{ msg.nav.dashboard }}</a>
-                            <a href="cadastroEmpresa.html">{{ msg.nav.empresa }}</a>
-                            <a href="cadastroInstituicao.html">{{ msg.nav.instituicao }}</a>
-                            <a href="recuperaSenha.html">{{ msg.nav.recuperarSenha }}</a>
+            <div class="auth-page">
+                <main class="auth-shell">
+                    <section class="auth-hero">
+                        <span class="auth-hero-badge">Empresas</span>
+                        <h1>Cadastro de empresa</h1>
+                        <p>Preencha os dados abaixo para continuar.</p>
+                        <p class="auth-hero-copy">Cadastre sua empresa e conecte sua operação a uma plataforma feita para transformar oportunidades em resultados. Organize seus dados, amplie sua presença e acelere cada etapa com uma experiência simples e profissional.</p>
+                    </section>
+
+                    <section class="auth-panel">
+                        <div class="auth-card">
+                            <div class="auth-card-top">
+                                <div class="auth-brand-inline">
+                                    <span>Desafios CDL</span>
+                                </div>
+                                <a class="auth-back-btn" href="login.html">Voltar ao login</a>
+                            </div>
+
+                            <div class="auth-form-header">
+                                <div class="auth-form-kicker">Cadastro de empresa</div>
+                                <h2 class="auth-form-title">{{ msg.cadastroEmpresa.title }}</h2>
+                                <p class="auth-form-subtitle">Complete os dados abaixo.</p>
+                            </div>
+
+                            <form class="auth-form" @submit.prevent="submit">
+                                <div v-if="success" class="form-success">✓ {{ success }}</div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.nome }}</label>
+                                    <input type="text" v-model="form.nome" :placeholder="msg.cadastroEmpresa.nome" :class="{ error: errors.nome }">
+                                    <div v-if="errors.nome" class="form-error">{{ errors.nome }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.nomeContato }}</label>
+                                    <input type="text" v-model="form.contato" placeholder="Nome completo" :class="{ error: errors.contato }">
+                                    <div v-if="errors.contato" class="form-error">{{ errors.contato }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.cnpj }}</label>
+                                    <input type="text" v-model="form.cnpj" placeholder="00.000.000/0000-00" :class="{ error: errors.cnpj }">
+                                    <div v-if="errors.cnpj" class="form-error">{{ errors.cnpj }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.telefone }}</label>
+                                    <input type="tel" v-model="form.telefone" placeholder="(XX) 9XXXX-XXXX" :class="{ error: errors.telefone }">
+                                    <div v-if="errors.telefone" class="form-error">{{ errors.telefone }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.email }}</label>
+                                    <input type="email" v-model="form.email" placeholder="seu@email.com" :class="{ error: errors.email }">
+                                    <div v-if="errors.email" class="form-error">{{ errors.email }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.senha }}</label>
+                                    <input type="password" v-model="form.senha" :placeholder="msg.cadastroEmpresa.senha" :class="{ error: errors.senha }">
+                                    <div v-if="errors.senha" class="form-error">{{ errors.senha }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.confirmarSenha }}</label>
+                                    <input type="password" v-model="form.confirma" placeholder="Confirme a senha" :class="{ error: errors.confirma }">
+                                    <div v-if="errors.confirma" class="form-error">{{ errors.confirma }}</div>
+                                </div>
+
+                                <button class="submit-btn">{{ msg.cadastroEmpresa.cadastrar }}</button>
+                            </form>
                         </div>
-                    </div>
-                </nav>
-                
-                <main>
-                    <div class="form-container">
-                        <h1>{{ msg.cadastroEmpresa.title }}</h1>
-                        <form @submit.prevent="submit">
-                            <div v-if="success" class="form-success">✓ {{ success }}</div>
-                            
-                            <div class="form-group">
-                                <label>{{ msg.cadastroEmpresa.nome }}</label>
-                                <input type="text" v-model="form.nome" :placeholder="msg.cadastroEmpresa.nome" :class="{ error: errors.nome }">
-                                <div v-if="errors.nome" class="form-error">{{ errors.nome }}</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>{{ msg.cadastroEmpresa.nomeContato }}</label>
-                                <input type="text" v-model="form.contato" placeholder="Nome completo" :class="{ error: errors.contato }">
-                                <div v-if="errors.contato" class="form-error">{{ errors.contato }}</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>{{ msg.cadastroEmpresa.cnpj }}</label>
-                                <input type="text" v-model="form.cnpj" placeholder="00.000.000/0000-00" :class="{ error: errors.cnpj }">
-                                <div v-if="errors.cnpj" class="form-error">{{ errors.cnpj }}</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>{{ msg.cadastroEmpresa.telefone }}</label>
-                                <input type="tel" v-model="form.telefone" placeholder="(XX) 9XXXX-XXXX" :class="{ error: errors.telefone }">
-                                <div v-if="errors.telefone" class="form-error">{{ errors.telefone }}</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>{{ msg.cadastroEmpresa.email }}</label>
-                                <input type="email" v-model="form.email" placeholder="seu@email.com" :class="{ error: errors.email }">
-                                <div v-if="errors.email" class="form-error">{{ errors.email }}</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>{{ msg.cadastroEmpresa.senha }}</label>
-                                <input type="password" v-model="form.senha" :placeholder="msg.cadastroEmpresa.senha" :class="{ error: errors.senha }">
-                                <div v-if="errors.senha" class="form-error">{{ errors.senha }}</div>
-                            </div>
-                            
-                            <div class="form-group">
-                                <label>{{ msg.cadastroEmpresa.confirmarSenha }}</label>
-                                <input type="password" v-model="form.confirma" placeholder="Confirme a senha" :class="{ error: errors.confirma }">
-                                <div v-if="errors.confirma" class="form-error">{{ errors.confirma }}</div>
-                            </div>
-                            
-                            <button class="button">{{ msg.cadastroEmpresa.cadastrar }}</button>
-                        </form>
-                    </div>
+                    </section>
                 </main>
-                
-                <footer>
+
+                <footer class="auth-footer">
                     <p>{{ msg.footer }}</p>
                 </footer>
             </div>
