@@ -10,8 +10,7 @@
     <script src="messages.js"></script>
 </head>
 <body class="tela-layout">
-    <div id="app">
-        <div class="screen">
+    <div id="app" class="screen">
             <div class="shell">
                 <aside class="sidebar">
                     <div class="brand">
@@ -71,7 +70,6 @@
                     </template>
                 </div>
             </div>
-            </div>
         </div>
     </div>
 </body>
@@ -80,18 +78,18 @@
 <script>
     const { createApp } = Vue;
     const API_URL = 'http://localhost:5000';
-    
+
     // Função para obter parâmetro da URL
     function getQueryParam(name) {
         const params = new URLSearchParams(window.location.search);
         return params.get(name);
     }
-    
+
     // Wait for messages to load before initializing Vue
     document.addEventListener('DOMContentLoaded', function() {
         if (window.messages) {
             const desafioId = getQueryParam('id');
-            
+
             createApp({
                 data() {
                     return {
@@ -123,12 +121,12 @@
                             this.loading = false;
                             return;
                         }
-                        
+
                         try {
                             this.loading = true;
                             const response = await fetch(`${API_URL}/desafios/${this.desafioId}`);
                             if (!response.ok) throw new Error('Desafio não encontrado');
-                            
+
                             const dados = await response.json();
                             this.desafio = {
                                 ...dados,
