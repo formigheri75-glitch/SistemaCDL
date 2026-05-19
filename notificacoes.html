@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Notificações</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <aside class="sidebar">
+                    <div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div>
+                    <div class="menu">
+                        <div class="menu-item" @click="goHome">Início</div>
+                        <div class="menu-item" @click="goProposals">Propostas</div>
+                        <div class="menu-item active">{{ msg.tela.menu.notificacoes }}</div>
+                    </div>
+                </aside>
+                <div class="content">
+                    <div class="tabbar">
+                        <span class="tab" :class="{ active: activeTab === 'todas' }" @click="activeTab = 'todas'">{{ msg.tela.tabs.todas }}</span>
+                        <span class="tab" :class="{ active: activeTab === 'propostas' }" @click="activeTab = 'propostas'">{{ msg.tela.tabs.propostas }}</span>
+                        <span class="tab" :class="{ active: activeTab === 'desafios' }" @click="activeTab = 'desafios'">{{ msg.tela.tabs.desafios }}</span>
+                    </div>
+
+                    <div v-if="activeTab === 'todas'" class="notifications-stack cards-grid">
+                        <div class="notify-card card" v-for="notification in allNotifications" :key="notification.title" :class="notification.type || ''">
+                            <div class="notify-mark"></div>
+                            <div class="notify-content card-body">
+                                <h3>{{ notification.title }}</h3>
+                                <p>{{ notification.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="activeTab === 'propostas'" class="notifications-stack cards-grid">
+                        <div class="notify-card card" v-for="notification in msg.notificacoesPropostas.notifications" :key="notification.title" :class="notification.type || ''">
+                            <div class="notify-mark"></div>
+                            <div class="notify-content card-body">
+                                <h3>{{ notification.title }}</h3>
+                                <p>{{ notification.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div v-if="activeTab === 'desafios'" class="notifications-stack cards-grid">
+                        <div class="notify-card card" v-for="notification in msg.notificacoesDesafios.notifications" :key="notification.title" :class="notification.type || ''">
+                            <div class="notify-mark"></div>
+                            <div class="notify-content card-body">
+                                <h3>{{ notification.title }}</h3>
+                                <p>{{ notification.description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            const { createApp } = Vue;
+
+            document.addEventListener('DOMContentLoaded', () => {
+                if (!window.messages) return console.error('Messages not loaded');
+
+                const allNotifications = [
+                    ...window.messages.notificacoesDesafios.notifications,
+                    ...window.messages.notificacoesPropostas.notifications,
+                ];
+
+                createApp({
+                    data() {
+                        return {
+                            msg: window.messages,
+                            activeTab: 'todas',
+                            allNotifications,
+                            homeUrl: window.AppRoutes ? window.AppRoutes.getHomeUrl() : 'tela-inicial-instituicao.html',
+                            proposalsUrl: window.AppRoutes ? window.AppRoutes.getProposalsUrl() : 'tela-propostas-instituicao.html',
+                        };
+                    },
+                    methods: {
+                        goHome() {
+                            window.location.href = this.homeUrl;
+                        },
+                        goProposals() {
+                            window.location.href = this.proposalsUrl;
+                        },
+                    },
+                }).mount('#app');
+
+                document.title = 'Notificações';
+            });
+        </script>
+    </body>
+</html>

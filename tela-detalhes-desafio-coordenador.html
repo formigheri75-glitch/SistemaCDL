@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Detalhes do Desafio - Coordenador</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <aside class="sidebar"><div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div><div class="menu"><div class="menu-item active">Desafios</div><div class="menu-item">Minhas propostas</div><div class="menu-item">Notificações</div></div></aside>
+                <div class="content">
+                    <div class="detail-hero">
+                        <div class="detail-top"><div class="detail-title"><h3>{{ msg.detalhesDesafio.challengeTitle }}</h3></div><span class="status">Em avaliação</span></div>
+                        <div class="detail-intro"><div class="illustration"></div><div><p>{{ msg.detalhesDesafio.description }}</p><div class="button-group"><a class="btn btn-primary" href="tela-envio-solucao-coordenador.html">Enviar solução</a><a class="btn btn-secondary" href="tela-propostas-coordenador.html">Ver propostas</a></div></div></div>
+                    </div>
+                    <div class="detail-grid">
+                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in msg.detalhesDesafio.requirements.items" :key="item">{{ item }}</li></ul></div>
+                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.additionalInfo.title }}</h4><ul><li v-for="item in msg.detalhesDesafio.additionalInfo.items" :key="item" v-html="item"></li></ul></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            const { createApp } = Vue;
+            createApp({ data() { return { msg: window.messages }; } }).mount('#app');
+            document.title = 'Detalhes do Desafio - Coordenador';
+        </script>
+    </body>
+</html>

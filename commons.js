@@ -76,3 +76,57 @@ const ValidationFunctions = {
         return /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/.test(cnpj);
     }
 };
+
+// Rotas por perfil de usuário
+const AppRoutes = {
+    normalizeRole(role) {
+        const value = String(role || '').trim().toLowerCase();
+
+        if (['empresa', 'empresario', 'company'].includes(value)) return 'empresa';
+        if (['instituicao', 'instituição', 'institution', 'usuario', 'usuário'].includes(value)) {
+            return 'instituicao';
+        }
+        if (['coordenador', 'coordinator'].includes(value)) return 'coordenador';
+        if (['admin', 'administrador'].includes(value)) return 'admin';
+
+        return 'instituicao';
+    },
+
+    getCurrentRole() {
+        return this.normalizeRole(localStorage.getItem('userType'));
+    },
+
+    getHomeUrl(role = this.getCurrentRole()) {
+        const routes = {
+            empresa: 'empresaDashboard.html',
+            instituicao: 'tela-inicial-instituicao.html',
+            coordenador: 'tela-inicial-coordenador.html',
+            admin: 'tela-admin.html'
+        };
+
+        return routes[this.normalizeRole(role)] || routes.instituicao;
+    },
+
+    getNotificationsUrl() {
+        return 'notificacoes.html';
+    },
+
+    getProposalsUrl(role = this.getCurrentRole()) {
+        const routes = {
+            empresa: 'propostas.html',
+            instituicao: 'tela-propostas-instituicao.html',
+            coordenador: 'tela-propostas-coordenador.html',
+            admin: 'tela-admin.html'
+        };
+
+        return routes[this.normalizeRole(role)] || routes.instituicao;
+    },
+
+    go(url) {
+        window.location.href = url;
+    }
+};
+
+if (typeof window !== 'undefined') {
+    window.AppRoutes = AppRoutes;
+}

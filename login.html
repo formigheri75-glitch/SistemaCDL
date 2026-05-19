@@ -6,6 +6,7 @@
     <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
     <link href="theme.css" rel="stylesheet" />
     <title></title>
+    <script src="commons.js"></script>
     <style>
         body {
             font-family: var(--font-family);
@@ -414,17 +415,49 @@
                 const data = await response.json();
                 
                 if (response.ok) {
-                    // Store JWT token
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('userEmail', email);
-                    
-                    // Show success message
-                    alert(messages.login.success + '\n\n' + messages.login.redirectMessage);
-                    
-                    // Redirect to challenges page
+
+                    let profile = {};
+
+                    try {
+                        const meResponse = await fetch(`${API_BASE_URL}/me`, {
+                            headers: {
+                                Authorization: `Bearer ${data.token}`,
+                            },
+                        });
+
+                        if (meResponse.ok) {
+                            profile = await meResponse.json();
+                        }
+                    } catch (profileError) {
+                        console.warn('Não foi possível carregar o perfil do usuário:', profileError);
+                    }
+
+                    const userType =
+                        (profile.tipoUsuario || profile.tipousuario || data.tipoUsuario || data.userType || 'instituicao');
+                    const normalizedRole = window.AppRoutes
+                        ? window.AppRoutes.normalizeRole(userType)
+                        : String(userType || '').toLowerCase();
+
+                    localStorage.setItem('userType', normalizedRole);
+                    if (profile.nome) {
+                        localStorage.setItem('userName', profile.nome);
+                    }
+
+                    alert(
+                        messages.login.success +
+                            '\n\n' +
+                            'Você será direcionado para a tela inicial do seu perfil.',
+                    );
+
                     setTimeout(() => {
-                        window.location.href = 'tela-inicial-desafios.html';
-                    }, 1000);
+                        const redirectUrl = window.AppRoutes
+                            ? window.AppRoutes.getHomeUrl(normalizedRole)
+                            : 'tela-inicial-instituicao.html';
+
+                        window.location.href = redirectUrl;
+                    }, 600);
                 } else {
                     // Show error message
                     alert(messages.login.errorPrefix + ' ' + data.erro);

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Início - Coordenador</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <aside class="sidebar">
+                    <div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div>
+                    <div class="menu">
+                        <div class="menu-item active">Desafios</div>
+                        <div class="menu-item" @click="go('tela-propostas-coordenador.html')">Minhas propostas</div>
+                        <div class="menu-item" @click="go('notificacoes.html')">Notificações</div>
+                    </div>
+                </aside>
+                <div class="content">
+                    <div class="hero-stats">
+                        <div class="stat"><strong>{{ stats.total }}</strong><span>Desafios disponíveis</span></div>
+                        <div class="stat"><strong>{{ stats.propostas }}</strong><span>Propostas em análise</span></div>
+                        <div class="stat"><strong>{{ stats.aprovadas }}</strong><span>Aprovadas</span></div>
+                    </div>
+                    <div class="section-head">
+                        <h2>Desafios para análise</h2>
+                        <a class="link-chip" href="notificacoes.html">Ver notificações</a>
+                    </div>
+                    <div class="list cards-grid">
+                        <div class="challenge-card card" v-for="challenge in challenges" :key="challenge.title">
+                            <div class="challenge-icon">📌</div>
+                            <div class="challenge-body card-body">
+                                <h3>{{ challenge.title }}</h3>
+                                <p>{{ challenge.description }}</p>
+                                <div class="challenge-meta">{{ challenge.date }}</div>
+                            </div>
+                            <a class="mini-btn" href="tela-detalhes-desafio-coordenador.html">Ver detalhes</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            const { createApp } = Vue;
+
+            document.addEventListener('DOMContentLoaded', () => {
+                createApp({
+                    data() {
+                        return {
+                            msg: window.messages,
+                            challenges: window.messages.telaInicialDesafios.challenges,
+                        };
+                    },
+                    computed: {
+                        stats() {
+                            return {
+                                total: this.challenges.length,
+                                propostas: 12,
+                                aprovadas: 4,
+                            };
+                        },
+                    },
+                    methods: {
+                        go(url) {
+                            window.location.href = url;
+                        },
+                    },
+                }).mount('#app');
+
+                document.title = 'Início - Coordenador';
+            });
+        </script>
+    </body>
+</html>

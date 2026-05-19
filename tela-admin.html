@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Admin | Sistema de Desafios</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <aside class="sidebar">
+                    <div class="brand">
+                        <span class="brand-icon"></span>
+                        <span>Admin</span>
+                    </div>
+                    <div class="menu">
+                        <div class="menu-item active">Painel inicial</div>
+                        <div class="menu-item" @click="go('login.html')">Login</div>
+                        <div class="menu-item" @click="go('CadastroEmpresa.html')">Cadastro empresa</div>
+                        <div class="menu-item" @click="go('CadastroInstituicao.html')">Cadastro instituição</div>
+                        <div class="menu-item" @click="go('notificacoes.html')">Notificações</div>
+                    </div>
+                </aside>
+                <div class="content">
+                    <div class="hero-stats">
+                        <div class="stat"><strong>{{ stats.empresas }}</strong><span>Empresas</span></div>
+                        <div class="stat"><strong>{{ stats.instituicoes }}</strong><span>Instituições</span></div>
+                        <div class="stat"><strong>{{ stats.coordenadores }}</strong><span>Coordenadores</span></div>
+                    </div>
+
+                    <div class="section-head">
+                        <h2>Acesso rápido às telas</h2>
+                    </div>
+
+                    <div class="list cards-grid">
+                        <a class="card" v-for="page in pages" :key="page.title" :href="page.href" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem;">
+                            <h3>{{ page.title }}</h3>
+                            <p>{{ page.description }}</p>
+                        </a>
+                    </div>
+
+                    <div class="detail-card card" style="margin-top: 1.5rem;">
+                        <h2>Funções administrativas</h2>
+                        <p>Este painel serve como ponto de entrada do admin e concentra acessos diretos para validação de cadastros, revisão de telas e navegação para todos os fluxos do sistema.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            const { createApp } = Vue;
+
+            createApp({
+                data() {
+                    return {
+                        pages: [
+                            { title: 'Login', href: 'login.html', description: 'Entrada do sistema com redirecionamento por perfil.' },
+                            { title: 'Cadastro Empresa', href: 'CadastroEmpresa.html', description: 'Cadastro e validação de empresas.' },
+                            { title: 'Cadastro Instituição', href: 'CadastroInstituicao.html', description: 'Cadastro de instituições e coordenadores.' },
+                            { title: 'Empresa Dashboard', href: 'empresaDashboard.html', description: 'Painel da empresa para gestão dos desafios.' },
+                            { title: 'Criação de Problema', href: 'criaProblema.html', description: 'Publicação de novos desafios da empresa.' },
+                            { title: 'Seleção de Instituições', href: 'selecaoInstituicoes.html', description: 'Busca e escolha de instituições parceiras.' },
+                            { title: 'Propostas', href: 'propostas.html', description: 'Listagem das propostas recebidas pela empresa.' },
+                            { title: 'Detalhes do Problema', href: 'detalhesProblema.html', description: 'Visualização completa de um desafio.' },
+                            { title: 'Detalhes da Proposta', href: 'detalhesPropossta.html', description: 'Análise de uma proposta enviada.' },
+                            { title: 'Instituição - Início', href: 'tela-inicial-instituicao.html', description: 'Tela inicial do perfil instituição.' },
+                            { title: 'Coordenador - Início', href: 'tela-inicial-coordenador.html', description: 'Tela inicial do perfil coordenador.' },
+                            { title: 'Notificações', href: 'notificacoes.html', description: 'Central única de notificações.' },
+                        ],
+                        stats: {
+                            empresas: 12,
+                            instituicoes: 8,
+                            coordenadores: 24,
+                        },
+                    };
+                },
+                methods: {
+                    go(url) {
+                        window.location.href = url;
+                    },
+                },
+            }).mount('#app');
+        </script>
+    </body>
+</html>

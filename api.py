@@ -21,7 +21,7 @@ app = Flask(__name__)
 
 CORS(app)
 
-app.config["JWT_SECRET_KEY"] = "sua_chave_super_secreta"
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "sua_chave_super_secreta")
 app.config["JSON_SORT_KEYS"] = False
 
 jwt = JWTManager(app)
@@ -1053,6 +1053,57 @@ def deletar_confirmacao_empresa(id):
         return jsonify({
             "erro": str(e)
         }), 500
+
+
+# =========================
+# PROBLEMAS
+# =========================
+
+@app.route('/problemas', methods=['GET'])
+def obter_problemas():
+
+    try:
+
+        response = supabase.table("problema") \
+            .select("*") \
+            .execute()
+
+        return jsonify(response.data), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
+@app.route('/problemas/<int:id>', methods=['GET'])
+def obter_problema(id):
+
+    try:
+
+        response = supabase.table("problema") \
+            .select("*") \
+            .eq("id", id) \
+            .execute()
+
+        dados = response.data
+
+        if len(dados) == 0:
+
+            return jsonify({
+                "erro": "Problema não encontrado"
+            }), 404
+
+        return jsonify(dados[0]), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
 # =========================
 # ERROS
 # =========================
