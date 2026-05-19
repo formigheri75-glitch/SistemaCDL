@@ -2505,7 +2505,7 @@ body.common-layout .header {
     margin-top: 0.5rem;
 }
 
-/* Detail content card (detalhesProblema / detalhesPropossta) */
+/* Detail content card (detalhesProblema / detalhesProposta) */
 .detail-card {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
