@@ -7,26 +7,133 @@
         <link href="theme.css" rel="stylesheet" />
         <title>Envio da Solução - Coordenador</title>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar"><div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div><div class="menu"><div class="menu-item">Desafios</div><div class="menu-item active">Minhas propostas</div><div class="menu-item">Notificações</div></div></aside>
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-propostas-coordenador.html"
+                ></side-nav>
                 <div class="content">
                     <div class="form-wrapper">
                         <h1>Envio da solução</h1>
-                        <div class="form-group"><label>Título da solução</label><input type="text" placeholder="Digite um título" /></div>
-                        <div class="form-group"><label>Descrição</label><textarea placeholder="Explique a solução"></textarea></div>
-                        <div class="form-row">
-                            <div class="form-group"><label>Equipe</label><input type="text" placeholder="Nome da equipe" /></div>
-                            <div class="form-group"><label>Prazo</label><input type="date" /></div>
+                        
+                        <!-- Exibição do desafio selecionado -->
+                        <div v-if="desafio" class="challenge-info">
+                            <h3>Desafio selecionado</h3>
+                            <div class="challenge-details">
+                                <div class="challenge-field">
+                                    <label>Título:</label>
+                                    <span>{{ desafio.titulo }}</span>
+                                </div>
+                                <div class="challenge-field">
+                                    <label>Descrição:</label>
+                                    <span>{{ desafio.descricao }}</span>
+                                </div>
+                            </div>
                         </div>
-                        <div class="button-group"><button class="btn-submit" type="button">Enviar solução</button><button class="btn-cancel" type="button">Cancelar</button></div>
+                        <div v-else class="form-error">Carregando desafio...</div>
+
+                        <div v-if="success" class="form-success">{{ success }}</div>
+                        <div v-if="error" class="form-error">{{ error }}</div>
+
+                        <div class="form-group"><label>Título da solução</label><input type="text" v-model="form.titulo" placeholder="Digite um título" /></div>
+                        <div class="form-group"><label>Descrição</label><textarea v-model="form.descricao" placeholder="Explique a solução"></textarea></div>
+                        <div class="form-row">
+                            <div class="form-group"><label>Equipe</label><input type="text" v-model="form.equipe" placeholder="Nome da equipe" /></div>
+                            <div class="form-group"><label>Prazo</label><input type="date" v-model="form.prazo" /></div>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" type="button" @click="submit" :disabled="loading">{{ loading ? msg.pages.telaEnvioSolucaoCoordenador.enviando : msg.pages.telaEnvioSolucaoCoordenador.enviarSolucao }}</button>
+                            <button class="btn btn-secondary" type="button" @click="cancel">{{ msg.pages.telaEnvioSolucaoCoordenador.cancelar }}</button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-        <script>const { createApp } = Vue; createApp({ data() { return { msg: window.messages }; } }).mount('#app'); document.title = 'Envio da Solução - Coordenador';</script>
+        <script>
+            // Verificar autenticação
+            window.checkAuth();
+
+            const { createApp } = Vue;
+            createApp({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+                            { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
+                        ],
+                        desafio: null,
+                        form: {
+                            titulo: '',
+                            descricao: '',
+                            equipe: '',
+                            prazo: ''
+                        },
+                        loading: false,
+                        success: '',
+                        error: ''
+                    };
+                },
+                async mounted() {
+                    const challengeId = this.getChallengeId();
+                    if (challengeId) {
+                        try {
+                            this.desafio = await window.loadDesafio(challengeId);
+                        } catch (err) {
+                            this.error = 'Erro ao carregar desafio: ' + (err.message || 'Erro desconhecido');
+                        }
+                    }
+                },
+                methods: {
+                    getChallengeId() {
+                        const params = new URLSearchParams(window.location.search);
+                        return params.get('id');
+                    },
+                    cancel() {
+                        this.form = { titulo: '', descricao: '', equipe: '', prazo: '' };
+                        this.error = '';
+                        this.success = '';
+                    },
+                    async submit() {
+                        this.error = '';
+                        this.success = '';
+                        if (!this.form.titulo || !this.form.descricao) {
+                            this.error = 'Título e descrição são obrigatórios.';
+                            return;
+                        }
+                        this.loading = true;
+                        try {
+                            const challengeId = this.getChallengeId();
+                            const user = window.StorageManager.getUser() || {};
+                            const payload = {
+                                desafioid: challengeId ? Number(challengeId) : null,
+                                instituicaoid: user.id || user.usuarioid || null,
+                                titulo: this.form.titulo,
+                                descricao: this.form.descricao,
+                                nomearquivo: null,
+                                arquivo: null
+                            };
+                            await ApiClient.post('/propostas', payload);
+                            this.success = window.messages.pages.telaEnvioSolucaoCoordenador.sucesso;
+                            this.cancel();
+                        } catch (err) {
+                            this.error = err && err.message ? err.message : window.messages.pages.telaEnvioSolucaoCoordenador.erro;
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }
+            }).mount('#app');
+            document.title = 'Envio da Solução - Coordenador';
+        </script>
     </body>
 </html>

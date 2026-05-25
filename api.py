@@ -4,7 +4,9 @@ from flask_jwt_extended import (  # type: ignore
     JWTManager,
     create_access_token,
     jwt_required,
-    get_jwt_identity
+    get_jwt_identity,
+    verify_jwt_in_request,
+    get_jwt
 )
 from dotenv import load_dotenv  # type: ignore
 from supabase import create_client, Client  # type: ignore
@@ -38,6 +40,12 @@ supabase: Client = create_client(
     SUPABASE_KEY
 )
 
+# Server-side auth flags
+# Set SERVER_AUTH_ENABLED=true to enable server enforcement of roles
+SERVER_AUTH_ENABLED = os.getenv('SERVER_AUTH_ENABLED', 'false').lower() == 'true'
+# If true, include role in JWT at login time; otherwise decorator will fetch role from DB per-request
+AUTH_ROLE_IN_TOKEN = os.getenv('AUTH_ROLE_IN_TOKEN', 'true').lower() == 'true'
+
 # =========================
 # HOME
 # =========================
@@ -65,7 +73,7 @@ def login():
         senha = dados.get('senha')
 
         response = supabase.table("usuario") \
-            .select("id, senha") \
+            .select("id, senha, tipousuario, nome") \
             .eq("email", email) \
             .execute()
 
@@ -85,8 +93,15 @@ def login():
                 "erro": "Email ou senha inválidos"
             }), 401
 
+        # determine role from user record
+        role = (usuario.get('tipousuario') or usuario.get('tipoUsuario') or 'instituicao')
+        token_kwargs = {}
+        if AUTH_ROLE_IN_TOKEN:
+            token_kwargs['additional_claims'] = {'role': role}
+
         token = create_access_token(
-            identity=str(usuario["id"])
+            identity=str(usuario["id"]),
+            **token_kwargs
         )
 
         return jsonify({
@@ -133,6 +148,64 @@ def me():
         return jsonify({
             "erro": str(e)
         }), 500
+
+
+# =========================
+# ACCESS CONTROL / AUTH HELPERS
+# =========================
+def require_roles(*allowed_roles):
+    def decorator(fn):
+        def wrapper(*args, **kwargs):
+            # if server-side enforcement disabled, allow everything
+            if not SERVER_AUTH_ENABLED:
+                return fn(*args, **kwargs)
+
+            # ensure JWT present
+            try:
+                verify_jwt_in_request()
+            except Exception as e:
+                return jsonify({"erro": "Token ausente ou inválido"}), 401
+
+            # determine role either from token or from DB lookup
+            role = None
+            try:
+                if AUTH_ROLE_IN_TOKEN:
+                    claims = get_jwt() or {}
+                    role = (claims.get('role') or '').lower()
+                else:
+                    # lookup user role from DB
+                    usuario_id = get_jwt_identity()
+                    resp = supabase.table('usuario').select('tipousuario').eq('id', usuario_id).execute()
+                    data = resp.data
+                    if data and len(data) > 0:
+                        role = (data[0].get('tipousuario') or '').lower()
+            except Exception:
+                role = None
+
+            # if admin, allow
+            if role and role == 'admin':
+                return fn(*args, **kwargs)
+
+            allowed = [r.lower() for r in allowed_roles]
+            if not role or role not in allowed:
+                return jsonify({"erro": "Acesso negado"}), 403
+
+            return fn(*args, **kwargs)
+        wrapper.__name__ = fn.__name__
+        return wrapper
+    return decorator
+
+
+@app.route('/access-control', methods=['GET'])
+def access_control():
+    try:
+        import json, os
+        path = os.path.join(os.path.dirname(__file__), 'access_control.json')
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
 
 
 # =========================

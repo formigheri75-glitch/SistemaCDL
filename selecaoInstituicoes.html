@@ -10,22 +10,18 @@
         />
         <link href="theme.css" rel="stylesheet" />
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar">
-                    <div class="brand">
-                        <span class="brand-icon"></span>
-                        <span>{{ msg.nav.brand }}</span>
-                    </div>
-                    <div class="menu">
-                        <div class="menu-item">{{ msg.nav.dashboard }}</div>
-                        <div class="menu-item">{{ msg.nav.novoProblema }}</div>
-                        <div class="menu-item">{{ msg.nav.propostas }}</div>
-                    </div>
-                </aside>
+                <side-nav
+                    :brand="msg.nav.brand"
+                    :items="menuItems"
+                    active-href=""
+                ></side-nav>
                 <div class="content">
                     <!-- Main Content -->
                     <div class="container">
@@ -42,7 +38,7 @@
                                     @keyup.enter="performSearch"
                                 />
                                 <button
-                                    class="search-button"
+                                    class="btn btn-primary"
                                     @click="performSearch"
                                 >
                                     {{ msg.selecaoInstituicoes.botaoBuscar }}
@@ -138,7 +134,7 @@
                                     </div>
                                 </div>
                                 <button
-                                    class="institution-button"
+                                    class="btn btn-primary"
                                     @click.stop="selectInstitution(inst.id)"
                                 >
                                     {{ msg.selecaoInstituicoes.verPropostas }}
@@ -161,74 +157,36 @@
             document.addEventListener("DOMContentLoaded", function () {
                 if (window.messages) {
                     createApp({
+                        components: { SideNav },
                         data() {
                             return {
                                 msg: window.messages,
+                                menuItems: [
+                                    { label: window.messages.nav.dashboard, href: 'dashboard.html' },
+                                    { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
+                                    { label: window.messages.nav.propostas, href: 'propostas.html' },
+                                ],
                                 searchQuery: "",
                                 selectedFilter: "all",
-                                institutions: [
-                                    {
-                                        id: 1,
-                                        name: "Universidade Federal do Rio de Janeiro",
-                                        type: "public",
-                                        description:
-                                            "Instituição líder em pesquisa e desenvolvimento de soluções inovadoras.",
-                                        proposalsCount: 12,
-                                        rating: 4.8,
-                                        projects: 45,
-                                    },
-                                    {
-                                        id: 2,
-                                        name: "Universidade de São Paulo",
-                                        type: "public",
-                                        description:
-                                            "Uma das maiores universidades do Brasil com excelência em tecnologia.",
-                                        proposalsCount: 18,
-                                        rating: 4.9,
-                                        projects: 67,
-                                    },
-                                    {
-                                        id: 3,
-                                        name: "PUC-Rio",
-                                        type: "private",
-                                        description:
-                                            "Pontifícia Universidade com programas inovadores de engenharia.",
-                                        proposalsCount: 9,
-                                        rating: 4.7,
-                                        projects: 32,
-                                    },
-                                    {
-                                        id: 4,
-                                        name: "UNICAMP",
-                                        type: "public",
-                                        description:
-                                            "Universidade com forte tradição em ciência e tecnologia.",
-                                        proposalsCount: 15,
-                                        rating: 4.8,
-                                        projects: 52,
-                                    },
-                                    {
-                                        id: 5,
-                                        name: "Universidade Federal de Minas Gerais",
-                                        type: "public",
-                                        description:
-                                            "UFMG - referência em educação superior e pesquisa científica.",
-                                        proposalsCount: 11,
-                                        rating: 4.6,
-                                        projects: 38,
-                                    },
-                                    {
-                                        id: 6,
-                                        name: "FGV",
-                                        type: "private",
-                                        description:
-                                            "Fundação Getulio Vargas - especializada em negócios e tecnologia.",
-                                        proposalsCount: 8,
-                                        rating: 4.7,
-                                        projects: 28,
-                                    },
-                                ],
+                                institutions: [],
                             };
+                        },
+                        mounted: async function() {
+                            try {
+                                const data = await window.ApiClient.get('/instituicoes');
+                                this.institutions = (data || []).map(inst => ({
+                                    id: inst.id,
+                                    name: inst.nomeInstituicao || inst.nomeinstituicao || inst.nome || 'Instituição',
+                                    type: ((inst.tipo || '').toLowerCase().includes('priv') ? 'private' : 'public'),
+                                    description: inst.descricao || `${inst.cidade || ''} ${inst.estado ? '- ' + inst.estado : ''}`.trim() || 'Instituição cadastrada na plataforma.',
+                                    proposalsCount: inst.propostasCount || 0,
+                                    rating: inst.rating || 4.5,
+                                    projects: inst.projects || 0,
+                                }));
+                            } catch (e) {
+                                console.error('Erro ao carregar instituições:', e);
+                                this.institutions = [];
+                            }
                         },
                         computed: {
                             filteredInstitutions() {

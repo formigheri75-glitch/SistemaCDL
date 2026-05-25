@@ -21,11 +21,248 @@ const NavBar = {
                 <div class="md:hidden">
                     <button class="text-gray-300 hover:text-white">Menu</button>
                 </div>
+                <div class="hidden md:flex items-center gap-3">
+                    <a id="navUserLink" href="javascript:void(0)" onclick="(function(){ const u=window.StorageManager.getUser(); if(u) window.location.href=window.AppRoutes.getHomeUrl(); else window.location.href='login.html'; })()" class="text-gray-300 hover:text-white" style="text-decoration:none;">
+                        <span id="navUserName">Entrar</span>
+                    </a>
+                    <button id="navLogoutBtn" onclick="window.StorageManager.logout()" class="ml-2 px-3 py-1 rounded bg-red-600 text-white" style="display:none">Sair</button>
+                </div>
             </div>
         </div>
     </nav>
     `
 };
+
+// Sidebar compartilhada para telas com navegação lateral
+const SideNav = {
+    props: {
+        brand: String,
+        items: {
+            type: Array,
+            default: () => [],
+        },
+        activeHref: String,
+    },
+    data() {
+        return {
+            expanded: {}
+        };
+    },
+    mounted() {
+        try {
+            // update view when localStorage changes (login/logout in other tabs)
+            window.addEventListener('storage', () => {
+                this.$forceUpdate && this.$forceUpdate();
+            });
+            // initialize expanded state for groups that contain the active href
+            try {
+                const menuInit = this.menuToRender || [];
+                menuInit.forEach((it, i) => {
+                    if (it && it.children && it.children.length) {
+                        this.expanded[i] = (this.resolvedActive && this.resolvedActive.parentIndex === i);
+                    }
+                });
+            } catch (e) {
+                // ignore
+            }
+        } catch (e) {
+            // ignore
+        }
+    },
+    methods: {
+        navigate(href) {
+            window.location.href = href;
+        },
+        toggleExpand(index) {
+            this.expanded[index] = !this.expanded[index];
+        },
+        isExpanded(index) {
+            return !!this.expanded[index];
+        },
+        isChildActive(item) {
+            if (!item || !item.children) return false;
+            return item.children.some(c => c.href === this.activeHref);
+        },
+        isParentActiveIndex(index) {
+            const r = this.resolvedActive || {};
+            return r.parentIndex === index;
+        },
+        isChildActiveIndex(parentIndex, childIndex) {
+            const r = this.resolvedActive || {};
+            return r.parentIndex === parentIndex && r.childIndex === childIndex;
+        },
+        isLoggedIn() {
+            return !!(StorageManager && StorageManager.getToken && StorageManager.getToken());
+        },
+        logout() {
+            if (StorageManager && StorageManager.logout) StorageManager.logout();
+        },
+        getUser() {
+            return StorageManager.getUser() || {};
+        },
+        getUserRole() {
+            const user = this.getUser();
+            return AppRoutes.normalizeRole(
+                user.type ||
+                    user.role ||
+                    user.userType ||
+                    user.tipoUsuario ||
+                    localStorage.getItem('userType'),
+            );
+        },
+        getUserName() {
+            const user = this.getUser();
+            return user.nome || user.name || user.email || 'Usuário';
+        },
+        getUserRoleLabel() {
+            const labels = {
+                empresa: 'Empresa',
+                instituicao: 'Instituição',
+                coordenador: 'Coordenador',
+                admin: 'Administrador',
+            };
+
+            return labels[this.getUserRole()] || 'Instituição';
+        },
+        getUserRoleIcon() {
+            const icons = {
+                empresa: '🏢',
+                instituicao: '🎓',
+                coordenador: '🧭',
+                admin: '⚙️',
+            };
+
+            return icons[this.getUserRole()] || '🎓';
+        },
+        getHomeUrl() {
+            return AppRoutes.getHomeUrl(this.getUserRole());
+        },
+    },
+    computed: {
+        menuToRender() {
+            try {
+                const role = this.getUserRole();
+                const menu = (typeof window !== 'undefined' && window.getMenuForRole)
+                    ? window.getMenuForRole(role)
+                    : (this.items || []);
+                return menu || [];
+            } catch (e) {
+                return this.items || [];
+            }
+        }
+        ,
+        resolvedActive() {
+            // determine which parent/child should be considered active
+            try {
+                const menu = this.menuToRender || [];
+                const href = this.activeHref;
+                if (!href) return { parentIndex: null, childIndex: null };
+
+                // first look for child match (gives priority)
+                for (let i = 0; i < menu.length; i++) {
+                    const it = menu[i];
+                    if (it && it.children && it.children.length) {
+                        for (let j = 0; j < it.children.length; j++) {
+                            if (it.children[j].href === href) {
+                                return { parentIndex: i, childIndex: j };
+                            }
+                        }
+                    }
+                }
+
+                // then look for parent match (first occurrence)
+                for (let i = 0; i < menu.length; i++) {
+                    const it = menu[i];
+                    if (it && it.href === href) return { parentIndex: i, childIndex: null };
+                }
+
+                return { parentIndex: null, childIndex: null };
+            } catch (e) {
+                return { parentIndex: null, childIndex: null };
+            }
+        }
+    },
+    template: `
+    <aside class="sidebar">
+        <a class="sidebar-user" :href="getHomeUrl()" @click.prevent="navigate(getHomeUrl())">
+            <span class="sidebar-user-icon" aria-hidden="true">{{ getUserRoleIcon() }}</span>
+            <span class="sidebar-user-content">
+                <span class="sidebar-user-name">{{ getUserName() }}</span>
+                <span class="sidebar-user-role">{{ getUserRoleLabel() }}</span>
+            </span>
+        </a>
+        <div class="brand">
+            <span class="brand-icon"></span>
+            <span>{{ brand }}</span>
+        </div>
+        <div class="menu">
+            <div v-for="(item, idx) in menuToRender" :key="item.href || item.label" class="menu-group">
+                <template v-if="item.children && item.children.length">
+                    <div class="menu-item menu-parent" :class="{ active: isParentActiveIndex(idx) }" @click.prevent="toggleExpand(idx)">
+                        <span class="menu-label">{{ item.label }}</span>
+                        <span class="chevron" :class="{ open: isExpanded(idx) }">▾</span>
+                    </div>
+                    <div class="submenu" v-show="isExpanded(idx)">
+                        <a v-for="(child, cidx) in item.children" :key="child.href" :href="child.href" class="menu-item child" :class="{ active: isChildActiveIndex(idx, cidx) }" @click.prevent="navigate(child.href)">{{ child.label }}</a>
+                    </div>
+                </template>
+                <template v-else>
+                    <a :href="item.href" class="menu-item" style="text-decoration: none;" :class="{ active: item.href === activeHref }" @click.prevent="navigate(item.href)">{{ item.label }}</a>
+                </template>
+            </div>
+        </div>
+        <div class="sidebar-footer">
+            <button class="sidebar-logout-btn" v-if="isLoggedIn()" @click.prevent="logout()">Sair</button>
+        </div>
+    </aside>
+    `
+};
+
+function buildSideNavItems(labels, activeHref, links) {
+    return labels.map((label, index) => ({
+        label,
+        href: links[index],
+        active: links[index] === activeHref,
+    }));
+}
+
+function mountVuePage(options) {
+    const { title, ...vueOptions } = options || {};
+    const { createApp } = Vue;
+
+    const app = createApp(vueOptions);
+
+    app.mount('#app');
+
+    if (title) {
+        document.title = title;
+    }
+
+    return app;
+}
+
+// Helper to mount standard app pages with common pattern
+function mountStandardApp({ mountSelector = '#app', title, components = {}, data, methods = {}, mounted } = {}) {
+    const { createApp } = Vue;
+
+    const options = {
+        components,
+        data: function() {
+            const base = (typeof data === 'function') ? data() : (data || {});
+            if (!base.msg && typeof window !== 'undefined') base.msg = window.messages || {};
+            return base;
+        },
+        methods,
+        mounted
+    };
+
+    const app = createApp(options);
+    app.mount(mountSelector);
+
+    if (title) document.title = title;
+
+    return app;
+}
 
 // Componente Input Reutilizável
 const FormInput = {
@@ -61,6 +298,84 @@ const FormInput = {
     emits: ['update:modelValue']
 };
 
+// Componente Cartão de Proposta
+const ProposalCard = {
+    methods: {
+        getDetailsLink() {
+            const base = this.proposal && this.proposal.detailsLink
+                ? this.proposal.detailsLink
+                : 'tela-detalhes-proposta-coordenador.html';
+            if (!this.proposal || !this.proposal.id) return base;
+            return `${base}?id=${encodeURIComponent(this.proposal.id)}`;
+        }
+    },
+    props: ['proposal', 'getStatusLabel'],
+    template: `
+    <div class="proposal-card card">
+        <div class="proposal-icon">📋</div>
+        <div class="proposal-main">
+            <h3>{{ proposal.title || proposal.institution }}</h3>
+            <p>{{ proposal.description || proposal.challenge }}</p>
+        </div>
+        <div class="proposal-actions">
+            <span class="status-pill" :class="proposal.status === 'aprovada' || proposal.status === 'accepted' ? 'approved' : 'analysis'">
+                {{ getStatusLabel ? getStatusLabel(proposal.status) : proposal.status }}
+            </span>
+            <a class="mini-btn" :href="getDetailsLink()">Ver detalhes</a>
+        </div>
+    </div>
+    `
+};
+
+// Componente Cartão de Desafio
+const ChallengeCard = {
+    methods: {
+        getDetailsHref() {
+            const base = this.detailsLink || 'tela-detalhes-desafio-coordenador.html';
+            if (!this.challenge || !this.challenge.id) return base;
+            return `${base}?id=${encodeURIComponent(this.challenge.id)}`;
+        }
+    },
+    props: ['challenge', 'icon', 'detailsLink'],
+    template: `
+    <div class="challenge-card card">
+        <div class="challenge-icon">{{ icon || '📌' }}</div>
+        <div class="challenge-body card-body">
+            <h3>{{ challenge.title }}</h3>
+            <p>{{ challenge.description }}</p>
+            <div class="challenge-meta">{{ challenge.date || challenge.meta }}</div>
+        </div>
+        <a class="mini-btn" :href="getDetailsHref()">Ver detalhes</a>
+    </div>
+    `
+};
+
+// Componente Cartão de Problema
+const ProblemCard = {
+    methods: {
+        getDetailsHref() {
+            const base = (this.problem && this.problem.detailsLink) ? this.problem.detailsLink : 'detalhesProblema.html';
+            if (!this.problem || !this.problem.id) return base;
+            return `${base}?id=${encodeURIComponent(this.problem.id)}`;
+        }
+    },
+    props: ['problem', 'showProposalCount'],
+    template: `
+    <div class="problem-card card">
+        <div class="problem-icon">📌</div>
+        <div class="problem-main">
+            <h3>{{ problem.title }}</h3>
+            <p>{{ problem.description }}</p>
+            <span v-if="showProposalCount" class="proposal-count">{{ problem.proposals }} propostas</span>
+        </div>
+        <div class="problem-actions">
+            <span class="deadline">{{ problem.deadline }}</span>
+            <a :href="getDetailsHref()" class="mini-btn">Detalhes</a>
+        </div>
+    </div>
+    `
+};
+
 // Funções de Validação
 const ValidationFunctions = {
     validateEmail(email) {
@@ -93,7 +408,12 @@ const AppRoutes = {
     },
 
     getCurrentRole() {
-        return this.normalizeRole(localStorage.getItem('userType'));
+        const user = StorageManager.getUser();
+
+        return this.normalizeRole(
+            (user && (user.type || user.role || user.userType || user.tipoUsuario)) ||
+                localStorage.getItem('userType'),
+        );
     },
 
     getHomeUrl(role = this.getCurrentRole()) {
@@ -127,6 +447,455 @@ const AppRoutes = {
     }
 };
 
+// ===================================
+// UTILITÁRIOS COMPARTILHADOS
+// ===================================
+
+// Obter ID da query string
+window.getIdFromQuery = function() {
+    const params = new URLSearchParams(window.location.search);
+    return params.get('id');
+};
+
+// Formatar label de status
+window.getStatusLabel = function(status) {
+    const value = String(status || '').toLowerCase();
+    if (!value) return '';
+    if (value.includes('aceit') || value.includes('aprov')) return 'Aprovada';
+    if (value.includes('reje') || value.includes('reprov')) return 'Rejeitada';
+    if (value.includes('pend') || value.includes('anal')) return 'Pendente';
+    return status;
+};
+
+// Verificar autenticação e redirecionar para login se necessário
+window.checkAuth = function() {
+    if (window.StorageManager && !window.StorageManager.getToken()) {
+        window.location.href = 'login.html';
+        return false;
+    }
+    return true;
+};
+
+// Carregar dados de proposta por ID
+window.loadProposta = async function(id) {
+    try {
+        if (id) {
+            return await window.ApiClient.get(`/propostas/${id}`);
+        } else {
+            const list = await window.ApiClient.get('/propostas');
+            return (list && list[0]) ? list[0] : {};
+        }
+    } catch (e) {
+        console.error('Erro ao carregar proposta:', e);
+        return {};
+    }
+};
+
+// Carregar dados de desafio por ID
+window.loadDesafio = async function(id) {
+    try {
+        if (id) {
+            return await window.ApiClient.get(`/desafios/${id}`);
+        } else {
+            const lista = await window.ApiClient.get('/me/desafios');
+            return (lista && lista[0]) ? lista[0] : {};
+        }
+    } catch (e) {
+        console.error('Erro ao carregar desafio:', e);
+        return {};
+    }
+};
+
+// ===================================
+// VALIDAÇÃO DE FORMULÁRIO
+// ===================================
+
+window.FormValidator = {
+    validateEmail(email) {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    },
+    
+    validatePassword(password) {
+        return password && password.length >= 6;
+    },
+    
+    validatePasswordMatch(password, confirmPassword) {
+        return password === confirmPassword;
+    },
+    
+    validateRequired(value) {
+        return value && value.trim().length > 0;
+    },
+    
+    validatePhone(phone) {
+        const re = /^\(\d{2}\)\s\d{5}-\d{4}$/;
+        return re.test(phone);
+    },
+    
+    validateCNPJ(cnpj) {
+        const re = /^\d{2}\.\d{3}\.\d{3}\/\d{4}-\d{2}$/;
+        return re.test(cnpj);
+    },
+    
+    validateEmailOrPhone(value) {
+        const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+        const isPhone = /^\(\d{2}\)\s?\d{4,5}-\d{4}$/.test(value);
+        return isEmail || isPhone;
+    }
+};
+
+// ===================================
+// VUE MIXIN PARA FORMULÁRIOS DE AUTENTICAÇÃO
+// ===================================
+
+window.AuthFormMixin = {
+    data() {
+        return {
+            form: {},
+            errors: {},
+            success: '',
+            loading: false
+        };
+    },
+    methods: {
+        clearErrors() {
+            this.errors = {};
+        },
+        
+        setFieldError(field, message) {
+            this.errors[field] = message;
+        },
+        
+        hasErrors() {
+            return Object.keys(this.errors).length > 0;
+        },
+        
+        showSuccess(message) {
+            this.success = message;
+            setTimeout(() => { this.success = ''; }, 3000);
+        },
+        
+        async submitForm(apiEndpoint, payload) {
+            this.clearErrors();
+            this.loading = true;
+            
+            try {
+                const response = await window.ApiClient.post(apiEndpoint, payload);
+                this.showSuccess(this.msg?.sucesso || 'Operação realizada com sucesso.');
+                return response;
+            } catch (err) {
+                const message = err && err.message ? err.message : this.msg?.erroGenerico || 'Erro ao processar requisição';
+                this.errors.general = message;
+                throw err;
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+};
+
+// ===================================
+// API E AUTENTICAÇÃO
+// ===================================
+
+// API_BASE_URL é definido em config.js e exportado para window.API_BASE_URL
+const API_BASE_URL = window.API_BASE_URL;
+
+// Gerenciador de Token JWT
+const StorageManager = {
+    setToken(token) {
+        localStorage.setItem('auth_token', token);
+    },
+    getToken() {
+        return localStorage.getItem('auth_token');
+    },
+    clearToken() {
+        localStorage.removeItem('auth_token');
+    },
+    setUser(user) {
+        localStorage.setItem('auth_user', JSON.stringify(user));
+        if (user && user.type) {
+            localStorage.setItem('userType', user.type);
+        } else {
+            localStorage.removeItem('userType');
+        }
+    },
+    getUser() {
+        const user = localStorage.getItem('auth_user');
+        return user ? JSON.parse(user) : null;
+    },
+    logout() {
+        this.clearToken();
+        this.clearUser();
+        window.location.href = 'login.html';
+    },
+    clearUser() {
+        localStorage.removeItem('auth_user');
+        localStorage.removeItem('userType');
+    }
+};
+
+// Cliente HTTP com Autenticação
+const ApiClient = {
+    async fetch(path, options = {}) {
+        const token = StorageManager.getToken();
+        const headers = {
+            'Content-Type': 'application/json',
+            ...(options.headers || {})
+        };
+        
+        if (token) {
+            headers.Authorization = `Bearer ${token}`;
+        }
+        
+        try {
+            const response = await fetch(`${API_BASE_URL}${path}`, {
+                ...options,
+                headers
+            });
+            
+            // Se token expirou (401), logout
+            if (response.status === 401 && token) {
+                StorageManager.logout();
+                return response;
+            }
+            
+            return response;
+        } catch (error) {
+            console.error('API Error:', error);
+            throw error;
+        }
+    },
+    
+    async get(path) {
+        const response = await this.fetch(path, { method: 'GET' });
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        return response.json();
+    },
+    
+    async post(path, data) {
+        const response = await this.fetch(path, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.erro || `API Error: ${response.status}`);
+        }
+        return response.json();
+    },
+    
+    async put(path, data) {
+        const response = await this.fetch(path, {
+            method: 'PUT',
+            body: JSON.stringify(data)
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({}));
+            throw new Error(error.erro || `API Error: ${response.status}`);
+        }
+        return response.json();
+    },
+    
+    async delete(path) {
+        const response = await this.fetch(path, { method: 'DELETE' });
+        if (!response.ok) throw new Error(`API Error: ${response.status}`);
+        return response.json();
+    }
+};
+
 if (typeof window !== 'undefined') {
+    // API_BASE_URL já é exportado pelo config.js, não redefinir aqui
+    window.StorageManager = StorageManager;
+    window.ApiClient = ApiClient;
     window.AppRoutes = AppRoutes;
+    window.NavBar = NavBar;
+    window.SideNav = SideNav;
+    window.buildSideNavItems = buildSideNavItems;
+    window.mountVuePage = mountVuePage;
+    window.FormInput = FormInput;
+    window.ProposalCard = ProposalCard;
+    window.ChallengeCard = ChallengeCard;
+    window.ProblemCard = ProblemCard;
+    window.ValidationFunctions = ValidationFunctions;
+    window.mountStandardApp = mountStandardApp;
 }
+
+// Auth UI helpers and access control
+(function(){
+    try{
+        function refreshNavUser(){
+            const nameEl = document.getElementById('navUserName');
+            const logoutBtn = document.getElementById('navLogoutBtn');
+            if(!nameEl && !logoutBtn) return;
+            const user = StorageManager.getUser();
+            if(user){
+                if(nameEl) nameEl.textContent = user.nome || user.name || user.email || 'Usuário';
+                if(logoutBtn) logoutBtn.style.display = 'inline-block';
+            } else {
+                if(nameEl) nameEl.textContent = 'Entrar';
+                if(logoutBtn) logoutBtn.style.display = 'none';
+            }
+        }
+
+        window.refreshNavUser = refreshNavUser;
+
+        // access control helper: allowedRoles array or single role
+        window.requireRole = function(allowedRoles){
+            if(!allowedRoles) return;
+            const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
+            const token = StorageManager.getToken();
+            if(!token){
+                window.location.href = 'login.html';
+                return false;
+            }
+            const role = AppRoutes.getCurrentRole();
+            if(!roles.includes(role)){
+                // redirect to user's home
+                window.location.href = AppRoutes.getHomeUrl(role);
+                return false;
+            }
+            return true;
+        };
+
+        // initialize shortly after load
+        setTimeout(refreshNavUser, 50);
+        window.addEventListener('storage', refreshNavUser);
+    }catch(e){
+        console.warn('Auth UI helpers init failed', e);
+    }
+})();
+
+// Admin menu factory for reuse across admin pages
+window.getAdminMenuItems = function(){
+    return [
+        { label: 'Dashboard geral', href: 'tela-admin.html' },
+        { label: 'Notificações', href: 'notificacoes.html' },
+        { label: 'Aprovações', href: 'aprovacoes.html' },
+        { label: 'Empresas', children: [
+            { label: 'Problemas', href: 'empresa-problemas.html' },
+            { label: 'Propostas', href: 'empresa-propostas.html' }
+        ] },
+        { label: 'Instituições', children: [
+            { label: 'Desafios', href: 'instituicao-desafios.html' },
+            { label: 'Propostas', href: 'instituicao-propostas.html' }
+        ] },
+        { label: 'Configurações', children: [
+            { label: 'Alterar senha', href: 'alterar-senha.html' },
+            { label: 'Usuários', href: 'usuarios.html' }
+        ] }
+    ];
+};
+
+// helper to normalize and remove duplicate hrefs from any menu
+function _normalizeMenuGeneric(menu){
+    const seen = new Set();
+    const out = [];
+    for(const item of menu){
+        const copy = Object.assign({}, item);
+        if(copy.children && Array.isArray(copy.children)){
+            const children = [];
+            for(const child of copy.children){
+                if(!child || !child.href) continue;
+                if(seen.has(child.href)) continue;
+                seen.add(child.href);
+                children.push(child);
+            }
+            copy.children = children;
+            if(copy.href && seen.has(copy.href)) delete copy.href;
+            out.push(copy);
+            continue;
+        }
+        if(copy.href){
+            if(seen.has(copy.href)) continue;
+            seen.add(copy.href);
+        }
+        out.push(copy);
+    }
+    return out;
+}
+
+// Role-based menu factory for all roles
+window.getMenuForRole = function(role){
+    role = String(role || '').toLowerCase();
+    if(role === 'admin') return window.getAdminMenuItems();
+
+    if(role === 'empresa'){
+        return _normalizeMenuGeneric([
+            { label: 'Dashboard', href: 'empresaDashboard.html' },
+            { label: 'Notificações', href: 'notificacoes.html' },
+            { label: 'Propostas', href: 'propostas.html' },
+            { label: 'Meus problemas', href: 'empresaDashboard.html' },
+            { label: 'Criar problema', href: 'criaProblema.html' },
+            { label: 'Seleção instituições', href: 'selecaoInstituicoes.html' },
+            { label: 'Configurações', children: [ { label: 'Alterar senha', href: 'alterar-senha.html' } ] }
+        ]);
+    }
+
+    if(role === 'instituicao'){
+        return _normalizeMenuGeneric([
+            { label: 'Início', href: 'tela-inicial-instituicao.html' },
+            { label: 'Notificações', href: 'notificacoes.html' },
+            { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
+            { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
+            { label: 'Configurações', children: [ { label: 'Alterar senha', href: 'alterar-senha.html' } ] }
+        ]);
+    }
+
+    if(role === 'coordenador'){
+        return _normalizeMenuGeneric([
+            { label: 'Início', href: 'tela-inicial-coordenador.html' },
+            { label: 'Notificações', href: 'notificacoes.html' },
+            { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+            { label: 'Propostas', href: 'tela-propostas-coordenador.html' },
+            { label: 'Envio solução', href: 'tela-envio-solucao-coordenador.html' },
+            { label: 'Configurações', children: [ { label: 'Alterar senha', href: 'alterar-senha.html' } ] }
+        ]);
+    }
+
+    // default public menu
+    const publicMenu = [
+        { label: 'Início', href: 'index.html' },
+        { label: 'Login', href: 'login.html' },
+        { label: 'Cadastro Empresa', href: 'CadastroEmpresa.html' },
+        { label: 'Cadastro Instituição', href: 'CadastroInstituicao.html' }
+    ];
+
+    // normalize to remove duplicate hrefs
+    function normalizeMenu(menu){
+        const seen = new Set();
+        const out = [];
+        for(const item of menu){
+            const copy = Object.assign({}, item);
+            // if has children, normalize children first
+            if(copy.children && Array.isArray(copy.children)){
+                const children = [];
+                for(const child of copy.children){
+                    if(!child || !child.href) continue;
+                    if(seen.has(child.href)) continue;
+                    seen.add(child.href);
+                    children.push(child);
+                }
+                copy.children = children;
+                // if parent href duplicates a child or seen, remove parent href to avoid duplication
+                if(copy.href && seen.has(copy.href)){
+                    delete copy.href;
+                }
+                // prefer to keep parents even if no href, as container for children
+                out.push(copy);
+                continue;
+            }
+
+            // simple item
+            if(copy.href){
+                if(seen.has(copy.href)) continue;
+                seen.add(copy.href);
+            }
+            out.push(copy);
+        }
+        return out;
+    }
+
+    return normalizeMenu(publicMenu);
+};

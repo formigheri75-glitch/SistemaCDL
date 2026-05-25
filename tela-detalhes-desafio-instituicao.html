@@ -7,27 +7,82 @@
         <link href="theme.css" rel="stylesheet" />
         <title>Detalhes do Desafio - Instituição</title>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar"><div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div><div class="menu"><div class="menu-item active">Desafios</div><div class="menu-item">Propostas</div><div class="menu-item">Notificações</div></div></aside>
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-inicial-instituicao.html"
+                ></side-nav>
                 <div class="content">
                     <div class="detail-hero">
-                        <div class="detail-top"><div class="detail-title"><h3>{{ msg.detalhesDesafio.challengeTitle }}</h3></div><span class="status">Aberto</span></div>
-                        <div class="detail-intro"><div class="illustration"></div><div><p>{{ msg.detalhesDesafio.description }}</p></div></div>
+                        <div class="detail-top"><div class="detail-title"><h3>{{ challenge.titulo || msg.detalhesDesafio.challengeTitle }}</h3></div><span class="status">{{ challenge.statusdesafio || challenge.status || 'Aberto' }}</span></div>
+                        <div class="detail-intro"><div class="illustration"></div><div><p>{{ challenge.descricao || msg.detalhesDesafio.description }}</p></div></div>
                     </div>
                     <div class="detail-grid">
-                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in msg.detalhesDesafio.requirements.items" :key="item">{{ item }}</li></ul></div>
-                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.additionalInfo.title }}</h4><ul><li v-for="item in msg.detalhesDesafio.additionalInfo.items" :key="item" v-html="item"></li></ul></div>
+                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in requirementsList" :key="item">{{ item }}</li></ul></div>
+                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.additionalInfo.title }}</h4><ul><li v-for="item in extraInfoList" :key="item" v-html="item"></li></ul></div>
                     </div>
                 </div>
             </div>
         </div>
         <script>
             const { createApp } = Vue;
-            createApp({ data() { return { msg: window.messages }; } }).mount('#app');
+            createApp({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
+                            { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
+                        ],
+                        challenge: {},
+                    };
+                },
+                computed: {
+                    requirementsList() {
+                        if (Array.isArray(this.challenge.requisitos) && this.challenge.requisitos.length) return this.challenge.requisitos;
+                        return this.msg.detalhesDesafio.requirements.items || [];
+                    },
+                    extraInfoList() {
+                        const info = [];
+                        if (this.challenge.areaconhecimento) info.push('Área: ' + this.challenge.areaconhecimento);
+                        if (this.challenge.nivelproblema) info.push('Nível: ' + this.challenge.nivelproblema);
+                        if (this.challenge.datalimite) info.push('Prazo: ' + this.challenge.datalimite);
+                        return info.length ? info : (this.msg.detalhesDesafio.additionalInfo.items || []);
+                    }
+                },
+                methods: {
+                    getIdFromQuery() {
+                        const params = new URLSearchParams(window.location.search);
+                        return params.get('id');
+                    },
+                    async loadChallenge() {
+                        const id = this.getIdFromQuery();
+                        try {
+                            if (id) {
+                                this.challenge = await window.ApiClient.get(`/desafios/${id}`);
+                            } else {
+                                const list = await window.ApiClient.get('/desafios');
+                                this.challenge = (list && list[0]) ? list[0] : {};
+                            }
+                        } catch (e) {
+                            console.error('Erro ao carregar desafio:', e);
+                            this.challenge = {};
+                        }
+                    }
+                },
+                mounted() {
+                    this.loadChallenge();
+                }
+            }).mount('#app');
             document.title = 'Detalhes do Desafio - Instituição';
         </script>
     </body>

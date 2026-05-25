@@ -10,24 +10,18 @@
         />
         <link href="theme.css" rel="stylesheet" />
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar">
-                    <div class="brand">
-                        <span class="brand-icon"></span>
-                        <span>{{ msg.nav.brand }}</span>
-                    </div>
-                    <div class="menu">
-                        <div class="menu-item">{{ msg.nav.dashboard }}</div>
-                        <div class="menu-item active">
-                            {{ msg.nav.novoProblema }}
-                        </div>
-                        <div class="menu-item">{{ msg.nav.propostas }}</div>
-                    </div>
-                </aside>
+                <side-nav
+                    :brand="msg.nav.brand"
+                    :items="menuItems"
+                    active-href="criaProblema.html"
+                ></side-nav>
                 <div class="content">
                     <!-- Main Content -->
                     <div class="container container-narrow">
@@ -221,7 +215,7 @@
                                             />
                                             <button
                                                 type="button"
-                                                class="btn-remove"
+                                                class="btn btn-secondary"
                                                 @click="removeRequirement(index)"
                                             >
                                                 {{ msg.criaProblema.remover }}
@@ -229,7 +223,7 @@
                                         </div>
                                         <button
                                             type="button"
-                                            class="btn-add-requirement"
+                                            class="btn btn-secondary"
                                             @click="addRequirement"
                                         >
                                             {{
@@ -241,12 +235,12 @@
 
                                 <!-- Buttons -->
                                 <div class="button-group">
-                                    <button type="submit" class="btn-submit">
+                                    <button type="submit" class="btn btn-primary">
                                         {{ msg.criaProblema.publicar }}
                                     </button>
                                     <button
                                         type="button"
-                                        class="btn-cancel"
+                                        class="btn btn-secondary"
                                         @click="cancelForm"
                                     >
                                         {{ msg.criaProblema.cancelar }}
@@ -265,9 +259,15 @@
             document.addEventListener("DOMContentLoaded", function () {
                 if (window.messages) {
                     createApp({
+                        components: { SideNav },
                         data() {
                             return {
                                 msg: window.messages,
+                                menuItems: [
+                                    { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
+                                    { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
+                                    { label: window.messages.nav.propostas, href: 'propostas.html' },
+                                ],
                                 form: {
                                     title: "",
                                     description: "",
@@ -290,7 +290,7 @@
                             removeRequirement(index) {
                                 this.form.requirements.splice(index, 1);
                             },
-                            submitForm() {
+                            async submitForm() {
                                 if (
                                     !this.form.title ||
                                     !this.form.description ||
@@ -306,15 +306,30 @@
                                     return;
                                 }
 
-                                this.alertMessage =
-                                    this.msg.criaProblema.sucesso;
-                                this.alertType = "success";
-                                this.showAlert = true;
+                                try {
+                                    const response = await window.ApiClient.post('/desafios', {
+                                        titulo: this.form.title,
+                                        descricao: this.form.description,
+                                        resultado_esperado: this.form.expectedResult,
+                                        categoria: this.form.category,
+                                        prioridade: this.form.priority,
+                                        prazo_dias: parseInt(this.form.deadline),
+                                        tecnologias: this.form.technologies ? this.form.technologies.split(',').map(t => t.trim()) : [],
+                                        requisitos: this.form.requirements.filter(r => r.trim() !== '')
+                                    });
+                                    
+                                    this.alertMessage = this.msg.criaProblema.sucesso;
+                                    this.alertType = "success";
+                                    this.showAlert = true;
 
-                                setTimeout(() => {
-                                    window.location.href =
-                                        "empresaDashboard.html";
-                                }, 1500);
+                                    setTimeout(() => {
+                                        window.location.href = "empresaDashboard.html";
+                                    }, 1500);
+                                } catch (error) {
+                                    this.alertMessage = error.message || this.msg.criaProblema.erro;
+                                    this.alertType = "error";
+                                    this.showAlert = true;
+                                }
                             },
                             cancelForm() {
                                 window.location.href = "empresaDashboard.html";

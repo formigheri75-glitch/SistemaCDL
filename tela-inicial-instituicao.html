@@ -7,71 +7,92 @@
         <link href="theme.css" rel="stylesheet" />
         <title>Início - Instituição</title>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar">
-                    <div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div>
-                    <div class="menu">
-                        <div class="menu-item active">Desafios</div>
-                        <div class="menu-item" @click="go('tela-propostas-instituicao.html')">Propostas</div>
-                        <div class="menu-item" @click="go('notificacoes.html')">Notificações</div>
-                    </div>
-                </aside>
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-inicial-instituicao.html"
+                ></side-nav>
                 <div class="content">
                     <div class="hero-stats">
-                        <div class="stat"><strong>{{ stats.total }}</strong><span>Desafios disponíveis</span></div>
-                        <div class="stat"><strong>{{ stats.pendentes }}</strong><span>Propostas pendentes</span></div>
-                        <div class="stat"><strong>{{ stats.notificacoes }}</strong><span>Notificações</span></div>
+                        <div class="stat"><strong>{{ stats.total }}</strong><span>{{ msg.pages.telaInicialInstituicao.desafiosDisponiveis }}</span></div>
+                        <div class="stat"><strong>{{ stats.pendentes }}</strong><span>{{ msg.pages.telaInicialInstituicao.propostasPendentes }}</span></div>
+                        <div class="stat"><strong>{{ stats.notificacoes }}</strong><span>{{ msg.pages.telaInicialInstituicao.notificacoes }}</span></div>
                     </div>
                     <div class="section-head">
-                        <h2>Desafios disponíveis</h2>
-                        <a class="link-chip" href="notificacoes.html">Ver notificações</a>
+                        <h2>{{ msg.pages.telaInicialInstituicao.desafiosDisponiveis }}</h2>
+                        <a class="mini-btn" href="notificacoes.html">{{ msg.pages.telaInicialInstituicao.verNotificacoes }}</a>
                     </div>
                     <div class="list cards-grid">
-                        <div class="challenge-card card" v-for="challenge in challenges" :key="challenge.title">
-                            <div class="challenge-icon">🎯</div>
-                            <div class="challenge-body card-body">
-                                <h3>{{ challenge.title }}</h3>
-                                <p>{{ challenge.description }}</p>
-                                <div class="challenge-meta">{{ challenge.date }}</div>
-                            </div>
-                            <a class="mini-btn" href="tela-detalhes-desafio-instituicao.html">Ver desafio</a>
-                        </div>
+                        <challenge-card
+                            v-for="challenge in challenges"
+                            :key="challenge.title"
+                            :challenge="challenge"
+                            icon="🎯"
+                            detailsLink="tela-detalhes-desafio-instituicao.html"
+                        ></challenge-card>
                     </div>
                 </div>
             </div>
         </div>
         <script>
-            const { createApp } = Vue;
-
             document.addEventListener('DOMContentLoaded', () => {
-                createApp({
+                // Verificar autenticação
+                if (!window.checkAuth()) return;
+
+                mountVuePage({
+                    components: { SideNav, ChallengeCard },
                     data() {
                         return {
                             msg: window.messages,
-                            challenges: window.messages.telaInicialDesafios.challenges,
+                            menuItems: [
+                                { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
+                                { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
+                                { label: 'Notificações', href: 'notificacoes.html' },
+                            ],
+                            challenges: [],
+                            notificationsCount: 0,
                         };
                     },
                     computed: {
                         stats() {
                             return {
                                 total: this.challenges.length,
-                                pendentes: 5,
-                                notificacoes: 7,
+                                pendentes: this.challenges.filter(c => c.status === 'pendente' || c.status === 'aberto').length,
+                                notificacoes: this.notificationsCount,
                             };
                         },
                     },
-                    methods: {
-                        go(url) {
-                            window.location.href = url;
-                        },
-                    },
-                }).mount('#app');
+                    mounted: async function() {
+                        try {
+                            const desafios = await window.ApiClient.get('/desafios');
+                            this.challenges = (desafios || []).map(d => ({
+                                id: d.id,
+                                title: d.titulo || d.nome || 'Desafio',
+                                description: d.descricao || '',
+                                meta: d.areaconhecimento || d.statusdesafio || d.status || '',
+                                status: d.statusdesafio || d.status || 'aberto',
+                            }));
+                        } catch (e) {
+                            console.error('Erro ao carregar desafios:', e);
+                            this.challenges = window.messages.telaInicialDesafios.challenges || [];
+                        }
 
-                document.title = 'Início - Instituição';
+                        try {
+                            const notificacoes = await window.ApiClient.get('/notificacoes');
+                            this.notificationsCount = (notificacoes || []).length;
+                        } catch (e) {
+                            this.notificationsCount = 0;
+                        }
+                    },
+                    title: 'Início - Instituição',
+                });
             });
         </script>
     </body>

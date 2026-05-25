@@ -10,39 +10,18 @@
         <link href="theme.css" rel="stylesheet" />
         <title>Dashboard</title>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar">
-                    <div class="brand">
-                        <span class="brand-icon"></span>
-                        <span>{{ msg.nav.brand }}</span>
-                    </div>
-                    <div class="menu">
-                        <div
-                            class="menu-item active"
-                            onclick="location.href = 'dashboard.html'"
-                        >
-                            {{ msg.nav.dashboard }}
-                        </div>
-                        <div
-                            class="menu-item"
-                            onclick="
-                                location.href = 'tela-inicial-desafios.html'
-                            "
-                        >
-                            {{ msg.nav.desafios }}
-                        </div>
-                        <div
-                            class="menu-item"
-                            onclick="location.href = 'propostas.html'"
-                        >
-                            {{ msg.nav.propostas }}
-                        </div>
-                    </div>
-                </aside>
+                <side-nav
+                    :brand="msg.nav.brand"
+                    :items="menuItems"
+                    active-href="dashboard.html"
+                ></side-nav>
                 <div class="content">
                     <div class="page-header">
                         <h1>{{ msg.dashboard.title }}</h1>
@@ -52,28 +31,28 @@
                     <div class="stats-grid">
                         <div class="stat-box">
                             <div class="stat-icon"></div>
-                            <div class="stat-value">12</div>
+                            <div class="stat-value">{{ stats.desafiosAtivos }}</div>
                             <div class="stat-label">
                                 {{ msg.dashboard.desafiosAtivos }}
                             </div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-icon"></div>
-                            <div class="stat-value">8</div>
+                            <div class="stat-value">{{ stats.concluidos }}</div>
                             <div class="stat-label">
                                 {{ msg.dashboard.concluidos }}
                             </div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-icon"></div>
-                            <div class="stat-value">4</div>
+                            <div class="stat-value">{{ stats.emAndamento }}</div>
                             <div class="stat-label">
                                 {{ msg.dashboard.emAndamento }}
                             </div>
                         </div>
                         <div class="stat-box">
                             <div class="stat-icon"></div>
-                            <div class="stat-value">24</div>
+                            <div class="stat-value">{{ stats.participantes }}</div>
                             <div class="stat-label">
                                 {{ msg.dashboard.participantes }}
                             </div>
@@ -83,48 +62,22 @@
                     <div class="section">
                         <h2>{{ msg.dashboard.desafios }}</h2>
                         <div class="challenges">
-                            <div class="challenge">
+                            <div
+                                v-for="challenge in challenges"
+                                :key="challenge.title"
+                                class="challenge"
+                            >
                                 <div class="challenge-title">
-                                    Desafio #001: Sistema Web
+                                    {{ challenge.title }}
                                 </div>
-                                <div>Progresso: 75%</div>
-                                <div
-                                    class="progress-bar"
-                                    style="margin-top: 0.5rem"
-                                >
+                                <div>
+                                    Progresso: {{ challenge.progress }}
+                                    <span v-if="challenge.done">✓</span>
+                                </div>
+                                <div class="progress-bar" style="margin-top: 0.5rem">
                                     <div
                                         class="progress-fill"
-                                        style="width: 75%"
-                                    ></div>
-                                </div>
-                            </div>
-                            <div class="challenge">
-                                <div class="challenge-title">
-                                    Desafio #002: API REST
-                                </div>
-                                <div>Progresso: 100% ✓</div>
-                                <div
-                                    class="progress-bar"
-                                    style="margin-top: 0.5rem"
-                                >
-                                    <div
-                                        class="progress-fill"
-                                        style="width: 100%"
-                                    ></div>
-                                </div>
-                            </div>
-                            <div class="challenge">
-                                <div class="challenge-title">
-                                    Desafio #003: Mobile App
-                                </div>
-                                <div>Progresso: 45%</div>
-                                <div
-                                    class="progress-bar"
-                                    style="margin-top: 0.5rem"
-                                >
-                                    <div
-                                        class="progress-fill"
-                                        style="width: 45%"
+                                        :style="{ width: challenge.progress }"
                                     ></div>
                                 </div>
                             </div>
@@ -134,40 +87,19 @@
                     <div class="section">
                         <h2>{{ msg.dashboard.atividades }}</h2>
                         <div class="activities">
-                            <div class="activity">
+                            <div
+                                v-for="activity in activities"
+                                :key="activity.title + activity.time"
+                                class="activity"
+                            >
                                 <div class="activity-icon"></div>
                                 <div class="activity-content">
                                     <div class="activity-title">
-                                        Novo desafio criado
+                                        {{ activity.title }}
                                     </div>
-                                    <div class="activity-time">Há 2 horas</div>
-                                </div>
-                            </div>
-                            <div class="activity">
-                                <div class="activity-icon"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">
-                                        Novo comentário recebido
+                                    <div class="activity-time">
+                                        {{ activity.time }}
                                     </div>
-                                    <div class="activity-time">Há 4 horas</div>
-                                </div>
-                            </div>
-                            <div class="activity">
-                                <div class="activity-icon"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">
-                                        Desafio concluído
-                                    </div>
-                                    <div class="activity-time">Há 1 dia</div>
-                                </div>
-                            </div>
-                            <div class="activity">
-                                <div class="activity-icon"></div>
-                                <div class="activity-content">
-                                    <div class="activity-title">
-                                        Novo participante
-                                    </div>
-                                    <div class="activity-time">Há 2 dias</div>
                                 </div>
                             </div>
                         </div>
@@ -177,19 +109,70 @@
         </div>
 
         <script>
-            document.addEventListener("DOMContentLoaded", function () {
-                if (window.messages) {
-                    const { createApp } = Vue;
-                    createApp({
-                        data() {
-                            return { msg: window.messages };
+            if (window.messages) {
+                mountStandardApp({
+                    title: window.messages.dashboard.title,
+                    components: { SideNav },
+                    data: () => ({
+                        menuItems: [
+                            { label: window.messages.nav.dashboard, href: 'dashboard.html' },
+                            { label: window.messages.nav.desafios, href: 'tela-inicial-desafios.html' },
+                            { label: window.messages.nav.propostas, href: 'propostas.html' },
+                        ],
+                        challenges: [
+                            { title: 'Desafio #001: Sistema Web', progress: '75%', done: false },
+                            { title: 'Desafio #002: API REST', progress: '100%', done: true },
+                            { title: 'Desafio #003: Mobile App', progress: '45%', done: false },
+                        ],
+                        activities: [
+                            { title: 'Novo desafio criado', time: 'Há 2 horas' },
+                            { title: 'Novo comentário recebido', time: 'Há 4 horas' },
+                            { title: 'Desafio concluído', time: 'Há 1 dia' },
+                            { title: 'Novo participante', time: 'Há 2 dias' },
+                        ],
+                        stats: {
+                            desafiosAtivos: 0,
+                            concluidos: 0,
+                            emAndamento: 0,
+                            participantes: 0,
                         },
-                    }).mount("#app");
-                    document.title = window.messages.dashboard.title;
-                } else {
-                    console.error("Messages not loaded");
-                }
-            });
+                    }),
+                    mounted: async function() {
+                        try {
+                            const [desafios, propostas, instituicoes] = await Promise.all([
+                                window.ApiClient.get('/desafios').catch(() => []),
+                                window.ApiClient.get('/propostas').catch(() => []),
+                                window.ApiClient.get('/instituicoes').catch(() => []),
+                            ]);
+
+                            const mappedDesafios = (desafios || []).map((d, idx) => {
+                                const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                                return {
+                                    id: d.id,
+                                    title: d.titulo || `Desafio #${idx + 1}`,
+                                    progress: status.includes('concl') ? '100%' : (status.includes('andamento') ? '60%' : '30%'),
+                                    done: status.includes('concl'),
+                                };
+                            });
+                            this.challenges = mappedDesafios;
+
+                            this.stats.desafiosAtivos = mappedDesafios.length;
+                            this.stats.concluidos = mappedDesafios.filter(d => d.done).length;
+                            this.stats.emAndamento = mappedDesafios.filter(d => !d.done).length;
+                            this.stats.participantes = (instituicoes || []).length;
+
+                            this.activities = (propostas || []).slice(0, 5).map((p, i) => ({
+                                title: `Nova proposta: ${p.titulo || 'Sem título'}`,
+                                time: p.data || `Item ${i + 1}`,
+                            }));
+                        } catch (e) {
+                            console.error('Erro ao carregar dashboard:', e);
+                        }
+                    },
+                });
+            } else {
+                console.error('Messages not loaded');
+            }
         </script>
     </body>
 </html>

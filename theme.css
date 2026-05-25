@@ -2,7 +2,7 @@
    THEME.CSS - CONFIGURAÇÕES CENTRALIZADAS
    ======================================== */
 
-/* Variables CSS - Cores Principais */
+/* Variables CSS - Cores Principais (Tema Escuro - Padrão) */
 :root {
     /* ======== PALETA DE CORES ======== */
     --color-bg-primary: #0f172a; /* Fundo principal (muito escuro) */
@@ -85,8 +85,7 @@
     --color-eef2ff: #eef2ff; /* Branco azulado */
 
     /* ======== TIPOGRAFIA ======== */
-    --font-family:
-        "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    --font-family: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     --font-size-xs: clamp(0.75rem, 1.5vw, 0.85rem);
     --font-size-sm: clamp(0.85rem, 2vw, 0.95rem);
     --font-size-base: clamp(0.875rem, 2vw, 1rem);
@@ -125,6 +124,53 @@
     --transition-fast: 0.15s ease;
     --transition-base: 0.3s ease;
     --transition-slow: 0.5s ease;
+}
+
+/* ========================================
+   TEMA CLARO
+   ======================================== */
+/* Ativar adicionando classe "light-theme" ao body ou html */
+.light-theme {
+    /* ======== PALETA DE CORES CLARAS ======== */
+    --color-bg-primary: #f8fafc; /* Fundo principal (branco muito claro) */
+    --color-bg-secondary: #ffffff; /* Fundo secundário (branco puro) */
+    --color-bg-tertiary: #f1f5f9; /* Fundo terciário (cinza muito claro) */
+
+    --color-border: #e2e8f0; /* Bordas (cinza claro) */
+    --color-border-light: #cbd5e1; /* Bordas mais claras */
+
+    --color-text-primary: #1e293b; /* Texto principal (cinza escuro) */
+    --color-text-secondary: #475569; /* Texto secundário (cinza médio) */
+    --color-text-muted: #64748b; /* Texto desabilitado/muted (cinza) */
+
+    /* ======== CORES FUNCIONAIS (MANTIDAS) ======== */
+    --color-primary: #3b82f6; /* Azul (ações principais) */
+    --color-primary-dark: #2563eb; /* Azul escuro (hover) */
+    --color-primary-light: rgba(59, 130, 246, 0.1); /* Azul claro (backgrounds) */
+    --color-primary-10: rgba(59, 130, 246, 0.1);
+    --color-primary-14: rgba(59, 130, 246, 0.14);
+    --color-primary-16: rgba(59, 130, 246, 0.16);
+    --color-primary-20: rgba(59, 130, 246, 0.2);
+    --color-primary-22: rgba(59, 130, 246, 0.22);
+
+    --color-secondary: #8b5cf6; /* Roxo (instituições) */
+    --color-secondary-light: rgba(139, 92, 246, 0.1);
+
+    --color-success: #10b981; /* Verde (sucesso) */
+    --color-success-light: rgba(16, 185, 129, 0.1);
+    --color-success-20: rgba(16, 185, 129, 0.2);
+
+    --color-warning: #f59e0b; /* Âmbar (aviso) */
+    --color-warning-light: rgba(245, 158, 11, 0.1);
+
+    --color-error: #ef4444; /* Vermelho (erro) */
+    --color-error-light: rgba(239, 68, 68, 0.1);
+    --color-error-dark: #dc2626;
+
+    --color-info: #06b6d4; /* Cyan (informação) */
+    --color-info-dark: #0891b2;
+    --color-success-dark: #059669;
+    --color-info-light: rgba(6, 182, 212, 0.1);
 }
 
 /* ========================================
@@ -806,6 +852,62 @@ body.auth-layout .auth-footer {
     padding: 24px 16px;
 }
 
+.sidebar-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px;
+    margin-bottom: 18px;
+    border-radius: 16px;
+    text-decoration: none;
+    color: #f8fafc;
+    background: rgba(15, 23, 42, 0.72);
+    border: 1px solid rgba(148, 163, 184, 0.12);
+    transition: all 0.2s ease;
+}
+
+.sidebar-user:hover {
+    background: rgba(30, 41, 59, 0.92);
+    border-color: rgba(59, 130, 246, 0.32);
+    transform: translateY(-1px);
+}
+
+.sidebar-user-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(6, 182, 212, 0.22));
+    color: #f8fafc;
+    font-size: 1.4rem;
+    flex-shrink: 0;
+}
+
+.sidebar-user-content {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.sidebar-user-name {
+    font-size: 0.98rem;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-user-role {
+    margin-top: 0.2rem;
+    color: #9fb0ca;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
 .brand {
     display: flex;
     align-items: center;
@@ -1243,20 +1345,201 @@ body.auth-layout .auth-footer {
 
 .mini-btn {
     border: none;
-    border-radius: 8px;
-    background: linear-gradient(180deg, #3b82f6 0%, #2663df 100%);
+    border-radius: var(--radius-md);
+    background: linear-gradient(
+        135deg,
+        var(--color-primary) 0%,
+        var(--color-primary-dark) 100%
+    );
     color: white;
     font-size: 0.75rem;
     padding: 8px 16px;
-    font-weight: 600;
+    font-weight: var(--font-weight-semibold);
     text-decoration: none;
     cursor: pointer;
-    transition: opacity 0.2s;
+    transition: all var(--transition-base);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
     white-space: nowrap;
 }
 
 .mini-btn:hover {
-    opacity: 0.85;
+    transform: scale(1.05);
+    box-shadow: 0 8px 16px rgba(59, 130, 246, 0.3);
+}
+
+a.mini-btn:hover {
+    color: white !important;
+}
+
+.mini-btn:active {
+    transform: scale(0.95);
+}
+
+/* ========================================
+   NAVEGAÇÃO COMPARTILHADA (CADASTROS)
+   ======================================== */
+
+.challenge-info {
+    background: var(--color-bg-secondary);
+    border: 1px solid var(--color-border);
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.challenge-info h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+}
+
+.challenge-details {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.challenge-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.challenge-field label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+}
+
+.challenge-field span {
+    font-size: 0.9375rem;
+    color: var(--color-text-primary);
+    line-height: 1.5;
+}
+
+.nav {
+    background: var(--color-bg-tertiary);
+    border-bottom: 1px solid var(--color-border);
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    padding: 0.5rem 0;
+}
+
+.nav-content {
+    max-width: 80rem;
+    margin: 0 auto;
+    padding: 0 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 4rem;
+}
+
+.nav-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    background: linear-gradient(to right, var(--color-primary), var(--color-info));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    cursor: pointer;
+}
+
+.nav-links {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.nav-links a {
+    padding: 0.5rem 1rem;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: var(--color-text-muted);
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.nav-links a:hover {
+    background: var(--color-primary-light);
+    color: var(--color-primary);
+}
+
+/* ========================================
+   FORMULÁRIO COMPARTILHADO (CADASTROS)
+   ======================================== */
+
+.form-container {
+    background: var(--color-bg-secondary);
+    border-radius: 0.75rem;
+    padding: 2rem;
+    border: 1px solid var(--color-border);
+}
+
+.form-container h1 {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-bottom: 2rem;
+    background: linear-gradient(to right, var(--color-primary), var(--color-info));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.form-group label .required {
+    color: var(--color-error);
+}
+
+.form-group input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-primary);
+    border: 2px solid var(--color-border);
+    border-radius: 0.5rem;
+    color: var(--color-text-primary);
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+}
+
+.form-error {
+    color: var(--color-error);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.form-success {
+    color: var(--color-success);
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+}
+
+.button-group {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+}
+
+.button-group button {
+    flex: 1;
 }
 
 /* ========================================
@@ -1611,6 +1894,36 @@ footer p {
     color: var(--color-text-muted);
     font-size: 0.875rem;
 }
+.sidebar-footer {
+    margin-top: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding-top: 12px;
+    border-top: 1px solid rgba(148, 163, 184, 0.06);
+}
+.sidebar-logout-btn {
+    background: #ef4444;
+    color: white;
+    border: none;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.sidebar-logout-btn:hover {
+    background: #dc2626;
+}
+
+.menu-group { margin-bottom: 6px; }
+.menu-parent { display:flex; justify-content:space-between; align-items:center; padding:10px 12px; border-radius:8px; color:#cfe3f7; cursor:pointer; }
+.menu-parent:hover { background: rgba(59,130,246,0.06); }
+.menu-item { display:block; padding:10px 12px; color:#cfe3f7; text-decoration:none; border-radius:8px; }
+.menu-item.active, .menu-parent.active { background: rgba(59,130,246,0.12); color:#e6f2ff; }
+.submenu { padding-left: 8px; margin-top:6px; display:block; }
+.menu-item.child { padding-left: 18px; font-size: 0.95rem; color:#bcd6ee; }
+.chevron { transition: transform 0.18s ease; opacity:0.8 }
+.chevron.open { transform: rotate(180deg); }
 
 /* ========================================
    COMPONENTES ADICIONAIS - FORMS
@@ -1727,9 +2040,12 @@ footer p {
     border-radius: 16px;
     overflow: hidden;
     display: grid;
-    grid-template-columns: 4px minmax(0, 1fr);
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
     transition: all 0.2s;
     border: 1px solid rgba(148, 163, 184, 0.1);
+    padding: 16px;
 }
 
 .proposal-card:hover {
@@ -1737,47 +2053,50 @@ footer p {
     transform: translateY(-2px);
 }
 
-.proposal-mark {
-    background: linear-gradient(180deg, #22c55e 0%, #84cc16 100%);
-}
-
-.proposal-content {
-    padding: 20px;
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
+.proposal-icon {
+    font-size: 2rem;
+    display: flex;
     align-items: center;
-    gap: 20px;
+    justify-content: center;
 }
 
-.proposal-content h3 {
+.proposal-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.proposal-main h3 {
     font-size: 1.05rem;
     font-weight: 700;
-    margin-bottom: 6px;
+    margin: 0;
     color: #f1f5f9;
 }
 
-.proposal-content p {
+.proposal-main p {
     font-size: 0.85rem;
     color: #cbd5e1;
+    margin: 0;
 }
 
 .proposal-actions {
     display: flex;
     flex-direction: column;
     align-items: flex-end;
-    gap: 12px;
+    gap: 8px;
 }
 
 .status-pill {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 110px;
-    padding: 6px 14px;
-    border-radius: 30px;
+    min-width: fit-content;
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
     font-size: 0.75rem;
-    font-weight: 700;
-    letter-spacing: 0.3px;
+    font-weight: var(--font-weight-semibold);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .status-pill.analysis {
@@ -2488,6 +2807,8 @@ body.common-layout .header {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.05em;
+    margin-top: 1.5rem;
+    margin-bottom: 1.5rem;
 }
 
 .status-badge.active {
@@ -2511,6 +2832,7 @@ body.common-layout .header {
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: clamp(1.5rem, 2vw, 2rem);
+    margin-bottom: 1.5rem;
     animation: fadeIn 0.6s ease;
 }
 
@@ -2679,15 +3001,63 @@ body.common-layout .header {
     background: var(--color-bg-secondary);
     border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: clamp(1.5rem, 2vw, 2rem);
+    padding: clamp(1rem, 2vw, 1.5rem);
     transition: all var(--transition-base);
     cursor: pointer;
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 16px;
 }
 
 .problem-card:hover {
     border-color: var(--color-primary);
     transform: translateY(-4px);
     box-shadow: 0 8px 16px rgba(59, 130, 246, 0.15);
+}
+
+.problem-icon {
+    font-size: 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.problem-main {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.problem-main h3 {
+    font-size: clamp(1rem, 2vw, 1.1rem);
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.problem-main p {
+    font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+    color: var(--color-text-secondary);
+    margin: 0;
+}
+
+.problem-main .proposal-count {
+    font-size: 0.8rem;
+    color: var(--color-primary);
+    font-weight: 600;
+}
+
+.problem-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.problem-actions .deadline {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
 }
 
 .problem-title {
@@ -2838,14 +3208,33 @@ body.common-layout .header {
     background: var(--color-bg-secondary);
     border: 2px solid var(--color-border);
     border-radius: var(--radius-lg);
-    padding: clamp(2rem, 3vw, 2.5rem);
+    padding: clamp(1rem, 2vw, 1.5rem);
     transition: all var(--transition-base);
     cursor: pointer;
     display: grid;
-    grid-template-columns: 1fr auto;
-    gap: clamp(1.5rem, 2vw, 2rem);
-    align-items: start;
+    grid-template-columns: auto 1fr auto;
+    gap: clamp(1rem, 2vw, 1.5rem);
+    align-items: center;
     animation: fadeIn 0.6s ease;
+}
+
+.proposals-grid .proposal-main {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.proposals-grid .proposal-main h3 {
+    font-size: clamp(1rem, 2vw, 1.1rem);
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.proposals-grid .proposal-main p {
+    font-size: clamp(0.85rem, 1.5vw, 0.9rem);
+    color: var(--color-text-secondary);
+    margin: 0;
 }
 
 .proposals-grid .proposal-card:hover {
@@ -2854,16 +3243,11 @@ body.common-layout .header {
     box-shadow: 0 8px 24px rgba(59, 130, 246, 0.2);
 }
 
-.proposals-grid .proposal-content {
+.proposals-grid .proposal-actions {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
-}
-
-.proposal-institution {
-    font-size: clamp(1rem, 2vw, 1.1rem);
-    font-weight: 700;
-    color: var(--color-text-primary);
+    align-items: flex-end;
+    gap: 8px;
 }
 
 .proposal-status {

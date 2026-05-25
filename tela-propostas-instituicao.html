@@ -7,47 +7,128 @@
         <link href="theme.css" rel="stylesheet" />
         <title>Propostas - Instituição</title>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar"><div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div><div class="menu"><div class="menu-item">Desafios</div><div class="menu-item active">Propostas</div><div class="menu-item">Notificações</div></div></aside>
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-propostas-instituicao.html"
+                ></side-nav>
                 <div class="content">
-                    <div class="section-head"><h2>Propostas recebidas</h2><a class="link-chip" href="notificacoes.html">Ver notificações</a></div>
-                    <div class="list cards-grid">
-                        <div class="proposal-card card" v-for="proposal in proposals" :key="proposal.title">
-                            <div class="proposal-mark"></div>
-                            <div class="proposal-content card-body">
-                                <div>
-                                    <h3>{{ proposal.title }}</h3>
-                                    <p>{{ proposal.challenge }}</p>
-                                </div>
-                                <div class="proposal-actions">
-                                    <span class="status-pill analysis">Em análise</span>
-                                    <a class="mini-btn" href="tela-detalhes-proposta-coordenador.html">Ver detalhes</a>
-                                </div>
-                            </div>
+                    <div class="container">
+                        <h1>{{ msg.pages.telaPropostasInstituicao.title }}</h1>
+
+                        <!-- Filter Section -->
+                        <div class="filter-section">
+                            <span class="filter-label"
+                                >{{ msg.propostas.filtro.label }}</span
+                            >
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'all' }"
+                                @click="selectedFilter = 'all'"
+                            >
+                                {{ msg.propostas.filtro.todas }} ({{
+                                proposals.length }})
+                            </button>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'pending' }"
+                                @click="selectedFilter = 'pending'"
+                            >
+                                {{ msg.propostas.filtro.pendentes }} ({{
+                                pendingCount }})
+                            </button>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'accepted' }"
+                                @click="selectedFilter = 'accepted'"
+                            >
+                                {{ msg.propostas.filtro.aceitas }} ({{
+                                acceptedCount }})
+                            </button>
+                        </div>
+
+                        <!-- Proposals Grid -->
+                        <div
+                            v-if="filteredProposals.length > 0"
+                            class="proposals-grid"
+                        >
+                            <proposal-card
+                                v-for="proposal in filteredProposals"
+                                :key="proposal.id"
+                                :proposal="proposal"
+                                :getStatusLabel="getStatusLabel"
+                            ></proposal-card>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div v-else class="empty-state">
+                            <p>{{ msg.pages.telaPropostasInstituicao.vazio }}</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <script>
-            const { createApp } = Vue;
-            createApp({
+            // Verificar autenticação
+            if (window.StorageManager && !window.StorageManager.getToken()) {
+                window.location.href = 'login.html';
+            }
+
+            mountVuePage({
+                components: { SideNav, ProposalCard },
                 data() {
                     return {
                         msg: window.messages,
-                        proposals: [
-                            { title: 'Gamificação do ensino híbrido', challenge: 'Inovação em Educação Digital' },
-                            { title: 'Eficiência energética no campus', challenge: 'Sustentabilidade no Campus' },
-                            { title: 'Aplicativo de impacto social', challenge: 'Startup de Impacto Social' },
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
+                            { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
                         ],
+                        selectedFilter: 'all',
+                        proposals: [],
                     };
                 },
-            }).mount('#app');
-            document.title = 'Propostas - Instituição';
+                mounted: async function() {
+                    try {
+                        const propostas = await window.ApiClient.get('/propostas');
+                        this.proposals = (propostas || []).map(p => ({
+                            id: p.id,
+                            institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
+                            description: p.descricao || '',
+                            status: String(p.statusproposta || p.status || 'pending').toLowerCase().includes('aceit') ? 'accepted' : 'pending',
+                            detailsLink: 'tela-detalhes-proposta-coordenador.html'
+                        }));
+                    } catch (e) {
+                        console.error('Erro ao carregar propostas:', e);
+                        this.proposals = [];
+                    }
+                },
+                computed: {
+                    filteredProposals() {
+                        if (this.selectedFilter === 'all') {
+                            return this.proposals;
+                        }
+                        return this.proposals.filter(p => p.status === this.selectedFilter);
+                    },
+                    pendingCount() {
+                        return this.proposals.filter(p => p.status === 'pending').length;
+                    },
+                    acceptedCount() {
+                        return this.proposals.filter(p => p.status === 'accepted').length;
+                    },
+                },
+                methods: {
+                    getStatusLabel: window.getStatusLabel,
+                },
+                title: 'Propostas - Instituição',
+            });
         </script>
     </body>
 </html>

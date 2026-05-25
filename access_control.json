@@ -1,0 +1,31 @@
+{
+  "meta": "Arquivo temporário de controle de acesso. Em produção será substituído por uma tabela no backend.",
+  "admin_has_access_to_all": true,
+  "pages": {
+    "login.html": ["public"],
+    "RecuperaSenha.html": ["public"],
+    "CadastroEmpresa.html": ["public"],
+    "CadastroInstituicao.html": ["public"],
+    "index.html": ["public"],
+
+    "empresaDashboard.html": ["empresa"],
+    "detalhesPropossta.html": ["empresa"],
+    "detalhesProblema.html": ["empresa"],
+    "criaProblema.html": ["empresa"],
+    "selecaoInstituicoes.html": ["empresa"],
+
+    "notificacoes.html": ["empresa", "instituicao", "coordenador", "admin"],
+
+    "tela-inicial-instituicao.html": ["instituicao"],
+    "tela-detalhes-desafio-instituicao.html": ["instituicao"],
+    "tela-propostas-instituicao.html": ["instituicao"],
+
+    "tela-inicial-coordenador.html": ["coordenador"],
+    "tela-detalhes-desafio-coordenador.html": ["coordenador"],
+    "tela-propostas-coordenador.html": ["coordenador"],
+    "tela-envio-solucao-coordenador.html": ["coordenador"],
+    "tela-detalhes-proposta-coordenador.html": ["coordenador"],
+
+    "tela-admin.html": ["admin"]
+  }
+}

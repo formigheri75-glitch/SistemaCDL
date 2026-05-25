@@ -10,24 +10,18 @@
         />
         <link href="theme.css" rel="stylesheet" />
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+            <script src="config.js"></script>
+            <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar">
-                    <div class="brand">
-                        <span class="brand-icon"></span>
-                        <span>{{ msg.nav.brand }}</span>
-                    </div>
-                    <div class="menu">
-                        <div class="menu-item">{{ msg.nav.dashboard }}</div>
-                        <div class="menu-item">{{ msg.nav.novoProblema }}</div>
-                        <div class="menu-item active">
-                            {{ msg.nav.propostas }}
-                        </div>
-                    </div>
-                </aside>
+                    <side-nav
+                        :brand="msg.nav.brand"
+                        :items="menuItems"
+                        active-href="propostas.html"
+                    ></side-nav>
                 <div class="content">
                     <div class="container">
                         <h1>{{ msg.propostas.title }}</h1>
@@ -68,46 +62,12 @@
                             v-if="filteredProposals.length > 0"
                             class="proposals-grid"
                         >
-                            <div
+                            <proposal-card
                                 v-for="proposal in filteredProposals"
                                 :key="proposal.id"
-                                class="proposal-card"
-                            >
-                                <div class="proposal-content">
-                                    <div class="proposal-institution">
-                                        {{ proposal.institution }}
-                                    </div>
-                                    <div class="proposal-description">
-                                        {{ proposal.description }}
-                                    </div>
-                                    <div class="proposal-footer">
-                                        <div class="proposal-rating">
-                                            {{ proposal.rating }}/5.0
-                                        </div>
-                                    </div>
-                                </div>
-                                <div
-                                    style="
-                                        display: flex;
-                                        flex-direction: column;
-                                        gap: 1rem;
-                                        align-items: flex-end;
-                                        min-width: 140px;
-                                    "
-                                >
-                                    <span
-                                        :class="['proposal-status', proposal.status]"
-                                        >{{ getStatusLabel(proposal.status)
-                                        }}</span
-                                    >
-                                    <button
-                                        class="proposal-button"
-                                        @click="viewProposal(proposal.id)"
-                                    >
-                                        {{ msg.propostas.verDetalhes }}
-                                    </button>
-                                </div>
-                            </div>
+                                :proposal="proposal"
+                                :getStatusLabel="getStatusLabel"
+                            ></proposal-card>
                         </div>
 
                         <!-- Empty State -->
@@ -125,11 +85,37 @@
             document.addEventListener("DOMContentLoaded", function () {
                 if (window.messages) {
                     createApp({
+                            components: { SideNav, ProposalCard },
                         data() {
                             return {
                                 msg: window.messages,
+                                    menuItems: [
+                                        { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
+                                        { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
+                                        { label: window.messages.nav.propostas, href: 'propostas.html' },
+                                    ],
                                 selectedFilter: "all",
-                                proposals: [
+                                proposals: [],
+                                loading: true,
+                                error: null,
+                            };
+                        },
+                        async mounted() {
+                            try {
+                                const data = await window.ApiClient.get('/propostas');
+                                this.proposals = (data || []).map(p => ({
+                                    id: p.id,
+                                    institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
+                                    description: p.descricao || '',
+                                    status: String(p.statusproposta || p.status || 'pending').toLowerCase().includes('aceit') ? 'accepted' : 'pending',
+                                    rating: p.rating || 0,
+                                    detailsLink: 'detalhesPropossta.html'
+                                }));
+                            } catch (error) {
+                                console.error('Erro ao carregar propostas:', error);
+                                this.error = 'Erro ao carregar propostas. Usando dados de exemplo.';
+                                // Fallback para dados de exemplo
+                                this.proposals = [
                                     {
                                         id: 1,
                                         institution: "UFRJ",
@@ -154,32 +140,10 @@
                                         status: "pending",
                                         rating: 4.7,
                                     },
-                                    {
-                                        id: 4,
-                                        institution: "PUC-Rio",
-                                        description:
-                                            "Otimização incremental com foco em batch processing e queues.",
-                                        status: "accepted",
-                                        rating: 4.6,
-                                    },
-                                    {
-                                        id: 5,
-                                        institution: "UFMG",
-                                        description:
-                                            "Implementação de GraphQL com data loader e batch requests.",
-                                        status: "pending",
-                                        rating: 4.5,
-                                    },
-                                    {
-                                        id: 6,
-                                        institution: "FGV",
-                                        description:
-                                            "Solução com serverless architecture e AWS Lambda optimization.",
-                                        status: "pending",
-                                        rating: 4.7,
-                                    },
-                                ],
-                            };
+                                ];
+                            } finally {
+                                this.loading = false;
+                            }
                         },
                         computed: {
                             filteredProposals() {

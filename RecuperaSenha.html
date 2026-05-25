@@ -12,6 +12,8 @@
 
     <script src="messages.js"></script>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
     <script>
         const { createApp } = Vue;
 
@@ -20,23 +22,23 @@
             <div class="auth-page">
                 <main class="auth-shell">
                     <section class="auth-hero">
-                        <span class="auth-hero-badge">Acesso</span>
+                        <span class="auth-hero-badge">{{ msg.recuperaSenha.badge }}</span>
                         <h1>{{ msg.recuperaSenha.title }}</h1>
                         <p>{{ msg.recuperaSenha.subtitulo }}</p>
-                        <p class="auth-hero-copy">Recupere o acesso à sua conta com segurança e rapidez. Informe seu e-mail ou telefone e siga o fluxo orientado para voltar à plataforma sem complicação.</p>
+                        <p class="auth-hero-copy">{{ msg.recuperaSenha.description }}</p>
                     </section>
 
                     <section class="auth-panel">
                         <div class="auth-card">
                             <div class="auth-card-top">
                                 <div class="auth-brand-inline">
-                                    <span>Desafios CDL</span>
+                                    <span>{{ msg.recuperaSenha.brand }}</span>
                                 </div>
-                                <a class="auth-back-btn" href="login.html">Voltar ao login</a>
+                                <a class="btn btn-secondary" href="login.html">{{ msg.recuperaSenha.voltarLogin }}</a>
                             </div>
 
                             <div class="auth-form-header">
-                                <div class="auth-form-kicker">Recuperação de acesso</div>
+                                <div class="auth-form-kicker">{{ msg.recuperaSenha.kicker }}</div>
                                 <h2 class="auth-form-title">{{ msg.recuperaSenha.title }}</h2>
                                 <p class="auth-form-subtitle">{{ msg.recuperaSenha.subtitulo }}</p>
                             </div>
@@ -50,7 +52,7 @@
                                     <div v-if="errors.contato" class="form-error">{{ errors.contato }}</div>
                                 </div>
 
-                                <button class="submit-btn">{{ msg.recuperaSenha.recuperar }}</button>
+                                <button class="btn btn-primary">{{ msg.recuperaSenha.recuperar }}</button>
                             </form>
 
                             <div class="auth-recovery-links">
@@ -66,33 +68,38 @@
                 </footer>
             </div>
             `,
+            mixins: [window.AuthFormMixin],
             data() { 
                 return { 
                     msg: messages,
-                    currentComponent: 'Form',
-                    form: { contato: '' },
-                    errors: {},
-                    success: ''
+                    form: { contato: '' }
                 } 
             },
             methods: { 
-                submit() {
-                    this.errors = {};
-                    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.form.contato);
-                    const isPhone = /^\(\d{2}\)\s?\d{4,5}-\d{4}$/.test(this.form.contato);
+                async submit() {
+                    this.clearErrors();
                     
-                    if (!this.form.contato) this.errors.contato = this.msg.validacao.campoObrigatorio;
-                    else if (!isEmail && !isPhone) this.errors.contato = this.msg.recuperaSenha.erro;
+                    if (!window.FormValidator.validateRequired(this.form.contato)) {
+                        this.setFieldError('contato', this.msg.validacao.campoObrigatorio);
+                        return;
+                    }
                     
-                    if (Object.keys(this.errors).length === 0) {
-                        this.success = this.msg.recuperaSenha.sucesso;
-                        setTimeout(() => { this.form.contato = ''; this.success = ''; }, 2000);
+                    if (!window.FormValidator.validateEmailOrPhone(this.form.contato)) {
+                        this.setFieldError('contato', this.msg.recuperaSenha.erro);
+                        return;
+                    }
+                    
+                    try {
+                        await this.submitForm('/usuarios/recuperar', { contato: this.form.contato });
+                        this.form.contato = '';
+                    } catch (err) {
+                        this.setFieldError('contato', this.errors.general);
                     }
                 }
             }
         };
 
-        createApp(App).mount('#app');
+        mountVuePage(App);
     </script>
 </body>
 </html>

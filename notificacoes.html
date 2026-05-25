@@ -7,20 +7,18 @@
         <link href="theme.css" rel="stylesheet" />
         <title>Notificações</title>
         <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
         <script src="commons.js"></script>
         <script src="messages.js"></script>
     </head>
     <body class="tela-layout">
         <div id="app" class="screen">
             <div class="shell">
-                <aside class="sidebar">
-                    <div class="brand"><span class="brand-icon"></span><span>{{ msg.tela.brand }}</span></div>
-                    <div class="menu">
-                        <div class="menu-item" @click="goHome">Início</div>
-                        <div class="menu-item" @click="goProposals">Propostas</div>
-                        <div class="menu-item active">{{ msg.tela.menu.notificacoes }}</div>
-                    </div>
-                </aside>
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="notificacoes.html"
+                ></side-nav>
                 <div class="content">
                     <div class="tabbar">
                         <span class="tab" :class="{ active: activeTab === 'todas' }" @click="activeTab = 'todas'">{{ msg.tela.tabs.todas }}</span>
@@ -39,7 +37,7 @@
                     </div>
 
                     <div v-if="activeTab === 'propostas'" class="notifications-stack cards-grid">
-                        <div class="notify-card card" v-for="notification in msg.notificacoesPropostas.notifications" :key="notification.title" :class="notification.type || ''">
+                        <div class="notify-card card" v-for="notification in proposalNotifications" :key="notification.title" :class="notification.type || ''">
                             <div class="notify-mark"></div>
                             <div class="notify-content card-body">
                                 <h3>{{ notification.title }}</h3>
@@ -49,7 +47,7 @@
                     </div>
 
                     <div v-if="activeTab === 'desafios'" class="notifications-stack cards-grid">
-                        <div class="notify-card card" v-for="notification in msg.notificacoesDesafios.notifications" :key="notification.title" :class="notification.type || ''">
+                        <div class="notify-card card" v-for="notification in challengeNotifications" :key="notification.title" :class="notification.type || ''">
                             <div class="notify-mark"></div>
                             <div class="notify-content card-body">
                                 <h3>{{ notification.title }}</h3>
@@ -61,37 +59,58 @@
             </div>
         </div>
         <script>
-            const { createApp } = Vue;
-
             document.addEventListener('DOMContentLoaded', () => {
                 if (!window.messages) return console.error('Messages not loaded');
 
-                const allNotifications = [
-                    ...window.messages.notificacoesDesafios.notifications,
-                    ...window.messages.notificacoesPropostas.notifications,
-                ];
-
-                createApp({
+                mountVuePage({
+                    title: 'Notificações',
+                    components: { SideNav },
                     data() {
                         return {
                             msg: window.messages,
                             activeTab: 'todas',
-                            allNotifications,
-                            homeUrl: window.AppRoutes ? window.AppRoutes.getHomeUrl() : 'tela-inicial-instituicao.html',
-                            proposalsUrl: window.AppRoutes ? window.AppRoutes.getProposalsUrl() : 'tela-propostas-instituicao.html',
+                            allNotifications: [],
+                            proposalNotifications: [],
+                            challengeNotifications: [],
+                            menuItems: [
+                                {
+                                    label: 'Início',
+                                    href: window.AppRoutes ? window.AppRoutes.getHomeUrl() : 'tela-inicial-instituicao.html',
+                                },
+                                {
+                                    label: window.messages.tela.menu.notificacoes,
+                                    href: 'notificacoes.html',
+                                },
+                                {
+                                    label: 'Propostas',
+                                    href: window.AppRoutes ? window.AppRoutes.getProposalsUrl() : 'tela-propostas-instituicao.html',
+                                },
+                            ],
                         };
                     },
-                    methods: {
-                        goHome() {
-                            window.location.href = this.homeUrl;
-                        },
-                        goProposals() {
-                            window.location.href = this.proposalsUrl;
-                        },
-                    },
-                }).mount('#app');
+                    mounted: async function() {
+                        try {
+                            const data = await window.ApiClient.get('/notificacoes');
+                            const mapped = (data || []).map(n => ({
+                                title: n.titulo || n.nome || 'Notificação',
+                                description: n.descricao || n.lista || '',
+                                type: (String(n.tipo || '').toLowerCase().includes('proposta') ? 'proposal' : 'challenge')
+                            }));
 
-                document.title = 'Notificações';
+                            this.allNotifications = mapped;
+                            this.proposalNotifications = mapped.filter(n => n.type === 'proposal');
+                            this.challengeNotifications = mapped.filter(n => n.type !== 'proposal');
+                        } catch (e) {
+                            console.error('Erro ao carregar notificações:', e);
+                            this.proposalNotifications = window.messages.notificacoesPropostas.notifications || [];
+                            this.challengeNotifications = window.messages.notificacoesDesafios.notifications || [];
+                            this.allNotifications = [
+                                ...this.challengeNotifications,
+                                ...this.proposalNotifications,
+                            ];
+                        }
+                    }
+                });
             });
         </script>
     </body>

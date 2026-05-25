@@ -535,6 +535,13 @@ const messages = {
   // Cadastro Empresa
   cadastroEmpresa: {
     title: "Cadastro de Empresa",
+    badge: "Empresas",
+    subtitle: "Preencha os dados abaixo para continuar.",
+    description: "Cadastre sua empresa e conecte sua operação a uma plataforma feita para transformar oportunidades em resultados. Organize seus dados, amplie sua presença e acelere cada etapa com uma experiência simples e profissional.",
+    brand: "Desafios CDL",
+    voltarLogin: "Voltar ao login",
+    kicker: "Cadastro de empresa",
+    formSubtitle: "Complete os dados abaixo.",
     nome: "Nome da Empresa *",
     nomeContato: "Nome do Contato *",
     cnpj: "CNPJ *",
@@ -548,11 +555,31 @@ const messages = {
     erroSenha: "Senha deve ter no mínimo 6 caracteres!",
     erroConfirm: "As senhas não correspondem!",
     sucesso: "✓ Empresa cadastrada com sucesso!",
+    placeholderNome: "Nome completo",
+    placeholderCNPJ: "00.000.000/0000-00",
+    placeholderTelefone: "(XX) 9XXXX-XXXX",
+    placeholderEmail: "seu@email.com",
+    placeholderSenha: "Digite sua senha",
+    placeholderConfirmarSenha: "Confirme a senha",
+    validacao: {
+      campoObrigatorio: "Campo obrigatório",
+      emailInvalido: "Email inválido",
+      senhaCurta: "Mínimo 6 caracteres",
+      senhasNaoCorrespondem: "Senhas não correspondem",
+      erroGenerico: "Erro ao cadastrar empresa"
+    }
   },
 
   // Cadastro Instituição
   cadastroInstituicao: {
     title: "Cadastro de Instituição",
+    badge: "Instituições",
+    subtitle: "Preencha os dados abaixo para continuar.",
+    description: "Sua instituição ganha uma vitrine moderna para se conectar com desafios, fortalecer parcerias e ampliar o impacto dos projetos. Tudo em um fluxo claro, confiável e preparado para crescer com você.",
+    brand: "Desafios CDL",
+    voltarLogin: "Voltar ao login",
+    kicker: "Cadastro de instituição",
+    formSubtitle: "Preencha os campos abaixo.",
     nome: "Nome da Instituição *",
     nomeContato: "Nome do Contato *",
     telefone: "Telefone *",
@@ -564,11 +591,31 @@ const messages = {
     cadastrar: "Cadastrar Instituição",
     cancelar: "Cancelar",
     sucesso: "✓ Instituição cadastrada com sucesso!",
+    placeholderNome: "Nome da instituição",
+    placeholderNomeContato: "Nome completo",
+    placeholderTelefone: "(XX) XXXXX-XXXX",
+    placeholderMEC: "Número da inscrição MEC",
+    placeholderCNPJ: "00.000.000/0000-00",
+    placeholderEmail: "seu@email.com",
+    placeholderSenha: "Digite sua senha",
+    placeholderConfirmarSenha: "Confirme a senha",
+    validacao: {
+      campoObrigatorio: "Campo obrigatório",
+      emailInvalido: "Email inválido",
+      senhaCurta: "Mínimo 6 caracteres",
+      senhasNaoCorrespondem: "Senhas não correspondem",
+      erroGenerico: "Erro ao cadastrar instituição"
+    }
   },
 
   // Recuperar Senha
   recuperaSenha: {
     title: "Recuperar Senha",
+    badge: "Acesso",
+    description: "Recupere o acesso à sua conta com segurança e rapidez. Informe seu e-mail ou telefone e siga o fluxo orientado para voltar à plataforma sem complicação.",
+    brand: "Desafios CDL",
+    voltarLogin: "Voltar ao login",
+    kicker: "Recuperação de acesso",
     label: "Email ou Telefone *",
     placeholder: "Digite seu email ou telefone no formato (XX) XXXXX-XXXX",
     recuperar: "Recuperar Senha",
@@ -576,7 +623,6 @@ const messages = {
     erro: "Email ou telefone inválido!",
     sucesso: "✓ Código enviado com sucesso! Verifique seu e-mail ou SMS.",
     subtitulo: "Digite seu e-mail ou telefone para recuperar sua senha",
-    voltarLogin: "Voltar para o Login",
     lembrou: "Lembrou sua senha?",
   },
 
@@ -631,8 +677,12 @@ const messages = {
       homeTitle: "Conectando empresas à inovação",
       homeSubtitle:
         "Publique desafios e encontre soluções com instituições de ensino",
+      loginTitle: "Bem-vindo",
+      emailLabel: "Email",
       emailPlaceholder: "seu@email.com",
+      senhaLabel: "Senha",
       passwordPlaceholder: "Digite sua senha",
+      entrarBtn: "Entrar",
       forgotPassword: "Esqueceu sua senha?",
       noAccountPrefix: "Não tem conta?",
       signUp: "Cadastre-se",
@@ -643,6 +693,45 @@ const messages = {
     },
     detalhesPropossta: {
       informacoes: "Informações",
+    },
+    telaPropostasInstituicao: {
+      title: "Propostas recebidas",
+      vazio: "Nenhuma proposta encontrada.",
+    },
+    telaInicialCoordenador: {
+      desafiosDisponiveis: "Desafios disponíveis",
+      propostasEmAnalise: "Propostas em análise",
+      aprovadas: "Aprovadas",
+      desafiosParaAnalise: "Desafios para análise",
+      verNotificacoes: "Ver notificações",
+    },
+    telaInicialInstituicao: {
+      desafiosDisponiveis: "Desafios disponíveis",
+      propostasPendentes: "Propostas pendentes",
+      notificacoes: "Notificações",
+      verNotificacoes: "Ver notificações",
+    },
+    telaPropostasCoordenador: {
+      minhasPropostas: "Minhas propostas",
+      novaSolucao: "Nova solução",
+      vazio: "Nenhuma proposta encontrada.",
+    },
+    telaDetalhesDesafioCoordenador: {
+      enviarSolucao: "Enviar solução",
+      verPropostas: "Ver propostas",
+      emAvaliacao: "Em avaliação",
+    },
+    telaEnvioSolucaoCoordenador: {
+      enviarSolucao: "Enviar solução",
+      cancelar: "Cancelar",
+      enviando: "Enviando...",
+      sucesso: "Solução enviada com sucesso.",
+      erro: "Erro ao enviar solução.",
+    },
+    telaDetalhesPropostaCoordenador: {
+      editar: "Editar",
+      voltar: "Voltar",
+      descricaoPadrao: "Revisão da solução enviada e acompanhamento do processo de avaliação.",
     },
   },
 };
