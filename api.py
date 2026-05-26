@@ -10,12 +10,14 @@ from flask_jwt_extended import (  # type: ignore
 )
 from dotenv import load_dotenv  # type: ignore
 from supabase import create_client, Client  # type: ignore
+from werkzeug.utils import secure_filename # type: ignore
+import uuid
 
 import os
 
-# =========================
+ 
 # CONFIGURAÇÕES
-# =========================
+ 
 
 load_dotenv()
 
@@ -28,9 +30,9 @@ app.config["JSON_SORT_KEYS"] = False
 
 jwt = JWTManager(app)
 
-# =========================
+ 
 # SUPABASE
-# =========================
+ 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -46,9 +48,81 @@ SERVER_AUTH_ENABLED = os.getenv('SERVER_AUTH_ENABLED', 'false').lower() == 'true
 # If true, include role in JWT at login time; otherwise decorator will fetch role from DB per-request
 AUTH_ROLE_IN_TOKEN = os.getenv('AUTH_ROLE_IN_TOKEN', 'true').lower() == 'true'
 
-# =========================
+ 
+
+@app.route('/upload-arquivo', methods=['POST'])
+@jwt_required()
+def upload_arquivo():
+
+    try:
+
+        if 'arquivo' not in request.files:
+
+            return jsonify({
+                "erro": "Nenhum arquivo enviado"
+            }), 400
+
+        arquivo = request.files['arquivo']
+
+        if arquivo.filename == '':
+
+            return jsonify({
+                "erro": "Arquivo inválido"
+            }), 400
+
+        # nome seguro
+        nome_original = secure_filename(arquivo.filename)
+
+        # extensão
+        extensao = nome_original.split('.')[-1].lower()
+
+        # permitir apenas zip
+        if extensao != 'zip':
+
+            return jsonify({
+                "erro": "Apenas arquivos ZIP são permitidos"
+            }), 400
+
+        # nome único
+        nome_arquivo = secure_filename(arquivo.filename)
+
+        # caminho no storage
+        caminho = f"propostas/{nome_arquivo}"
+
+        # upload supabase
+        response = supabase.storage.from_("arquivos").upload(
+            path=caminho,
+            file=arquivo.read(),
+            file_options={
+                "content-type": "application/zip"
+            }
+        )
+
+        # URL pública
+        url = supabase.storage.from_("arquivos").get_public_url(caminho)
+
+        return jsonify({
+
+            "mensagem": "Arquivo enviado com sucesso",
+            "arquivo": {
+                "nome_original": nome_original,
+                "nome_storage": nome_arquivo,
+                "caminho": caminho,
+                "url": url
+            }
+
+        }), 201
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
+
 # HOME
-# =========================
+ 
 
 @app.route('/')
 def index():
@@ -58,9 +132,9 @@ def index():
     })
 
 
-# =========================
+ 
 # LOGIN
-# =========================
+ 
 
 @app.route('/login', methods=['POST'])
 def login():
@@ -116,9 +190,9 @@ def login():
         }), 500
 
 
-# =========================
+ 
 # ME
-# =========================
+ 
 
 @app.route('/me', methods=['GET'])
 @jwt_required()
@@ -150,9 +224,9 @@ def me():
         }), 500
 
 
-# =========================
+ 
 # ACCESS CONTROL / AUTH HELPERS
-# =========================
+ 
 def require_roles(*allowed_roles):
     def decorator(fn):
         def wrapper(*args, **kwargs):
@@ -208,9 +282,9 @@ def access_control():
         return jsonify({"erro": str(e)}), 500
 
 
-# =========================
+ 
 # MEUS DESAFIOS
-# =========================
+ 
 
 @app.route('/me/desafios', methods=['GET'])
 @jwt_required()
@@ -248,9 +322,9 @@ def meus_desafios():
         }), 500
 
 
-# =========================
+ 
 # USUÁRIOS
-# =========================
+ 
 
 @app.route('/usuarios', methods=['GET'])
 def obter_usuarios():
@@ -309,7 +383,7 @@ def criar_usuario():
             "nome": dados.get('nome'),
             "email": dados.get('email'),
             "senha": dados.get('senha'),
-            "tipousuario": "Usuario",
+            "tipousuario": dados.get('tipousuario'),
             "ativo": True
         }
 
@@ -383,9 +457,9 @@ def deletar_usuario(id):
         }), 500
 
 
-# =========================
+ 
 # EMPRESAS
-# =========================
+ 
 
 @app.route('/empresas', methods=['GET'])
 def obter_empresas():
@@ -515,9 +589,9 @@ def deletar_empresa(id):
         }), 500
 
 
-# =========================
+ 
 # INSTITUIÇÕES
-# =========================
+ 
 
 @app.route('/instituicoes', methods=['GET'])
 def obter_instituicoes():
@@ -599,9 +673,9 @@ def criar_instituicao():
         }), 500
 
 
-# =========================
+ 
 # DESAFIOS
-# =========================
+ 
 
 @app.route('/desafios', methods=['GET'])
 def obter_desafios():
@@ -728,9 +802,9 @@ def deletar_desafio(id):
         }), 500
 
 
-# =========================
+ 
 # PROPOSTAS
-# =========================
+ 
 
 @app.route('/propostas', methods=['GET'])
 def obter_propostas():
@@ -810,9 +884,9 @@ def criar_proposta():
         }), 500
 
 
-# =========================
+ 
 # REQUISITOS
-# =========================
+ 
 
 @app.route('/requisitos', methods=['GET'])
 def obter_requisitos():
@@ -888,9 +962,9 @@ def criar_requisito():
         }), 500
 
 
-# =========================
+ 
 # NOTIFICAÇÕES
-# =========================
+ 
 
 @app.route('/notificacoes', methods=['GET'])
 def obter_notificacoes():
@@ -989,9 +1063,9 @@ def deletar_notificacao(id):
         }), 500
 
 
-# =========================
+ 
 # CONFIRMAÇÕES EMPRESA
-# =========================
+ 
 
 @app.route('/confirmacoes-empresa', methods=['GET'])
 def obter_confirmacoes_empresa():
@@ -1128,9 +1202,9 @@ def deletar_confirmacao_empresa(id):
         }), 500
 
 
-# =========================
+ 
 # PROBLEMAS
-# =========================
+ 
 
 @app.route('/problemas', methods=['GET'])
 def obter_problemas():
@@ -1177,9 +1251,9 @@ def obter_problema(id):
         }), 500
 
 
-# =========================
+ 
 # ERROS
-# =========================
+ 
 
 @app.errorhandler(404)
 def not_found(error):
@@ -1197,9 +1271,9 @@ def internal_error(error):
     }), 500
 
 
-# =========================
+ 
 # EXECUÇÃO
-# =========================
+ 
 
 if __name__ == '__main__':
 
