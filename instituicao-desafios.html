@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Desafios - Admin (Instituições)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.tela.brand" :items="menuItems" active-href="instituicao-desafios.html"></side-nav>
+            <div class="content">
+                <div class="section-head"><h2>Desafios (Instituições)</h2></div>
+                <div class="list cards-grid">
+                    <challenge-card v-for="d in desafios" :key="d.id" :challenge="d" icon="🎯"></challenge-card>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.ensureRole('admin')) return;
+
+            mountVuePage({
+                components: { SideNav, ChallengeCard },
+                data() { return { msg: window.messages, menuItems: window.getAdminMenuItems(), desafios: [] }; },
+                async mounted() {
+                    try {
+                        const des = await window.fetchDesafiosList();
+                        this.desafios = (des || []).map(d => ({ id: d.id, titulo: d.titulo || d.nome || 'Desafio', descricao: d.descricao || '' }));
+                    } catch (e) { console.error('Erro ao carregar desafios', e); }
+                },
+                title: 'Desafios - Admin'
+            });
+        });
+    </script>
+</body>
+</html>

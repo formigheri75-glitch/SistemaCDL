@@ -87,6 +87,11 @@
         </div>
 
         <script>
+            // Verificar autenticação e autorização
+            if (!window.ensureRole('empresa')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
             if (window.messages) {
                 mountStandardApp({
                     title: window.messages.empresaDashboard.title,
@@ -97,13 +102,8 @@
                             { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
                             { label: window.messages.nav.propostas, href: 'propostas.html' },
                         ],
-                        problems: [
-                            { title: window.messages.criaProblema.tituloPlaceholder, description: 'Uma descrição breve do problema que a empresa enfrenta e que busca solução.', proposals: 20, deadline: '30 dias' },
-                            { title: 'Otimização de API', description: 'Melhorar performance e escalabilidade da API REST atual.', proposals: 15, deadline: '20 dias' },
-                            { title: 'Sistema de Autenticação', description: 'Implementar sistema seguro de autenticação e autorização.', proposals: 12, deadline: '45 dias' },
-                            { title: 'Interface Mobile', description: 'Redesenhar aplicação mobile para melhor experiência do usuário.', proposals: 25, deadline: '60 dias' },
-                        ],
-                        subscriptions: [ 'UFRJ', 'USP', 'UNICAMP', 'PUC-RJ', 'UFMG' ],
+                        problems: [],
+                        subscriptions: [],
                         stats: { problemas: 0, solucoes: 0, selecionadas: 0, implementadas: 0 },
                     }),
                     mounted: async function() {

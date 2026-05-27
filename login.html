@@ -660,22 +660,143 @@
                         console.warn('Não foi possível carregar o perfil do usuário:', profileError);
                     }
 
-                    const userType =
-                        (profile.tipoUsuario || profile.tipousuario || data.tipoUsuario || data.userType || 'instituicao');
+                    let userType = (profile && (profile.tipoUsuario || profile.tipousuario)) || (data && data.usuario && data.usuario.tipo) || data.tipoUsuario || data.userType;
+
+                    // If backend didn't provide an explicit tipo, infer from profile fields
+                    if (!userType) {
+                        if (profile) {
+                            if (profile.nomefantasia || profile.cnpj || profile.razaosocial) userType = 'empresa';
+                            else if (profile.nomeinstituicao || profile.instituicao || profile.sigla) userType = 'instituicao';
+                            else if (profile.coordenador || profile.tipo === 'coordenador') userType = 'coordenador';
+                        }
+                    }
+
+                    userType = userType || 'instituicao';
+
                     const normalizedRole = window.AppRoutes
                         ? window.AppRoutes.normalizeRole(userType)
                         : String(userType || '').toLowerCase();
 
                     // Prefer storing the full profile returned by /me when available
+                    // Infer the source table from the returned record's columns when possible.
+                    const loginTipo = (data && data.usuario && data.usuario.tipo) ? String(data.usuario.tipo).toLowerCase() : null;
+                    const mapTipoToSource = (t) => {
+                        if (!t) return null;
+                        if (t.includes('empresa')) return 'empresas';
+                        if (t.includes('instituic')) return 'instituicoes';
+                        if (t.includes('coordenador')) return 'coordenadores';
+                        if (t.includes('admin')) return 'administradores';
+                        return 'usuarios';
+                    };
+
+                    const inferSourceFromRecord = (rec) => {
+                        if (!rec || typeof rec !== 'object') return null;
+                        const keys = Object.keys(rec).map(k => String(k).toLowerCase());
+                        if (keys.some(k => ['nomefantasia','cnpj','razaosocial','razao_social'].includes(k))) return 'empresas';
+                        if (keys.some(k => ['nomeinstituicao','nome_instituicao','nome_instituição','instituicaonome','instituicao_nome','instituicao','sigla'].includes(k))) return 'instituicoes';
+                        if (keys.some(k => ['coordenador','coordenadores'].includes(k))) return 'coordenadores';
+                        if (keys.some(k => ['tipousuario','tipousuario','tipo','usuarioid','usuario_id'].includes(k))) return 'usuarios';
+                        // check nested objects
+                        if (rec.instituicao && typeof rec.instituicao === 'object') return 'instituicoes';
+                        if (rec.empresa && typeof rec.empresa === 'object') return 'empresas';
+                        return null;
+                    };
+
+                    // prefer structure-based inference from profile, then login returned tipo, then normalizedRole
+                    let inferredSource = inferSourceFromRecord(profile) || mapTipoToSource(loginTipo) || mapTipoToSource(normalizedRole);
+
+                    // DEBUG: print login response and inferred values
+                    try { console.debug('login:debug', { data, profile, loginTipo, normalizedRole, inferredSource }); } catch(e) {}
+
                     if (profile && Object.keys(profile).length > 0) {
                         // normalize property names
                         profile.type = normalizedRole;
+                        if (inferredSource) profile.sourceTable = inferredSource;
+
+                        // If empresa, try to load canonical empresa record to get nomefantasia
+                        if (normalizedRole === 'empresa') {
+                            try {
+                                const possibleIds = [profile.id, profile.empresaid, profile.empresa_id, data.empresaId, data.empresa_id].filter(Boolean);
+                                let empresaData = null;
+                                for (let pid of possibleIds) {
+                                    try {
+                                        empresaData = await window.ApiClient.get(`/empresas/${pid}`);
+                                        if (empresaData) break;
+                                    } catch (e) {
+                                        // try next
+                                    }
+                                }
+
+                                if (empresaData && typeof empresaData === 'object') {
+                                    // merge empresa fields into profile for display
+                                    profile = Object.assign({}, profile, empresaData);
+                                    profile.type = normalizedRole;
+                                }
+                            } catch (e) {
+                                // ignore fetch errors
+                            }
+                        }
+                        // If instituicao, try to load canonical instituicao record to get nomeinstituicao
+                        if (normalizedRole === 'instituicao') {
+                            try {
+                                const possibleIdsInst = [profile.id, profile.instituicaoid, profile.instituicao_id, profile.instituicaoid, data.instituicaoId, data.instituicao_id, (data && data.usuario && data.usuario.id) || null].filter(Boolean);
+                                let instituicaoData = null;
+                                for (let pid of possibleIdsInst) {
+                                    try {
+                                        instituicaoData = await window.ApiClient.get(`/instituicoes/${pid}`);
+                                        if (instituicaoData) break;
+                                    } catch (e) {
+                                        // try next
+                                    }
+                                }
+
+                                if (instituicaoData && typeof instituicaoData === 'object') {
+                                    profile = Object.assign({}, profile, instituicaoData);
+                                    profile.type = normalizedRole;
+                                }
+                            } catch (e) {
+                                // ignore fetch errors
+                            }
+                        }
                         window.StorageManager.setUser(profile);
                     } else {
                         const currentUser = window.StorageManager.getUser() || {};
                         currentUser.email = email;
                         currentUser.type = normalizedRole;
-                        if (profile.nome) currentUser.nome = profile.nome;
+                        // infer source from login response `data.usuario` if profile missing
+                        const loginRec = data && data.usuario ? data.usuario : null;
+                        const fallbackSource = inferSourceFromRecord(loginRec) || inferredSource;
+                        if (fallbackSource) currentUser.sourceTable = fallbackSource;
+                        if (profile && profile.nome) currentUser.nome = profile.nome;
+
+                        // Try to fetch canonical record when we inferred source but /me didn't return profile
+                        try {
+                            if (fallbackSource === 'empresas') {
+                                const idToTry = (loginRec && (loginRec.id || loginRec.empresaId || loginRec.empresaid)) || null;
+                                if (idToTry) {
+                                    const empresaData = await window.ApiClient.get(`/empresas/${idToTry}`);
+                                    if (empresaData && typeof empresaData === 'object') {
+                                        Object.assign(currentUser, empresaData);
+                                        currentUser.type = normalizedRole;
+                                        currentUser.sourceTable = 'empresas';
+                                    }
+                                }
+                            }
+                            if (fallbackSource === 'instituicoes') {
+                                const idToTry = (loginRec && (loginRec.id || loginRec.instituicaoId || loginRec.instituicaoid || loginRec.instituicao_id)) || null;
+                                if (idToTry) {
+                                    const instData = await window.ApiClient.get(`/instituicoes/${idToTry}`);
+                                    if (instData && typeof instData === 'object') {
+                                        Object.assign(currentUser, instData);
+                                        currentUser.type = normalizedRole;
+                                        currentUser.sourceTable = 'instituicoes';
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            // ignore fetch errors
+                        }
+
                         window.StorageManager.setUser(currentUser);
                     }
 

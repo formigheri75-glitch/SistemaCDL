@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Aprovações - Admin</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.tela.brand" :items="menuItems" active-href="aprovacoes.html"></side-nav>
+            <div class="content">
+                <div class="section-head"><h2>Aprovações</h2></div>
+                <div class="list cards-grid">
+                    <challenge-card v-for="d in desafios" :key="d.id" :challenge="d" icon="📌"></challenge-card>
+                </div>
+                <h3 class="mt-6">Propostas pendentes</h3>
+                <div class="list cards-grid">
+                    <proposal-card v-for="p in propostas" :key="p.id" :proposal="p" :getStatusLabel="getStatusLabel"></proposal-card>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.ensureRole('admin')) return;
+
+            mountVuePage({
+                components: { SideNav, ChallengeCard, ProposalCard },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: window.getAdminMenuItems(),
+                        desafios: [],
+                        propostas: []
+                    };
+                },
+                async mounted() {
+                    try {
+                        const [des, props] = await Promise.all([window.fetchDesafiosList(), window.ApiClient.get('/propostas')]);
+                        this.desafios = (des || []).map(d => ({ id: d.id, titulo: d.titulo || d.nome || 'Desafio', descricao: d.descricao || '' }));
+                        this.propostas = (props || []).filter(p => (p.statusproposta || p.status || '').toLowerCase().includes('pend') || (p.statusproposta||p.status||'') === 'pendente');
+                    } catch (e) {
+                        console.error('Erro ao carregar aprovações', e);
+                    }
+                },
+                methods: { getStatusLabel: window.getStatusLabel },
+                title: 'Aprovações - Admin'
+            });
+        });
+    </script>
+</body>
+</html>

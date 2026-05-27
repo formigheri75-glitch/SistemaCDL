@@ -5,14 +5,16 @@ const messages = {
   tela: {
     brand: "Desafios",
     menu: {
+      inicio: "Início",
       desafios: "Desafios",
       minhasPropostas: "Minhas propostas",
       notificacoes: "Notificações",
+      propostas: "Propostas",
     },
     tabs: {
       todas: "Todas",
-      propostas: "Propostas",
-      desafios: "Desafios",
+      lidas: "Lidas",
+      naoLidas: "Não lidas",
       propostasEmpresas: "Propostas das empresas",
     },
     search: {
@@ -30,6 +32,18 @@ const messages = {
       verProposta: "Ver proposta",
       verTodos: "Ver todos os desafios",
     },
+  },
+
+  // Tela Notificações
+  notificacoes: {
+    title: "Notificações",
+    subtitle: "Acompanhe os avisos e abra cada item para ver o detalhe relacionado.",
+    defaultTitle: "Notificação",
+    loadError: "Erro ao carregar notificações",
+    messagesNotLoaded: "Mensagens não carregadas",
+    empty: "Nenhuma notificação encontrada.",
+    readLabel: "Lida",
+    unreadLabel: "Não lida",
   },
 
   // Tela Detalhes Desafio
@@ -212,13 +226,23 @@ const messages = {
   cadastroEmpresa: {
     title: "Cadastro de Empresa",
     nome: "Nome da empresa",
+    razaosocial: "Razão social",
+    nomefantasia: "Nome fantasia",
     nomeContato: "Nome do contato",
     cnpj: "CNPJ",
     telefone: "Telefone",
+    cidade: "Cidade",
+    estado: "Estado",
+    endereco: "Endereço",
+    areaatuacao: "Área de atuação",
     email: "E-mail",
     senha: "Senha",
     confirmarSenha: "Confirmar senha",
     cadastrar: "Cadastrar",
+    placeholderCidade: "Ex: São Paulo",
+    placeholderEstado: "Ex: SP",
+    placeholderEndereco: "Rua, número, bairro",
+    placeholderAreaAtuacao: "Ex: Tecnologia, Saúde, Educação",
     erroEmail: "E-mail inválido",
     erroSenha: "Senha deve ter pelo menos 6 caracteres",
     erroConfirm: "Senhas não conferem",
@@ -229,8 +253,12 @@ const messages = {
   cadastroInstituicao: {
     title: "Cadastro de Instituição",
     nome: "Nome da instituição",
+    nomeInstituicao: "Nome da instituição",
     nomeContato: "Nome do contato",
     telefone: "Telefone",
+    cidade: "Cidade",
+    estado: "Estado",
+    endereco: "Endereço",
     mec: "Número de inscrição MEC",
     cnpj: "CNPJ",
     email: "E-mail",
@@ -300,6 +328,20 @@ const messages = {
     novoProblema: "Novo problema",
     propostas: "Propostas",
     sair: "Sair",
+  },
+
+  // Dashboard Empresa (rótulos específicos usados em empresaDashboard.html)
+  empresaDashboard: {
+    title: "Dashboard Empresa",
+    stats: {
+      problemas: "Problemas",
+      solucoes: "Propostas enviadas",
+      selecionadas: "Selecionadas",
+      implementadas: "Implementadas"
+    },
+    meusproblemas: "Meus problemas",
+    novoProblema: "Novo problema",
+    subscrições: "Subscrições"
   },
 
   // Home Page
@@ -624,6 +666,24 @@ const messages = {
     sucesso: "✓ Código enviado com sucesso! Verifique seu e-mail ou SMS.",
     subtitulo: "Digite seu e-mail ou telefone para recuperar sua senha",
     lembrou: "Lembrou sua senha?",
+  },
+
+  // Alterar Senha
+  alterarSenha: {
+    title: "Alterar Senha",
+    subtitle: "Atualize sua senha com segurança.",
+    brand: "Desafios CDL",
+    voltar: "Voltar",
+    currentLabel: "Senha atual",
+    placeholderCurrent: "Digite sua senha atual",
+    newLabel: "Nova senha",
+    placeholderNew: "Digite a nova senha",
+    confirmLabel: "Confirmar nova senha",
+    placeholderConfirm: "Confirme a nova senha",
+    submit: "Alterar senha",
+    sucesso: "Senha alterada com sucesso!",
+    erroSenha: "Senha deve ter pelo menos 6 caracteres",
+    erroConfirm: "Senhas não conferem"
   },
 
   // Dashboard (Estatísticas)

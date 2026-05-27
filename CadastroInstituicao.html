@@ -136,6 +136,24 @@
                                 </div>
 
                                 <div class="form-group">
+                                    <label>{{ msg.cadastroInstituicao.cidade }}</label>
+                                    <input type="text" v-model="form.cidade" :placeholder="msg.cadastroInstituicao.placeholderCidade" :class="{ error: errors.cidade }">
+                                    <div v-if="errors.cidade" class="form-error">{{ errors.cidade }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroInstituicao.estado }}</label>
+                                    <input type="text" v-model="form.estado" :placeholder="msg.cadastroInstituicao.placeholderEstado" :class="{ error: errors.estado }">
+                                    <div v-if="errors.estado" class="form-error">{{ errors.estado }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroInstituicao.endereco }}</label>
+                                    <input type="text" v-model="form.endereco" :placeholder="msg.cadastroInstituicao.placeholderEndereco" :class="{ error: errors.endereco }">
+                                    <div v-if="errors.endereco" class="form-error">{{ errors.endereco }}</div>
+                                </div>
+
+                                <div class="form-group">
                                     <label>{{ msg.cadastroInstituicao.mec }}</label>
                                     <input type="text" v-model="form.mec" :placeholder="msg.cadastroInstituicao.placeholderMEC" :class="{ error: errors.mec }">
                                     <div v-if="errors.mec" class="form-error">{{ errors.mec }}</div>
@@ -180,7 +198,7 @@
                 return { 
                     msg: messages,
                     currentComponent: 'Form',
-                    form: { nome: '', contato: '', telefone: '', mec: '', cnpj: '', email: '', senha: '', confirma: '' },
+                    form: { nome: '', contato: '', telefone: '', mec: '', cnpj: '', email: '', senha: '', confirma: '', cidade: '', estado: '', endereco: '' },
                     errors: {},
                     success: ''
                 } 
@@ -202,19 +220,20 @@
                     
                     if (Object.keys(this.errors).length === 0) {
                         try {
-                            const response = await window.ApiClient.post('/usuarios', {
-                                nome: this.form.nome,
+                            const response = await window.ApiClient.post('/instituicoes', {
+                                nomeinstituicao: this.form.nome,
+                                cnpj: this.form.cnpj,
                                 email: this.form.email,
+                                celular: this.form.telefone,
+                                cidade: this.form.cidade,
+                                estado: this.form.estado,
+                                endereco: this.form.endereco,
                                 senha: this.form.senha,
-                                telefone: this.form.telefone,
-                                tipousuario: 'instituicao',
-                                metadata: {
-                                    contato: this.form.contato,
-                                    mec: this.form.mec,
-                                    cnpj: this.form.cnpj
-                                }
+                                mec: this.form.mec,
+                                contato: this.form.contato,
+                                tipousuario: 'instituicao'
                             });
-                            
+
                             this.success = this.msg.cadastroInstituicao.sucesso + ' Redirecionando para login...';
                             setTimeout(() => { window.location.href = 'login.html'; }, 2000);
                         } catch (error) {

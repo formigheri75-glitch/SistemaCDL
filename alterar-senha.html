@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Alterar Senha - Sistema de Desafios</title>
+</head>
+<body class="auth-layout auth-layout--change-password">
+    <div id="app"></div>
+
+    <script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        const App = {
+            template: `
+            <div class="auth-page">
+                <main class="auth-shell">
+                    <section class="auth-hero">
+                        <h1>{{ msg.alterarSenha.title }}</h1>
+                        <p>{{ msg.alterarSenha.subtitle }}</p>
+                    </section>
+
+                    <section class="auth-panel">
+                        <div class="auth-card">
+                            <div class="auth-card-top">
+                                <div class="auth-brand-inline">
+                                    <span>{{ msg.alterarSenha.brand }}</span>
+                                </div>
+                                <a class="btn btn-secondary" href="tela-inicial-instituicao.html">{{ msg.alterarSenha.voltar }}</a>
+                            </div>
+
+                            <div class="auth-form-header">
+                                <h2 class="auth-form-title">{{ msg.alterarSenha.title }}</h2>
+                                <p class="auth-form-subtitle">{{ msg.alterarSenha.subtitle }}</p>
+                            </div>
+
+                            <form class="auth-form auth-form--single" @submit.prevent="submit">
+                                <div v-if="success" class="form-success">✓ {{ success }}</div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.alterarSenha.currentLabel }}</label>
+                                    <input type="password" v-model="form.current" :placeholder="msg.alterarSenha.placeholderCurrent" :class="{ error: errors.current }">
+                                    <div v-if="errors.current" class="form-error">{{ errors.current }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.alterarSenha.newLabel }}</label>
+                                    <input type="password" v-model="form.newPassword" :placeholder="msg.alterarSenha.placeholderNew" :class="{ error: errors.newPassword }">
+                                    <div v-if="errors.newPassword" class="form-error">{{ errors.newPassword }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.alterarSenha.confirmLabel }}</label>
+                                    <input type="password" v-model="form.confirm" :placeholder="msg.alterarSenha.placeholderConfirm" :class="{ error: errors.confirm }">
+                                    <div v-if="errors.confirm" class="form-error">{{ errors.confirm }}</div>
+                                </div>
+
+                                <button type="submit" class="btn btn-primary" :disabled="loading">{{ loading ? (msg.login && msg.login.loading) || 'Aguarde...' : msg.alterarSenha.submit }}</button>
+                                <div v-if="errors.general" class="form-error" style="margin-top:10px">{{ errors.general }}</div>
+                            </form>
+
+                        </div>
+                    </section>
+                </main>
+
+                <footer class="auth-footer">
+                    <p>{{ msg.footer }}</p>
+                </footer>
+            </div>
+            `,
+            mixins: [window.AuthFormMixin],
+            data() {
+                return {
+                    msg: messages,
+                    form: { current: '', newPassword: '', confirm: '' }
+                };
+            },
+            mounted() {
+                if (window.checkAuth) window.checkAuth();
+            },
+            methods: {
+                async submit() {
+                    this.clearErrors();
+
+                    if (!window.FormValidator.validateRequired(this.form.current)) {
+                        this.setFieldError('current', this.msg.validacao.campoObrigatorio);
+                        return;
+                    }
+
+                    if (!window.FormValidator.validatePassword(this.form.newPassword)) {
+                        this.setFieldError('newPassword', this.msg.validacao.senhaCurta || this.msg.erroSenha);
+                        return;
+                    }
+
+                    if (!window.FormValidator.validatePasswordMatch(this.form.newPassword, this.form.confirm)) {
+                        this.setFieldError('confirm', this.msg.validacao.senhasNaoCorrespondem || this.msg.erroConfirm);
+                        return;
+                    }
+
+                    try {
+                        const user = window.StorageManager.getUser() || {};
+                        const payload = {
+                            id: user.id || user.usuarioid || user.usuarioId || null,
+                            currentPassword: this.form.current,
+                            newPassword: this.form.newPassword
+                        };
+
+                        await this.submitForm('/usuarios/alterar-senha', payload);
+                        this.form.current = '';
+                        this.form.newPassword = '';
+                        this.form.confirm = '';
+                    } catch (err) {
+                        // errors.general será preenchido pelo mixin
+                    }
+                }
+            }
+        };
+
+        mountVuePage(App);
+    </script>
+</body>
+</html>

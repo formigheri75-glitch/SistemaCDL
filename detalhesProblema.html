@@ -108,7 +108,7 @@
                                     </h2>
                                     <p style="margin-bottom: 1rem">Total: <strong>{{ totalPropostas }} propostas</strong> de diferentes instituições</p>
                                     <a
-                                        href="propostas.html"
+                                        :href="problema.id ? ('propostas.html?desafio=' + encodeURIComponent(problema.id)) : 'propostas.html'"
                                         style="
                                             display: inline-block;
                                             background: linear-gradient(
@@ -184,6 +184,7 @@
 
                                 <div class="button-group">
                                     <a
+                                        v-if="isEmpresa"
                                         href="detalhesProblema.html"
                                         class="btn btn-primary"
                                     >
@@ -204,6 +205,11 @@
         </div>
 
         <script>
+            // Verificar autenticação e autorização
+            if (!window.ensureRole(['empresa', 'admin'])) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
             if (window.messages) {
                 mountStandardApp({
                     components: { SideNav },
@@ -216,12 +222,19 @@
                         ],
                         problema: {},
                         totalPropostas: 0,
+                        userRole: null,
                     }),
                     methods: {
                         getIdFromQuery: window.getIdFromQuery,
+                        getUserRole() {
+                            const user = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
+                            const role = user && (user.type || user.role || user.tipoUsuario) || localStorage.getItem('userType') || 'instituicao';
+                            return window.AppRoutes && window.AppRoutes.normalizeRole ? window.AppRoutes.normalizeRole(role) : String(role).toLowerCase();
+                        },
                         async loadProblema() {
                             const id = window.getIdFromQuery();
                             this.problema = await window.loadDesafio(id);
+                            this.userRole = this.getUserRole();
 
                             try {
                                 const propostas = await window.ApiClient.get('/propostas');
@@ -231,6 +244,11 @@
                                 this.totalPropostas = 0;
                             }
                         },
+                    },
+                    computed: {
+                        isEmpresa() {
+                            return this.userRole === 'empresa';
+                        }
                     },
                     mounted: async function() {
                         await this.loadProblema();

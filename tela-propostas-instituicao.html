@@ -53,6 +53,7 @@
                                 acceptedCount }})
                             </button>
                         </div>
+                        <div v-if="desafioQueryId" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ filtroDesafioTitle || desafioQueryId }}</div>
 
                         <!-- Proposals Grid -->
                         <div
@@ -76,9 +77,9 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação
-            if (window.StorageManager && !window.StorageManager.getToken()) {
-                window.location.href = 'login.html';
+            // Verificar autenticação e autorização
+            if (!window.ensureRole('instituicao')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
             mountVuePage({
@@ -93,18 +94,57 @@
                         ],
                         selectedFilter: 'all',
                         proposals: [],
+                        desafioQueryId: null,
+                        filtroDesafioTitle: null,
                     };
                 },
                 mounted: async function() {
+                    // read optional desafio filter from querystring
+                    try {
+                        const params = new URLSearchParams(window.location.search);
+                        const d = params.get('desafio');
+                        if (d) this.desafioQueryId = d;
+                    } catch (e) {
+                        this.desafioQueryId = null;
+                    }
+
                     try {
                         const propostas = await window.ApiClient.get('/propostas');
-                        this.proposals = (propostas || []).map(p => ({
+                        const raw = (propostas || []).map(p => ({
                             id: p.id,
+                            desafioId: p.desafioid || p.desafioID || p.desafioId || null,
                             institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
                             description: p.descricao || '',
-                            status: String(p.statusproposta || p.status || 'pending').toLowerCase().includes('aceit') ? 'accepted' : 'pending',
+                            statusRaw: p.statusproposta || p.status || 'pending',
                             detailsLink: 'tela-detalhes-proposta-coordenador.html'
                         }));
+
+                        const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
+                        const desafiosMap = {};
+                        await Promise.all(desafioIds.map(async id => {
+                            try {
+                                const d = await window.loadDesafio(id);
+                                if (d) desafiosMap[id] = d;
+                            } catch (e) {}
+                        }));
+
+                        this.proposals = raw.map(p => ({
+                            id: p.id,
+                            institution: p.institution,
+                            description: p.description,
+                            status: String(p.statusRaw).toLowerCase().includes('aceit') ? 'accepted' : 'pending',
+                            detailsLink: p.detailsLink,
+                            challengeTitle: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : null,
+                            desafioId: p.desafioId || null
+                        }));
+
+                        if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
+                            this.filtroDesafioTitle = desafiosMap[this.desafioQueryId].titulo || null;
+                        }
+
+                        if (this.desafioQueryId) {
+                            this.proposals = this.proposals.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                        }
                     } catch (e) {
                         console.error('Erro ao carregar propostas:', e);
                         this.proposals = [];
@@ -112,10 +152,14 @@
                 },
                 computed: {
                     filteredProposals() {
-                        if (this.selectedFilter === 'all') {
-                            return this.proposals;
+                        let list = this.proposals;
+                        if (this.selectedFilter !== 'all') {
+                            list = list.filter(p => p.status === this.selectedFilter);
                         }
-                        return this.proposals.filter(p => p.status === this.selectedFilter);
+                        if (this.desafioQueryId) {
+                            list = list.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                        }
+                        return list;
                     },
                     pendingCount() {
                         return this.proposals.filter(p => p.status === 'pending').length;

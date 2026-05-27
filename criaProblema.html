@@ -106,37 +106,37 @@
                                                 msg.criaProblema.seleccionarCategoria
                                                 }}
                                             </option>
-                                            <option value="backend">
+                                            <option :value="msg.criaProblema.categorias.backend">
                                                 {{
                                                 msg.criaProblema.categorias.backend
                                                 }}
                                             </option>
-                                            <option value="frontend">
+                                            <option :value="msg.criaProblema.categorias.frontend">
                                                 {{
                                                 msg.criaProblema.categorias.frontend
                                                 }}
                                             </option>
-                                            <option value="mobile">
+                                            <option :value="msg.criaProblema.categorias.mobile">
                                                 {{
                                                 msg.criaProblema.categorias.mobile
                                                 }}
                                             </option>
-                                            <option value="devops">
+                                            <option :value="msg.criaProblema.categorias.devops">
                                                 {{
                                                 msg.criaProblema.categorias.devops
                                                 }}
                                             </option>
-                                            <option value="data">
+                                            <option :value="msg.criaProblema.categorias.data">
                                                 {{
                                                 msg.criaProblema.categorias.data
                                                 }}
                                             </option>
-                                            <option value="design">
+                                            <option :value="msg.criaProblema.categorias.design">
                                                 {{
                                                 msg.criaProblema.categorias.design
                                                 }}
                                             </option>
-                                            <option value="other">
+                                            <option :value="msg.criaProblema.categorias.outro">
                                                 {{
                                                 msg.criaProblema.categorias.outro
                                                 }}
@@ -158,25 +158,17 @@
                                                 msg.criaProblema.seleccionarPrioridade
                                                 }}
                                             </option>
-                                            <option value="low">
-                                                {{
-                                                msg.criaProblema.prioridades.baixa
-                                                }}
+                                            <option :value="msg.criaProblema.prioridades.baixa">
+                                                {{ msg.criaProblema.prioridades.baixa }}
                                             </option>
-                                            <option value="medium">
-                                                {{
-                                                msg.criaProblema.prioridades.media
-                                                }}
+                                            <option :value="msg.criaProblema.prioridades.media">
+                                                {{ msg.criaProblema.prioridades.media }}
                                             </option>
-                                            <option value="high">
-                                                {{
-                                                msg.criaProblema.prioridades.alta
-                                                }}
+                                            <option :value="msg.criaProblema.prioridades.alta">
+                                                {{ msg.criaProblema.prioridades.alta }}
                                             </option>
-                                            <option value="critical">
-                                                {{
-                                                msg.criaProblema.prioridades.critica
-                                                }}
+                                            <option :value="msg.criaProblema.prioridades.critica">
+                                                {{ msg.criaProblema.prioridades.critica }}
                                             </option>
                                         </select>
                                     </div>
@@ -257,6 +249,9 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
+                // Verificar autenticação e autorização
+                if (!window.ensureRole('empresa')) return;
+
                 if (window.messages) {
                     createApp({
                         components: { SideNav },
@@ -305,29 +300,71 @@
                                     this.showAlert = true;
                                     return;
                                 }
-
                                 try {
-                                    const response = await window.ApiClient.post('/desafios', {
+                                    // determine empresa id for the logged user
+                                    const user = window.StorageManager.getUser() || {};
+                                    let empresaId = null;
+                                    try {
+                                        const empresas = await window.ApiClient.get('/empresas');
+                                        if (Array.isArray(empresas)) {
+                                            // try match by usuarioid or email
+                                            const found = empresas.find(e => String(e.usuarioid || e.usuarioId || e.usuarioID || e.usuario) === String(user.id) || String(e.email) === String(user.email));
+                                            if (found) empresaId = found.id || found.ID || found.empresaID || null;
+                                        }
+                                    } catch (err) {
+                                        // ignore, will validate below
+                                    }
+
+                                    if (!empresaId) {
+                                        this.alertMessage = 'Não foi possível determinar a empresa associada ao usuário. Faça login como empresa ou verifique seu cadastro.';
+                                        this.alertType = 'error';
+                                        this.showAlert = true;
+                                        return;
+                                    }
+
+                                    // compute datalimite from deadline days
+                                    const days = parseInt(this.form.deadline) || 0;
+                                    const lim = new Date();
+                                    lim.setDate(lim.getDate() + days);
+                                    const datalimite = lim.toISOString();
+
+                                    const payload = {
+                                        empresaid: empresaId,
                                         titulo: this.form.title,
                                         descricao: this.form.description,
-                                        resultado_esperado: this.form.expectedResult,
-                                        categoria: this.form.category,
-                                        prioridade: this.form.priority,
-                                        prazo_dias: parseInt(this.form.deadline),
-                                        tecnologias: this.form.technologies ? this.form.technologies.split(',').map(t => t.trim()) : [],
-                                        requisitos: this.form.requirements.filter(r => r.trim() !== '')
-                                    });
-                                    
+                                        areaconhecimento: this.form.category,
+                                        nivelproblema: this.form.priority,
+                                        statusdesafio: 'Aberto',
+                                        datalimite: datalimite
+                                    };
+
+                                    const res = await window.ApiClient.post('/desafios', payload);
+
+                                    // determine created desafio id from response
+                                    const created = res && res.dados && Array.isArray(res.dados) && res.dados[0] ? res.dados[0] : null;
+                                    const desafioId = created && (created.id || created.ID || created.desafioid || created.desafioId) ? (created.id || created.ID || created.desafioid || created.desafioId) : null;
+
+                                    // if we have requirements, POST them to /requisitos
+                                    if (desafioId && Array.isArray(this.form.requirements)) {
+                                        await Promise.all(this.form.requirements.filter(r => r && r.trim()).map(async req => {
+                                            try {
+                                                await window.ApiClient.post('/requisitos', { desafioid: desafioId, descricao: req });
+                                            } catch (e) {
+                                                // ignore individual requisito errors
+                                            }
+                                        }));
+                                    }
+
                                     this.alertMessage = this.msg.criaProblema.sucesso;
-                                    this.alertType = "success";
+                                    this.alertType = 'success';
                                     this.showAlert = true;
 
                                     setTimeout(() => {
-                                        window.location.href = "empresaDashboard.html";
+                                        window.location.href = 'empresaDashboard.html';
                                     }, 1500);
                                 } catch (error) {
-                                    this.alertMessage = error.message || this.msg.criaProblema.erro;
-                                    this.alertType = "error";
+                                    this.alertMessage = (error && error.message) ? error.message : this.msg.criaProblema.erro;
+                                    this.alertType = 'error';
                                     this.showAlert = true;
                                 }
                             },

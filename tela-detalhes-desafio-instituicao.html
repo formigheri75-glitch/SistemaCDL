@@ -32,6 +32,11 @@
             </div>
         </div>
         <script>
+            // Verificar autenticação e autorização
+            if (!window.ensureRole('instituicao')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
             const { createApp } = Vue;
             createApp({
                 components: { SideNav },
@@ -68,9 +73,9 @@
                         const id = this.getIdFromQuery();
                         try {
                             if (id) {
-                                this.challenge = await window.ApiClient.get(`/desafios/${id}`);
+                                    this.challenge = await window.loadDesafio(id);
                             } else {
-                                const list = await window.ApiClient.get('/desafios');
+                                    const list = await window.fetchDesafiosList();
                                 this.challenge = (list && list[0]) ? list[0] : {};
                             }
                         } catch (e) {

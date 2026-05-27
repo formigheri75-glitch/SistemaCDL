@@ -756,6 +756,16 @@ body.auth-layout .auth-footer {
     box-sizing: border-box;
 }
 
+/* Smaller submit buttons inside auth forms */
+body.auth-layout .auth-form button.btn,
+body.auth-layout .auth-form .btn-primary {
+    width: auto;
+    padding: 0.55rem 0.9rem;
+    font-size: var(--font-size-base);
+    border-radius: 10px;
+    align-self: start;
+}
+
 @media (max-width: 960px) {
     body.auth-layout .auth-shell {
         grid-template-columns: 1fr;
@@ -2142,6 +2152,16 @@ footer p {
     border: 1px solid rgba(148, 163, 184, 0.1);
 }
 
+.content .notifications-stack .notify-card {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 12px;
+    text-decoration: none;
+    color: inherit;
+    cursor: pointer;
+}
+
 .notify-card:hover {
     background: rgba(255, 255, 255, 0.06);
     transform: translateX(4px);
@@ -2173,6 +2193,76 @@ footer p {
 .notify-content p {
     font-size: 0.85rem;
     color: #cbd5e1;
+}
+
+.notifications-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    gap: 16px;
+    margin-bottom: 18px;
+}
+
+.notifications-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #f8fafc;
+}
+
+.notifications-header p {
+    margin-top: 6px;
+    color: #94a3b8;
+    font-size: 0.92rem;
+}
+
+.notification-summary {
+    min-width: 44px;
+    height: 44px;
+    padding: 0 14px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(59, 130, 246, 0.12);
+    color: #dbeafe;
+    font-weight: 700;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+}
+
+.notify-meta {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.notify-badge {
+    padding: 4px 10px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+.notify-badge.read {
+    background: rgba(34, 197, 94, 0.14);
+    color: #86efac;
+}
+
+.notify-badge.unread {
+    background: rgba(59, 130, 246, 0.14);
+    color: #93c5fd;
+}
+
+.notifications-empty {
+    padding: 28px;
+    text-align: center;
+    color: #cbd5e1;
+}
+
+.notifications-empty p {
+    margin: 0;
 }
 
 /* ========================================

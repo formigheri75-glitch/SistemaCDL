@@ -28,6 +28,7 @@
                             <div>
                                 <h1>{{ proposta.titulo || msg.detalhesProposta.titulo }}</h1>
                                 <div class="institution-name">{{ proposta.instituicaoNome || proposta.instituicao || 'Instituição não informada' }}</div>
+                                <div v-if="desafioTitle" class="challenge-ref">Desafio: <a :href="desafioLink">{{ desafioTitle }}</a></div>
                             </div>
                             <span class="status-badge pending"
                                 >{{ statusLabel(proposta.statusproposta) || msg.detalhesProposta.statusBadges.pendente
@@ -192,10 +193,18 @@
 
                                 <div class="button-group">
                                     <button
+                                        v-if="isEmpresa"
                                         class="btn btn-primary"
                                         @click="acceptProposal"
                                     >
                                         {{ msg.detalhesProposta.aceitar }}
+                                    </button>
+                                    <button
+                                        v-if="isCoordenador && !isProposalAccepted"
+                                        class="btn btn-primary"
+                                        @click="editProposal"
+                                    >
+                                        {{ msg.detalhesProposta.editar || 'Editar' }}
                                     </button>
                                     <button
                                         class="btn btn-secondary"
@@ -212,6 +221,11 @@
         </div>
 
         <script>
+            // Verificar autenticação e autorização
+            if (!window.ensureRole(['empresa', 'admin'])) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
             if (window.messages) {
                 mountStandardApp({
                     components: { SideNav },
@@ -223,21 +237,64 @@
                             { label: window.messages.nav.propostas, href: 'propostas.html' },
                         ],
                         proposta: {},
+                        desafioTitle: null,
+                        desafioId: null,
+                        desafioLink: null,
+                        userRole: null,
                     }),
                     methods: {
                         statusLabel: window.getStatusLabel,
                         getIdFromQuery: window.getIdFromQuery,
+                        getUserRole() {
+                            const user = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
+                            const role = user && (user.type || user.role || user.tipoUsuario) || localStorage.getItem('userType') || 'instituicao';
+                            return window.AppRoutes && window.AppRoutes.normalizeRole ? window.AppRoutes.normalizeRole(role) : String(role).toLowerCase();
+                        },
                         async loadProposta() {
                             const id = window.getIdFromQuery();
                             this.proposta = await window.loadProposta(id);
+                            this.userRole = this.getUserRole();
+                            // resolve desafio for display
+                            try {
+                                const desafioId = this.proposta && (this.proposta.desafioid || this.proposta.desafioId || this.proposta.desafioID || this.proposta.desafio) || null;
+                                if (desafioId) {
+                                    this.desafioId = desafioId;
+                                    const d = await window.loadDesafio(desafioId);
+                                    if (d) {
+                                        this.desafioTitle = d.titulo || d.desafioTitulo || null;
+                                        this.desafioLink = `detalhesProblema.html?id=${encodeURIComponent(desafioId)}`;
+                                    }
+                                }
+                            } catch (e) {
+                                // ignore
+                            }
                         },
                         acceptProposal() {
                             alert(this.msg.detalhesProposta.sucesso);
-                            window.location.href = 'propostas.html';
+                            // navigate back to proposals, preserving desafio filter when possible
+                            if (this.desafioId) window.location.href = `propostas.html?desafio=${encodeURIComponent(this.desafioId)}`;
+                            else window.location.href = 'propostas.html';
+                        },
+                        editProposal() {
+                            const id = this.getIdFromQuery();
+                            window.location.href = `tela-envio-solucao-coordenador.html?id=${id}`;
                         },
                         goBack() {
-                            window.location.href = 'propostas.html';
+                            if (this.desafioId) window.location.href = `propostas.html?desafio=${encodeURIComponent(this.desafioId)}`;
+                            else window.location.href = 'propostas.html';
                         },
+                    },
+                    computed: {
+                        isEmpresa() {
+                            return this.userRole === 'empresa';
+                        },
+                        isCoordenador() {
+                            return this.userRole === 'coordenador';
+                        },
+                        isProposalAccepted() {
+                            const status = String(this.proposta && this.proposta.statusproposta || '').toLowerCase();
+                            return status.includes('aceit') || status.includes('aprov');
+                        }
                     },
                     mounted: async function() {
                         await this.loadProposta();

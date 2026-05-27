@@ -97,7 +97,7 @@
                             window.ApiClient.get('/usuarios').catch(() => []),
                             window.ApiClient.get('/notificacoes').catch(() => []),
                             window.ApiClient.get('/propostas').catch(() => []),
-                            window.ApiClient.get('/desafios').catch(() => []),
+                            window.fetchDesafiosList().catch(() => []),
                         ]);
 
                         this.stats.empresas = (empresas || []).length;

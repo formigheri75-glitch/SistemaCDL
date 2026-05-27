@@ -155,6 +155,9 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
+                // Verificar autenticação e autorização
+                if (!window.ensureRole('empresa')) return;
+
                 if (window.messages) {
                     createApp({
                         components: { SideNav },

@@ -57,8 +57,10 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação
-            window.checkAuth();
+            // Verificar autenticação e autorização
+            if (!window.ensureRole('coordenador')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
 
             const { createApp } = Vue;
             createApp({
@@ -102,6 +104,15 @@
                         this.form = { titulo: '', descricao: '', equipe: '', prazo: '' };
                         this.error = '';
                         this.success = '';
+                        try {
+                            if (window.history && window.history.length > 1) {
+                                window.history.back();
+                            } else {
+                                window.location.href = 'tela-propostas-coordenador.html';
+                            }
+                        } catch (e) {
+                            window.location.href = 'tela-propostas-coordenador.html';
+                        }
                     },
                     async submit() {
                         this.error = '';
@@ -114,9 +125,28 @@
                         try {
                             const challengeId = this.getChallengeId();
                             const user = window.StorageManager.getUser() || {};
+
+                            // determine instituicao id for logged user
+                            let instituicaoId = null;
+                            try {
+                                const insts = await ApiClient.get('/instituicoes');
+                                if (Array.isArray(insts)) {
+                                    const found = insts.find(i => String(i.usuarioid || i.usuarioId || i.usuario) === String(user.id) || String(i.email) === String(user.email));
+                                    if (found) instituicaoId = found.id || found.ID || null;
+                                }
+                            } catch (e) {
+                                // ignore
+                            }
+
+                            if (!instituicaoId) {
+                                this.error = 'Não foi possível determinar a instituição associada ao usuário. Faça login como instituição ou verifique seu cadastro.';
+                                this.loading = false;
+                                return;
+                            }
+
                             const payload = {
                                 desafioid: challengeId ? Number(challengeId) : null,
-                                instituicaoid: user.id || user.usuarioid || null,
+                                instituicaoid: instituicaoId,
                                 titulo: this.form.titulo,
                                 descricao: this.form.descricao,
                                 nomearquivo: null,

@@ -26,6 +26,8 @@
                     <div class="container">
                         <h1>{{ msg.propostas.title }}</h1>
 
+                        <div v-if="desafioTitle" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ desafioTitle }}</div>
+
                         <!-- Filter Section -->
                         <div class="filter-section">
                             <span class="filter-label"
@@ -83,6 +85,9 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
+                // Verificar autenticação e autorização
+                if (!window.ensureRole('empresa')) return;
+
                 if (window.messages) {
                     createApp({
                             components: { SideNav, ProposalCard },
@@ -96,63 +101,92 @@
                                     ],
                                 selectedFilter: "all",
                                 proposals: [],
+                                desafioQueryId: null,
                                 loading: true,
                                 error: null,
                             };
                         },
                         async mounted() {
+                            // read optional desafio filter from querystring
                             try {
-                                const data = await window.ApiClient.get('/propostas');
-                                this.proposals = (data || []).map(p => ({
-                                    id: p.id,
-                                    institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
-                                    description: p.descricao || '',
-                                    status: String(p.statusproposta || p.status || 'pending').toLowerCase().includes('aceit') ? 'accepted' : 'pending',
-                                    rating: p.rating || 0,
-                                    detailsLink: 'detalhesPropossta.html'
-                                }));
-                            } catch (error) {
-                                console.error('Erro ao carregar propostas:', error);
-                                this.error = 'Erro ao carregar propostas. Usando dados de exemplo.';
-                                // Fallback para dados de exemplo
-                                this.proposals = [
-                                    {
-                                        id: 1,
-                                        institution: "UFRJ",
-                                        description:
-                                            "Solução completa de otimização com cache distribuído e query optimization.",
-                                        status: "pending",
-                                        rating: 4.8,
-                                    },
-                                    {
-                                        id: 2,
-                                        institution: "USP",
-                                        description:
-                                            "Implementação de Redis cluster com replicação automática e failover.",
-                                        status: "pending",
-                                        rating: 4.9,
-                                    },
-                                    {
-                                        id: 3,
-                                        institution: "UNICAMP",
-                                        description:
-                                            "Solução baseada em microserviços com API Gateway otimizado.",
-                                        status: "pending",
-                                        rating: 4.7,
-                                    },
-                                ];
-                            } finally {
-                                this.loading = false;
+                                const params = new URLSearchParams(window.location.search);
+                                const d = params.get('desafio');
+                                if (d) this.desafioQueryId = d;
+                            } catch (e) {
+                                this.desafioQueryId = null;
                             }
+
+                            try {
+                                    const data = await window.ApiClient.get('/propostas');
+
+                                    const raw = (data || []).map(p => ({
+                                        id: p.id,
+                                        instituicaoId: p.instituicaoid || p.instituicaoID || p.instituicaoId || null,
+                                        desafioId: p.desafioid || p.desafioID || p.desafioId || null,
+                                        institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
+                                        description: p.descricao || '',
+                                        statusRaw: p.statusproposta || p.status || 'pending',
+                                        rating: p.rating || 0,
+                                        detailsLink: 'detalhesPropossta.html'
+                                    }));
+
+                                    // resolve related desafios to get the challenge title
+                                    const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
+                                    const desafiosMap = {};
+                                    await Promise.all(desafioIds.map(async id => {
+                                        try {
+                                            const d = await window.loadDesafio(id);
+                                            if (d) desafiosMap[id] = d;
+                                        } catch (e) {
+                                            // ignore
+                                        }
+                                    }));
+
+                                    // if a desafio filter was provided but not present in the proposals list, try to fetch it
+                                    if (this.desafioQueryId && !desafiosMap[this.desafioQueryId]) {
+                                        try {
+                                            const df = await window.loadDesafio(this.desafioQueryId);
+                                            if (df) desafiosMap[this.desafioQueryId] = df;
+                                        } catch (e) {
+                                            // ignore
+                                        }
+                                    }
+
+                                    this.proposals = raw.map(p => ({
+                                        id: p.id,
+                                        institution: p.institution,
+                                        description: p.description,
+                                        status: String(p.statusRaw).toLowerCase().includes('aceit') ? 'accepted' : 'pending',
+                                        rating: p.rating,
+                                        detailsLink: p.detailsLink,
+                                        challengeTitle: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : null,
+                                        desafioId: p.desafioId || null
+                                    }));
+
+                                    // expose desafio title for UI if filtering
+                                    if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
+                                        this.desafioTitle = desafiosMap[this.desafioQueryId].titulo || desafiosMap[this.desafioQueryId].desafioTitulo || null;
+                                    } else {
+                                        this.desafioTitle = null;
+                                    }
+                                } catch (error) {
+                                    console.error('Erro ao carregar propostas:', error);
+                                    this.error = 'Erro ao carregar propostas.';
+                                    this.proposals = [];
+                                } finally {
+                                    this.loading = false;
+                                }
                         },
                         computed: {
                             filteredProposals() {
-                                if (this.selectedFilter === "all") {
-                                    return this.proposals;
+                                let list = this.proposals;
+                                if (this.selectedFilter !== 'all') {
+                                    list = list.filter(p => p.status === this.selectedFilter);
                                 }
-                                return this.proposals.filter(
-                                    (p) => p.status === this.selectedFilter,
-                                );
+                                if (this.desafioQueryId) {
+                                    list = list.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                                }
+                                return list;
                             },
                             pendingCount() {
                                 return this.proposals.filter(

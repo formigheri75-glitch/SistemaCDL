@@ -22,7 +22,7 @@
                 <div class="content">
                     <div class="detail-hero">
                         <div class="detail-top"><div class="detail-title"><h3>{{ challenge.titulo || msg.detalhesDesafio.challengeTitle }}</h3></div><span class="status">{{ challenge.statusdesafio || msg.pages.telaDetalhesDesafioCoordenador.emAvaliacao }}</span></div>
-                        <div class="detail-intro"><div class="illustration"></div><div><p>{{ challenge.descricao || msg.detalhesDesafio.description }}</p><div class="button-group"><a class="btn btn-primary" :href="challenge.id ? ('tela-envio-solucao-coordenador.html?id=' + challenge.id) : 'tela-envio-solucao-coordenador.html'">{{ msg.pages.telaDetalhesDesafioCoordenador.enviarSolucao }}</a><a class="btn btn-secondary" href="tela-propostas-coordenador.html">{{ msg.pages.telaDetalhesDesafioCoordenador.verPropostas }}</a></div></div></div>
+                        <div class="detail-intro"><div class="illustration"></div><div><p>{{ challenge.descricao || msg.detalhesDesafio.description }}</p><div class="button-group"><a class="btn btn-primary" :href="challenge.id ? ('tela-envio-solucao-coordenador.html?id=' + challenge.id) : 'tela-envio-solucao-coordenador.html'">{{ msg.pages.telaDetalhesDesafioCoordenador.enviarSolucao }}</a><a class="btn btn-secondary" :href="challenge.id ? ('tela-propostas-coordenador.html?desafio=' + encodeURIComponent(challenge.id)) : 'tela-propostas-coordenador.html'">{{ msg.pages.telaDetalhesDesafioCoordenador.verPropostas }}</a></div></div></div>
                     </div>
                     <div class="detail-grid">
                         <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in requirementsList" :key="item">{{ item }}</li></ul></div>
@@ -32,9 +32,9 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação
-            if (window.StorageManager && !window.StorageManager.getToken()) {
-                window.location.href = 'login.html';
+            // Verificar autenticação e autorização
+            if (!window.ensureRole('coordenador')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
             const { createApp } = Vue;
@@ -66,13 +66,13 @@
                 },
                 methods: {
                     getIdFromQuery: window.getIdFromQuery,
-                    async loadChallenge() {
+                        async loadChallenge() {
                         const id = window.getIdFromQuery();
                         try {
                             if (id) {
-                                this.challenge = await window.ApiClient.get(`/desafios/${id}`);
+                                this.challenge = await window.loadDesafio(id);
                             } else {
-                                const list = await window.ApiClient.get('/desafios');
+                                const list = await window.fetchDesafiosList();
                                 this.challenge = (list && list[0]) ? list[0] : {};
                             }
                         } catch (e) {

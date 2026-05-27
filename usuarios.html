@@ -1,0 +1,264 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Usuários - Admin</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.tela.brand" :items="menuItems" active-href="usuarios.html"></side-nav>
+            <div class="content">
+                <div class="section-head flex items-center justify-between">
+                    <div>
+                        <h2>Gerenciamento de Usuários</h2>
+                        <p class="text-sm text-gray-400">Exiba, crie, edite e remova usuários, empresas e instituições.</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <select v-model="filter.type" class="px-3 py-2 rounded bg-slate-800 text-white">
+                            <option value="all">Todos</option>
+                            <option value="usuarios">Usuários</option>
+                            <option value="empresas">Empresas</option>
+                            <option value="instituicoes">Instituições</option>
+                        </select>
+                        <input v-model="filter.q" @input="debouncedLoad" placeholder="Pesquisar nome ou email" class="px-3 py-2 rounded bg-slate-800 text-white" />
+                        <button class="btn btn-primary" @click.prevent="openCreate">Novo</button>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    <div v-if="loading" class="text-gray-400">Carregando...</div>
+                    <div v-else class="overflow-x-auto">
+                        <table class="table-auto w-full">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Tipo</th>
+                                    <th>Nome</th>
+                                    <th>Email</th>
+                                    <th class="text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="item in pagedItems" :key="item.source + '-' + item.id">
+                                    <td>{{ item.id }}</td>
+                                    <td>{{ item.tipo || item.source }}</td>
+                                    <td>{{ item.nome || '-' }}</td>
+                                    <td>{{ item.email || '-' }}</td>
+                                    <td class="text-right">
+                                        <button class="mini-btn" @click.prevent="openEdit(item)">Editar</button>
+                                        <button class="mini-btn danger" @click.prevent="confirmDelete(item)">Excluir</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between">
+                        <div class="text-sm text-gray-400">Mostrando {{ totalItems }} itens</div>
+                        <div class="flex gap-2 items-center">
+                            <button class="mini-btn" :disabled="page===1" @click.prevent="page--">Anterior</button>
+                            <div>Página {{ page }} / {{ totalPages }}</div>
+                            <button class="mini-btn" :disabled="page>=totalPages" @click.prevent="page++">Próxima</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal -->
+                <div v-if="modal.open" class="modal">
+                    <div class="modal-content">
+                        <h3>{{ modal.mode === 'create' ? 'Novo' : 'Editar' }} {{ modal.typeLabel }}</h3>
+                        <form @submit.prevent="save">
+                            <div v-if="modal.type==='usuarios'">
+                                <label>Nome</label>
+                                <input v-model="modal.data.nome" class="w-full" />
+                                <label>Email</label>
+                                <input v-model="modal.data.email" class="w-full" />
+                                <label>Tipo</label>
+                                <select v-model="modal.data.tipousuario" class="w-full">
+                                    <option value="usuario">Usuário</option>
+                                    <option value="coordenador">Coordenador</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                                <label>Senha (opcional)</label>
+                                <input v-model="modal.data.senha" type="password" class="w-full" />
+                            </div>
+                            <div v-if="modal.type==='empresas'">
+                                <label>Nome Fantasia</label>
+                                <input v-model="modal.data.nomefantasia" class="w-full" />
+                                <label>Razão Social</label>
+                                <input v-model="modal.data.razaosocial" class="w-full" />
+                                <label>CNPJ</label>
+                                <input v-model="modal.data.cnpj" class="w-full" />
+                                <label>Email</label>
+                                <input v-model="modal.data.email" class="w-full" />
+                            </div>
+                            <div v-if="modal.type==='instituicoes'">
+                                <label>Nome Instituição</label>
+                                <input v-model="modal.data.nomeinstituicao" class="w-full" />
+                                <label>CNPJ</label>
+                                <input v-model="modal.data.cnpj" class="w-full" />
+                                <label>Email</label>
+                                <input v-model="modal.data.email" class="w-full" />
+                            </div>
+                            <div class="mt-4 flex gap-2 justify-end">
+                                <button class="mini-btn" type="button" @click.prevent="closeModal">Cancelar</button>
+                                <button class="mini-btn primary" type="submit">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.ensureRole('admin')) return;
+
+            mountVuePage({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: window.getAdminMenuItems(),
+                        users: [],
+                        loading: false,
+                        filter: { type: 'all', q: '' },
+                        page: 1,
+                        pageSize: 12,
+                        modal: { open: false, mode: 'create', type: 'usuarios', typeLabel: 'Usuário', data: {} },
+                        confirmItem: null,
+                        debounceTimer: null
+                    };
+                },
+                computed: {
+                    filteredItems() {
+                        const q = String(this.filter.q || '').trim().toLowerCase();
+                        return (this.users || []).filter(it => {
+                            if (this.filter.type !== 'all' && it.source !== this.filter.type) return false;
+                            if (!q) return true;
+                            return (String(it.nome || '') + ' ' + String(it.email || '')).toLowerCase().includes(q);
+                        });
+                    },
+                    totalItems() { return this.filteredItems.length; },
+                    totalPages() { return Math.max(1, Math.ceil(this.totalItems / this.pageSize)); },
+                    pagedItems() {
+                        const start = (this.page - 1) * this.pageSize;
+                        return this.filteredItems.slice(start, start + this.pageSize);
+                    }
+                },
+                methods: {
+                    async loadAll() {
+                        this.loading = true;
+                        try {
+                            const [usersList, empresasList, instituicoesList] = await Promise.all([
+                                window.ApiClient.get('/usuarios').catch(() => []),
+                                window.ApiClient.get('/empresas').catch(() => []),
+                                window.ApiClient.get('/instituicoes').catch(() => [])
+                            ]);
+
+                            const normalizeUser = u => ({
+                                id: u.id || u.ID || u.usuarioid || u.usuarioId || u.userId || null,
+                                nome: u.nome || u.name || u.Nome || null,
+                                email: u.email || u.Email || null,
+                                tipo: u.tipousuario || u.tipo || u.type || 'usuario',
+                                source: 'usuarios',
+                                raw: u
+                            });
+
+                            const normalizeEmpresa = e => ({
+                                id: e.id || e.ID || e.empresaid || e.empresaId || null,
+                                nome: e.nomefantasia || e.nomeFantasia || e.razaosocial || e.nome || null,
+                                email: e.email || null,
+                                tipo: 'empresa',
+                                source: 'empresas',
+                                raw: e
+                            });
+
+                            const normalizeInstituicao = i => ({
+                                id: i.id || i.ID || null,
+                                nome: i.nomeInstituicao || i.nomeinstituicao || i.nome || null,
+                                email: i.email || null,
+                                tipo: 'instituicao',
+                                source: 'instituicoes',
+                                raw: i
+                            });
+
+                            const all = [];
+                            (usersList || []).forEach(u => all.push(normalizeUser(u)));
+                            (empresasList || []).forEach(e => all.push(normalizeEmpresa(e)));
+                            (instituicoesList || []).forEach(i => all.push(normalizeInstituicao(i)));
+
+                            all.sort((a,b) => String(a.tipo).localeCompare(String(b.tipo)) || String((a.nome||'')).localeCompare(String(b.nome||'')));
+
+                            this.users = all;
+                            this.page = 1;
+                        } catch (e) {
+                            console.error('Erro ao carregar usuários/empresas/instituições', e);
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                    debouncedLoad() {
+                        clearTimeout(this.debounceTimer);
+                        this.debounceTimer = setTimeout(() => { this.page = 1; }, 300);
+                    },
+                    openCreate() {
+                        this.modal = { open: true, mode: 'create', type: this.filter.type==='all' ? 'usuarios' : this.filter.type, typeLabel: this.titleForType(this.filter.type==='all' ? 'usuarios' : this.filter.type), data: {} };
+                    },
+                    openEdit(item) {
+                        this.modal = { open: true, mode: 'edit', type: item.source, typeLabel: this.titleForType(item.source), data: Object.assign({}, item.raw) };
+                    },
+                    closeModal() { this.modal.open = false; this.modal.data = {}; },
+                    titleForType(t) { return t === 'empresas' ? 'Empresa' : (t === 'instituicoes' ? 'Instituição' : 'Usuário'); },
+                    async save() {
+                        try {
+                            const t = this.modal.type;
+                            const payload = Object.assign({}, this.modal.data);
+                            if (this.modal.mode === 'create') {
+                                if (t === 'usuarios') await window.ApiClient.post('/usuarios', payload);
+                                else if (t === 'empresas') await window.ApiClient.post('/empresas', payload);
+                                else if (t === 'instituicoes') await window.ApiClient.post('/instituicoes', payload);
+                            } else {
+                                const id = payload.id || payload.ID || payload.usuarioid || payload.empresaid || payload.instituicaoid;
+                                if (!id) throw new Error('ID ausente');
+                                if (t === 'usuarios') await window.ApiClient.put(`/usuarios/${id}`, payload);
+                                else if (t === 'empresas') await window.ApiClient.put(`/empresas/${id}`, payload);
+                                else if (t === 'instituicoes') await window.ApiClient.put(`/instituicoes/${id}`, payload);
+                            }
+                            this.closeModal();
+                            await this.loadAll();
+                        } catch (e) {
+                            console.error('Erro ao salvar', e);
+                            alert('Erro ao salvar: ' + (e.message || e));
+                        }
+                    },
+                    confirmDelete(item) {
+                        if (!confirm('Confirma exclusão?')) return;
+                        this.deleteItem(item);
+                    },
+                    async deleteItem(item) {
+                        try {
+                            const id = item.id;
+                            if (item.source === 'usuarios') await window.ApiClient.delete(`/usuarios/${id}`);
+                            else if (item.source === 'empresas') await window.ApiClient.delete(`/empresas/${id}`);
+                            else if (item.source === 'instituicoes') await window.ApiClient.delete(`/instituicoes/${id}`);
+                            await this.loadAll();
+                        } catch (e) { console.error('Erro ao excluir', e); alert('Erro ao excluir: ' + (e.message || e)); }
+                    }
+                },
+                async mounted() { await this.loadAll(); },
+                title: 'Usuários - Admin'
+            });
+        });
+    </script>
+</body>
+</html>

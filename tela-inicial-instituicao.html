@@ -27,7 +27,10 @@
                     </div>
                     <div class="section-head">
                         <h2>{{ msg.pages.telaInicialInstituicao.desafiosDisponiveis }}</h2>
-                        <a class="mini-btn" href="notificacoes.html">{{ msg.pages.telaInicialInstituicao.verNotificacoes }}</a>
+                        <div class="flex gap-2">
+                            <a class="mini-btn" href="notificacoes.html">{{ msg.pages.telaInicialInstituicao.verNotificacoes }}</a>
+                            <button class="mini-btn" @click.prevent="openCoordinatorManager">Gerenciar Coordenadores</button>
+                        </div>
                     </div>
                     <div class="list cards-grid">
                         <challenge-card
@@ -38,13 +41,71 @@
                             detailsLink="tela-detalhes-desafio-instituicao.html"
                         ></challenge-card>
                     </div>
+                    <!-- Coordenator manager modal -->
+                    <div v-if="coordinatorModal.open" class="popup" style="position:fixed; z-index:1000; top:10%; left:50%; transform:translateX(-50%); max-width:1100px; width:90%; background:var(--card-bg, #fff); box-shadow:0 8px 24px rgba(0,0,0,0.12); border-radius:8px; padding:16px;">
+                        <div class="modal-content">
+                            <h3>Gerenciar Coordenadores</h3>
+                            <div class="mb-4">
+                                <button class="mini-btn" @click.prevent="openNewCoordinator">Novo Coordenador</button>
+                            </div>
+                            <div v-if="coordinatorLoading">Carregando...</div>
+                            <div v-else class="overflow-x-auto">
+                                    <table class="table-auto w-full" style="max-width:1000px; width:95%;">
+                                    <thead>
+                                        <tr>
+                                            <th>ID</th>
+                                            <th>Nome</th>
+                                            <th>Email</th>
+                                            <!-- telefone/CPF removed for coordenador -->
+                                            <th class="text-right">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="c in coordinators" :key="c.id">
+                                            <td>{{ c.id }}</td>
+                                            <td>{{ c.nome || c.name }}</td>
+                                            <td>{{ c.email }}</td>
+                                            <!-- telefone/CPF not applicable -->
+                                            <td class="text-right">
+                                                <button class="mini-btn" @click.prevent="editCoordinator(c)">Editar</button>
+                                                <button class="mini-btn danger" @click.prevent="deleteCoordinator(c)">Excluir</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="mt-4">
+                                <button class="mini-btn" @click.prevent="closeCoordinatorManager">Fechar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New/Edit coordinator modal (simplified) -->
+                    <div v-if="coordinatorModal.editOpen" class="popup" style="position:fixed; z-index:1001; top:20%; left:50%; transform:translateX(-50%); width:420px; background:#fff; box-shadow:0 8px 20px rgba(0,0,0,0.12); border-radius:8px; padding:16px;">
+                        <div class="modal-content">
+                            <h3>{{ coordinatorModal.editMode==='create' ? 'Novo Coordenador' : 'Editar Coordenador' }}</h3>
+                            <form @submit.prevent="saveCoordinator">
+                                <label>Nome</label>
+                                <input v-model="coordinatorForm.nome" class="w-full" required />
+                                <label>Email</label>
+                                <input v-model="coordinatorForm.email" class="w-full" type="email" required />
+                                <label>Senha</label>
+                                <input v-model="coordinatorForm.senha" type="password" class="w-full" :required="coordinatorModal.editMode==='create'" />
+                                <input type="hidden" v-model="coordinatorForm.instituicao" />
+                                <div class="mt-4 flex gap-2 justify-end">
+                                    <button class="mini-btn" @click.prevent="closeCoordinatorEdit">Cancelar</button>
+                                    <button class="mini-btn primary" type="submit">Salvar</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                // Verificar autenticação
-                if (!window.checkAuth()) return;
+                // Verificar autenticação e autorização
+                if (!window.ensureRole('instituicao')) return;
 
                 mountVuePage({
                     components: { SideNav, ChallengeCard },
@@ -58,6 +119,11 @@
                             ],
                             challenges: [],
                             notificationsCount: 0,
+                            // Coordinator management state
+                            coordinators: [],
+                            coordinatorModal: { open: false, editOpen: false, editMode: '' },
+                            coordinatorForm: {},
+                            coordinatorLoading: false,
                         };
                     },
                     computed: {
@@ -71,7 +137,7 @@
                     },
                     mounted: async function() {
                         try {
-                            const desafios = await window.ApiClient.get('/desafios');
+                            const desafios = await window.fetchDesafiosList();
                             this.challenges = (desafios || []).map(d => ({
                                 id: d.id,
                                 title: d.titulo || d.nome || 'Desafio',
@@ -89,6 +155,102 @@
                             this.notificationsCount = (notificacoes || []).length;
                         } catch (e) {
                             this.notificationsCount = 0;
+                        }
+                    },
+                    methods: {
+                        async getUserInstituicaoId() {
+                            try {
+                                const auth = JSON.parse(localStorage.getItem('auth_user') || 'null');
+                                if (!auth) return null;
+                                return auth.instituicao || auth.instituicaoid || auth.instituicaoId || auth.instituicao_id || auth.id || (auth.usuario && (auth.usuario.instituicao || auth.usuario.id)) || null;
+                            } catch (e) {
+                                return null;
+                            }
+                        },
+                        openCoordinatorManager() {
+                            this.coordinatorModal.open = true;
+                            this.loadCoordinators();
+                        },
+                        closeCoordinatorManager() {
+                            this.coordinatorModal.open = false;
+                        },
+                        async loadCoordinators() {
+                            try {
+                                this.coordinatorLoading = true;
+                                const instId = await this.getUserInstituicaoId();
+                                if (!instId) {
+                                    this.coordinators = [];
+                                    return;
+                                }
+                                const users = await window.ApiClient.get('/usuarios');
+                                this.coordinators = (users || []).filter(u => (String(u.tipousuario || u.tipo || '').toLowerCase() === 'coordenador') && (String(u.instituicao || u.instituicaoid || '') === String(instId)));
+                            } catch (e) {
+                                console.error('Erro ao carregar coordenadores:', e);
+                                this.coordinators = [];
+                            } finally {
+                                this.coordinatorLoading = false;
+                            }
+                        },
+                        async openNewCoordinator() {
+                            this.coordinatorModal.editMode = 'create';
+                            this.coordinatorModal.editOpen = true;
+                            const instId = await this.getUserInstituicaoId();
+                            this.coordinatorForm = { nome: '', email: '', senha: '', telefone: '', cpf: '', cargo: '', departamento: '', ativo: true, instituicao: instId };
+                        },
+                        editCoordinator(c) {
+                            this.coordinatorModal.editMode = 'edit';
+                            this.coordinatorModal.editOpen = true;
+                            this.coordinatorForm = {
+                                id: c.id,
+                                nome: c.nome || c.name || c.Nome || '',
+                                email: c.email || '',
+                                telefone: c.telefone || c.phone || '',
+                                cpf: c.cpf || '',
+                                cargo: c.cargo || '',
+                                departamento: c.departamento || '',
+                                ativo: typeof c.ativo === 'boolean' ? c.ativo : (c.ativo === 'false' || c.ativo === '0' ? false : true),
+                                instituicao: c.instituicao || c.instituicaoid || c.instituicaoId || ''
+                            };
+                        },
+                        closeCoordinatorEdit() { this.coordinatorModal.editOpen = false; this.coordinatorForm = {}; },
+                        async saveCoordinator() {
+                            try {
+                                const instId = this.coordinatorForm.instituicao || await this.getUserInstituicaoId();
+                                if (!instId) throw new Error('Instituição não encontrada');
+                                const payload = {
+                                    nome: this.coordinatorForm.nome,
+                                    email: this.coordinatorForm.email,
+                                    senha: this.coordinatorForm.senha,
+                                    telefone: this.coordinatorForm.telefone,
+                                    cpf: this.coordinatorForm.cpf,
+                                    cargo: this.coordinatorForm.cargo,
+                                    departamento: this.coordinatorForm.departamento,
+                                    ativo: this.coordinatorForm.ativo,
+                                    tipousuario: 'coordenador',
+                                    instituicao: instId
+                                };
+                                if (this.coordinatorModal.editMode === 'create') {
+                                    await window.ApiClient.post('/usuarios', payload);
+                                } else {
+                                    const id = this.coordinatorForm.id;
+                                    await window.ApiClient.put(`/usuarios/${id}`, payload);
+                                }
+                                this.closeCoordinatorEdit();
+                                await this.loadCoordinators();
+                            } catch (e) {
+                                console.error('Erro ao salvar coordenador:', e);
+                                alert('Erro: ' + (e.message || e));
+                            }
+                        },
+                        async deleteCoordinator(c) {
+                            if (!confirm('Confirma exclusão do coordenador?')) return;
+                            try {
+                                await window.ApiClient.delete(`/usuarios/${c.id}`);
+                                await this.loadCoordinators();
+                            } catch (e) {
+                                console.error('Erro ao excluir coordenador:', e);
+                                alert('Erro ao excluir coordenador');
+                            }
                         }
                     },
                     title: 'Início - Instituição',

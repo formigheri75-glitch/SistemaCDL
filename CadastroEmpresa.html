@@ -110,9 +110,15 @@
 
                                 <div class="form-group">
                                     <label>{{ msg.cadastroEmpresa.nome }}</label>
-                                    <input type="text" v-model="form.nome" :placeholder="msg.cadastroEmpresa.nome" :class="{ error: errors.nome }">
+                                        <input type="text" v-model="form.nomefantasia" :placeholder="msg.cadastroEmpresa.nome" :class="{ error: errors.nomefantasia }">
                                     <div v-if="errors.nome" class="form-error">{{ errors.nome }}</div>
                                 </div>
+
+                                    <div class="form-group">
+                                        <label>{{ msg.cadastroEmpresa.razaosocial }}</label>
+                                        <input type="text" v-model="form.razaosocial" :placeholder="msg.cadastroEmpresa.razaosocial" :class="{ error: errors.razaosocial }">
+                                        <div v-if="errors.razaosocial" class="form-error">{{ errors.razaosocial }}</div>
+                                    </div>
 
                                 <div class="form-group">
                                     <label>{{ msg.cadastroEmpresa.nomeContato }}</label>
@@ -130,6 +136,30 @@
                                     <label>{{ msg.cadastroEmpresa.telefone }}</label>
                                     <input type="tel" v-model="form.telefone" :placeholder="msg.cadastroEmpresa.placeholderTelefone" :class="{ error: errors.telefone }">
                                     <div v-if="errors.telefone" class="form-error">{{ errors.telefone }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.cidade }}</label>
+                                    <input type="text" v-model="form.cidade" :placeholder="msg.cadastroEmpresa.placeholderCidade" :class="{ error: errors.cidade }">
+                                    <div v-if="errors.cidade" class="form-error">{{ errors.cidade }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.estado }}</label>
+                                    <input type="text" v-model="form.estado" :placeholder="msg.cadastroEmpresa.placeholderEstado" :class="{ error: errors.estado }">
+                                    <div v-if="errors.estado" class="form-error">{{ errors.estado }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.endereco }}</label>
+                                    <input type="text" v-model="form.endereco" :placeholder="msg.cadastroEmpresa.placeholderEndereco" :class="{ error: errors.endereco }">
+                                    <div v-if="errors.endereco" class="form-error">{{ errors.endereco }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.areaatuacao }}</label>
+                                    <input type="text" v-model="form.areaatuacao" :placeholder="msg.cadastroEmpresa.placeholderAreaAtuacao" :class="{ error: errors.areaatuacao }">
+                                    <div v-if="errors.areaatuacao" class="form-error">{{ errors.areaatuacao }}</div>
                                 </div>
 
                                 <div class="form-group">
@@ -162,19 +192,22 @@
             </div>
             `,
             mixins: [window.AuthFormMixin],
-            data() { 
+                    data() { 
                 return { 
                     msg: messages,
-                    form: { nome: '', contato: '', cnpj: '', telefone: '', email: '', senha: '', confirma: '' }
+                    form: { nomefantasia: '', razaosocial: '', contato: '', cnpj: '', telefone: '', cidade: '', estado: '', endereco: '', areaatuacao: '', email: '', senha: '', confirma: '' }
                 } 
             },
             methods: { 
                 goHome() { window.location.href = 'index.html'; },
-                async submit() {
+                    async submit() {
                     this.clearErrors();
                     
-                    if (!window.FormValidator.validateRequired(this.form.nome)) {
-                        this.setFieldError('nome', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    if (!window.FormValidator.validateRequired(this.form.nomefantasia)) {
+                        this.setFieldError('nomefantasia', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.razaosocial)) {
+                        this.setFieldError('razaosocial', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
                     }
                     if (!window.FormValidator.validateRequired(this.form.contato)) {
                         this.setFieldError('contato', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
@@ -184,6 +217,15 @@
                     }
                     if (!window.FormValidator.validateRequired(this.form.telefone)) {
                         this.setFieldError('telefone', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.cidade)) {
+                        this.setFieldError('cidade', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.estado)) {
+                        this.setFieldError('estado', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.endereco)) {
+                        this.setFieldError('endereco', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
                     }
                     if (!window.FormValidator.validateRequired(this.form.email)) {
                         this.setFieldError('email', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
@@ -200,20 +242,23 @@
                     }
                     
                     if (this.hasErrors()) return;
-                    
+
                     try {
-                        await this.submitForm('/usuarios', {
-                            nome: this.form.nome,
+                        await this.submitForm('/empresas', {
+                            razaosocial: this.form.razaosocial,
+                            nomefantasia: this.form.nomefantasia,
+                            cnpj: this.form.cnpj,
                             email: this.form.email,
+                            celular: this.form.telefone,
+                            cidade: this.form.cidade,
+                            estado: this.form.estado,
+                            endereco: this.form.endereco,
+                            areaatuacao: this.form.areaatuacao,
                             senha: this.form.senha,
-                            telefone: this.form.telefone,
-                            tipousuario: 'empresa',
-                            metadata: { 
-                                contato: this.form.contato, 
-                                cnpj: this.form.cnpj 
-                            }
+                            contato: this.form.contato,
+                            tipousuario: 'empresa'
                         });
-                        
+
                         this.success = this.msg.cadastroEmpresa.sucesso + ' Redirecionando para login...';
                         setTimeout(() => { window.location.href = 'login.html'; }, 2000);
                     } catch (error) {

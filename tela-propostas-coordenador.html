@@ -21,6 +21,7 @@
                 ></side-nav>
                 <div class="content">
                     <div class="section-head"><h2>{{ msg.pages.telaPropostasCoordenador.minhasPropostas }}</h2><a class="btn btn-primary" href="tela-envio-solucao-coordenador.html">{{ msg.pages.telaPropostasCoordenador.novaSolucao }}</a></div>
+                    <div v-if="desafioQueryId" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ filtroDesafioTitle || desafioQueryId }}</div>
                     <div class="list cards-grid" v-if="proposals.length">
                         <proposal-card
                             v-for="proposal in proposals"
@@ -36,8 +37,10 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação
-            window.checkAuth();
+            // Verificar autenticação e autorização
+            if (!window.ensureRole('coordenador')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
 
             mountVuePage({
                 components: { SideNav, ProposalCard },
@@ -50,27 +53,98 @@
                             { label: 'Notificações', href: 'notificacoes.html' },
                         ],
                         proposals: [],
+                        desafioQueryId: null,
+                        filtroDesafioTitle: null,
                     };
                 },
                 mounted: async function() {
+                    // Get user's institution
                     try {
-                        const propostas = await window.ApiClient.get('/propostas');
                         const user = window.StorageManager.getUser() || {};
-                        const userId = user.id || user.usuarioid || user.usuarioId || null;
+                        if (!user.id) {
+                            console.error('User not logged in');
+                            return;
+                        }
 
-                        const mapped = (propostas || []).map(p => ({
-                            id: p.id,
-                            title: p.titulo || 'Proposta',
-                            challenge: p.desafioTitulo || p.desafio || p.descricao || '',
-                            status: String(p.statusproposta || p.status || 'analisando').toLowerCase(),
-                            detailsLink: 'tela-detalhes-proposta-coordenador.html',
-                            instituicaoid: p.instituicaoid || p.instituicaoID || null,
+                        // Determine role to allow admin to see all proposals
+                        const role = window.AppRoutes ? window.AppRoutes.getCurrentRole() : (user.type || user.role || '').toLowerCase();
+
+                        // Find user's institution (used only for non-admins)
+                        let userInstituicaoId = null;
+                        if (role !== 'admin') {
+                            const instituicoes = await window.ApiClient.get('/instituicoes');
+                            if (Array.isArray(instituicoes)) {
+                                const found = instituicoes.find(i => 
+                                    String(i.usuarioid || i.usuarioId || i.usuario || i.usuarioID || '') === String(user.id) || 
+                                    String(i.email || '').toLowerCase() === String(user.email || '').toLowerCase()
+                                );
+                                if (found) userInstituicaoId = found.id || found.ID || null;
+                            }
+
+                            if (!userInstituicaoId) {
+                                console.warn('No institution found for user');
+                                this.proposals = [];
+                                return;
+                            }
+                        }
+
+                        // read optional desafio filter from querystring
+                        try {
+                            const params = new URLSearchParams(window.location.search);
+                            const d = params.get('desafio');
+                            if (d) this.desafioQueryId = d;
+                        } catch (e) {
+                            this.desafioQueryId = null;
+                        }
+
+                        const propostas = await window.ApiClient.get('/propostas');
+
+                        const raw = (propostas || [])
+                            .filter(p => {
+                                // Admin sees all proposals; coordenador sees only proposals from their institution
+                                if (role === 'admin') return true;
+                                const propInstId = p.instituicaoid || p.instituicaoID || p.instituicaoId;
+                                return String(propInstId) === String(userInstituicaoId);
+                            })
+                            .map(p => ({
+                                id: p.id,
+                                titleRaw: p.titulo || 'Proposta',
+                                desafioId: p.desafioid || p.desafioID || p.desafioId || null,
+                                challengeRaw: p.desafioTitulo || p.desafio || p.descricao || '',
+                                status: String(p.statusproposta || p.status || 'analisando').toLowerCase(),
+                                detailsLink: 'tela-detalhes-proposta-coordenador.html',
+                                instituicaoid: p.instituicaoid || p.instituicaoID || null,
+                            }));
+
+                        const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
+                        const desafiosMap = {};
+                        await Promise.all(desafioIds.map(async id => {
+                            try {
+                                const d = await window.loadDesafio(id);
+                                if (d) desafiosMap[id] = d;
+                            } catch (e) {}
                         }));
 
-                        // If API sends institution/user binding, show only coordinator-related records.
-                        this.proposals = userId
-                            ? mapped.filter(p => !p.instituicaoid || String(p.instituicaoid) === String(userId))
-                            : mapped;
+                        const mapped = raw.map(p => ({
+                            id: p.id,
+                            title: p.titleRaw,
+                            challenge: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : p.challengeRaw,
+                            status: p.status,
+                            detailsLink: p.detailsLink,
+                            instituicaoid: p.instituicaoid,
+                            desafioId: p.desafioId || null,
+                        }));
+
+                        // capture filter title if we have it
+                        if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
+                            this.filtroDesafioTitle = desafiosMap[this.desafioQueryId].titulo || null;
+                        }
+
+                        this.proposals = mapped;
+
+                        if (this.desafioQueryId) {
+                            this.proposals = this.proposals.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                        }
                     } catch (e) {
                         console.error('Erro ao carregar propostas:', e);
                         this.proposals = [];

@@ -109,6 +109,11 @@
         </div>
 
         <script>
+            // Verificar autenticação e autorização
+            if (!window.ensureRole('admin')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
             if (window.messages) {
                 mountStandardApp({
                     title: window.messages.dashboard.title,
@@ -140,7 +145,7 @@
                     mounted: async function() {
                         try {
                             const [desafios, propostas, instituicoes] = await Promise.all([
-                                window.ApiClient.get('/desafios').catch(() => []),
+                                window.fetchDesafiosList().catch(() => []),
                                 window.ApiClient.get('/propostas').catch(() => []),
                                 window.ApiClient.get('/instituicoes').catch(() => []),
                             ]);

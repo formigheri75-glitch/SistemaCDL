@@ -2,19 +2,21 @@
   "meta": "Arquivo temporário de controle de acesso. Em produção será substituído por uma tabela no backend.",
   "admin_has_access_to_all": true,
   "pages": {
+    "index.html": ["public"],
     "login.html": ["public"],
     "RecuperaSenha.html": ["public"],
+    "alterar-senha.html": ["empresa", "instituicao", "coordenador", "admin"],
     "CadastroEmpresa.html": ["public"],
     "CadastroInstituicao.html": ["public"],
-    "index.html": ["public"],
+    "dashboard.html": ["admin"],
+    "notificacoes.html": ["empresa", "instituicao", "coordenador", "admin"],
 
     "empresaDashboard.html": ["empresa"],
-    "detalhesPropossta.html": ["empresa"],
-    "detalhesProblema.html": ["empresa"],
     "criaProblema.html": ["empresa"],
     "selecaoInstituicoes.html": ["empresa"],
-
-    "notificacoes.html": ["empresa", "instituicao", "coordenador", "admin"],
+    "propostas.html": ["empresa"],
+    "detalhesProblema.html": ["empresa", "admin"],
+    "detalhesPropossta.html": ["empresa", "admin"],
 
     "tela-inicial-instituicao.html": ["instituicao"],
     "tela-detalhes-desafio-instituicao.html": ["instituicao"],
@@ -27,5 +29,54 @@
     "tela-detalhes-proposta-coordenador.html": ["coordenador"],
 
     "tela-admin.html": ["admin"]
+  },
+  "role_definitions": {
+    "empresa": {
+      "label": "Empresa",
+      "icon": "🏢",
+      "home": "empresaDashboard.html",
+      "menu_items": [
+        {"label": "Dashboard", "href": "empresaDashboard.html"},
+        {"label": "Novo Desafio", "href": "criaProblema.html"},
+        {"label": "Meus Desafios", "href": "empresaDashboard.html"},
+        {"label": "Propostas", "href": "propostas.html"},
+        {"label": "Instituições", "href": "selecaoInstituicoes.html"},
+        {"label": "Notificações", "href": "notificacoes.html"},
+        {"label": "Alterar Senha", "href": "alterar-senha.html"}
+      ]
+    },
+    "instituicao": {
+      "label": "Instituição",
+      "icon": "🎓",
+      "home": "tela-inicial-instituicao.html",
+      "menu_items": [
+        {"label": "Desafios", "href": "tela-inicial-instituicao.html"},
+        {"label": "Minhas Propostas", "href": "tela-propostas-instituicao.html"},
+        {"label": "Notificações", "href": "notificacoes.html"},
+        {"label": "Alterar Senha", "href": "alterar-senha.html"}
+      ]
+    },
+    "coordenador": {
+      "label": "Coordenador",
+      "icon": "🧭",
+      "home": "tela-inicial-coordenador.html",
+      "menu_items": [
+        {"label": "Desafios", "href": "tela-inicial-coordenador.html"},
+        {"label": "Minhas Propostas", "href": "tela-propostas-coordenador.html"},
+        {"label": "Notificações", "href": "notificacoes.html"},
+        {"label": "Alterar Senha", "href": "alterar-senha.html"}
+      ]
+    },
+    "admin": {
+      "label": "Administrador",
+      "icon": "⚙️",
+      "home": "tela-admin.html",
+      "menu_items": [
+        {"label": "Dashboard", "href": "tela-admin.html"},
+        {"label": "Painel Admin", "href": "dashboard.html"},
+        {"label": "Notificações", "href": "notificacoes.html"},
+        {"label": "Alterar Senha", "href": "alterar-senha.html"}
+      ]
+    }
   }
 }
