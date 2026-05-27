@@ -435,12 +435,13 @@ def criar_usuario():
     try:
 
         dados = request.get_json()
-
         novo_usuario = {
             "nome": dados.get('nome'),
             "email": dados.get('email'),
             "senha": dados.get('senha'),
             "tipousuario": dados.get('tipousuario'),
+            "instituicao": dados.get('instituicao'),
+            
             "ativo": True
         }
 
