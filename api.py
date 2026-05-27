@@ -146,41 +146,100 @@ def login():
         email = dados.get('email')
         senha = dados.get('senha')
 
-        response = supabase.table("usuario") \
-            .select("id, senha, tipousuario, nome") \
+        usuario_encontrado = None
+        tipo_usuario = None
+
+        # =========================
+        # TABELA USUARIO
+        # =========================
+
+        response_usuario = supabase.table("usuario") \
+            .select("*") \
             .eq("email", email) \
             .execute()
 
-        usuarios = response.data
+        if len(response_usuario.data) > 0:
 
-        if len(usuarios) == 0:
+            usuario = response_usuario.data[0]
+
+            if usuario["senha"] == senha:
+
+                usuario_encontrado = usuario
+                tipo_usuario = usuario.get("tipousuario", "usuario")
+
+        # =========================
+        # TABELA EMPRESA
+        # =========================
+
+        if usuario_encontrado is None:
+
+            response_empresa = supabase.table("empresa") \
+                .select("*") \
+                .eq("email", email) \
+                .execute()
+
+            if len(response_empresa.data) > 0:
+
+                empresa = response_empresa.data[0]
+
+                if empresa["senha"] == senha:
+
+                    usuario_encontrado = empresa
+                    tipo_usuario = "empresa"
+
+        # =========================
+        # TABELA INSTITUICAO
+        # =========================
+
+        if usuario_encontrado is None:
+
+            response_instituicao = supabase.table("instituicao") \
+                .select("*") \
+                .eq("email", email) \
+                .execute()
+
+            if len(response_instituicao.data) > 0:
+
+                instituicao = response_instituicao.data[0]
+
+                if instituicao["senha"] == senha:
+
+                    usuario_encontrado = instituicao
+                    tipo_usuario = "instituicao"
+
+        # =========================
+        # NÃO ENCONTROU
+        # =========================
+
+        if usuario_encontrado is None:
 
             return jsonify({
                 "erro": "Email ou senha inválidos"
             }), 401
 
-        usuario = usuarios[0]
-
-        if usuario["senha"] != senha:
-
-            return jsonify({
-                "erro": "Email ou senha inválidos"
-            }), 401
-
-        # determine role from user record
-        role = (usuario.get('tipousuario') or usuario.get('tipoUsuario') or 'instituicao')
-        token_kwargs = {}
-        if AUTH_ROLE_IN_TOKEN:
-            token_kwargs['additional_claims'] = {'role': role}
+        # =========================
+        # TOKEN JWT
+        # =========================
 
         token = create_access_token(
-            identity=str(usuario["id"]),
-            **token_kwargs
+            identity=str(usuario_encontrado["id"]),
+            additional_claims={
+                "role": tipo_usuario
+            }
         )
 
         return jsonify({
-            "mensagem": "Login realizado",
-            "token": token
+
+            "mensagem": "Login realizado com sucesso",
+
+            "token": token,
+
+            "usuario": {
+                "id": usuario_encontrado["id"],
+                "email": usuario_encontrado["email"],
+                "tipo": tipo_usuario
+            }
+
         }), 200
 
     except Exception as e:
@@ -188,8 +247,6 @@ def login():
         return jsonify({
             "erro": str(e)
         }), 500
-
-
  
 # ME
  
