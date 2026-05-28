@@ -15,9 +15,7 @@ import uuid
 
 import os
 
- 
-# CONFIGURAÇÕES
- 
+
 
 load_dotenv()
 
@@ -30,9 +28,7 @@ app.config["JSON_SORT_KEYS"] = False
 
 jwt = JWTManager(app)
 
- 
-# SUPABASE
- 
+
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -42,10 +38,7 @@ supabase: Client = create_client(
     SUPABASE_KEY
 )
 
-# Server-side auth flags
-# Set SERVER_AUTH_ENABLED=true to enable server enforcement of roles
 SERVER_AUTH_ENABLED = os.getenv('SERVER_AUTH_ENABLED', 'false').lower() == 'true'
-# If true, include role in JWT at login time; otherwise decorator will fetch role from DB per-request
 AUTH_ROLE_IN_TOKEN = os.getenv('AUTH_ROLE_IN_TOKEN', 'true').lower() == 'true'
 
  
@@ -70,26 +63,19 @@ def upload_arquivo():
                 "erro": "Arquivo inválido"
             }), 400
 
-        # nome seguro
         nome_original = secure_filename(arquivo.filename)
 
-        # extensão
         extensao = nome_original.split('.')[-1].lower()
-
-        # permitir apenas zip
         if extensao != 'zip':
 
             return jsonify({
                 "erro": "Apenas arquivos ZIP são permitidos"
             }), 400
 
-        # nome único
         nome_arquivo = secure_filename(arquivo.filename)
 
-        # caminho no storage
         caminho = f"propostas/{nome_arquivo}"
 
-        # upload supabase
         response = supabase.storage.from_("arquivos").upload(
             path=caminho,
             file=arquivo.read(),
@@ -98,7 +84,6 @@ def upload_arquivo():
             }
         )
 
-        # URL pública
         url = supabase.storage.from_("arquivos").get_public_url(caminho)
 
         return jsonify({
@@ -119,11 +104,7 @@ def upload_arquivo():
             "erro": str(e)
         }), 500
 
-
-
-# HOME
  
-
 @app.route('/')
 def index():
 
@@ -131,9 +112,6 @@ def index():
         "mensagem": "Bem-vindo à API do Sistema CDL!"
     })
 
-
- 
-# LOGIN
  
 
 @app.route('/login', methods=['POST'])
@@ -149,9 +127,6 @@ def login():
         usuario_encontrado = None
         tipo_usuario = None
 
-        # =========================
-        # TABELA USUARIO
-        # =========================
 
         response_usuario = supabase.table("usuario") \
             .select("*") \
@@ -167,9 +142,6 @@ def login():
                 usuario_encontrado = usuario
                 tipo_usuario = usuario.get("tipousuario", "usuario")
 
-        # =========================
-        # TABELA EMPRESA
-        # =========================
 
         if usuario_encontrado is None:
 
@@ -187,9 +159,6 @@ def login():
                     usuario_encontrado = empresa
                     tipo_usuario = "empresa"
 
-        # =========================
-        # TABELA INSTITUICAO
-        # =========================
 
         if usuario_encontrado is None:
 
@@ -207,9 +176,6 @@ def login():
                     usuario_encontrado = instituicao
                     tipo_usuario = "instituicao"
 
-        # =========================
-        # NÃO ENCONTROU
-        # =========================
 
         if usuario_encontrado is None:
 
@@ -217,9 +183,6 @@ def login():
                 "erro": "Email ou senha inválidos"
             }), 401
 
-        # =========================
-        # TOKEN JWT
-        # =========================
 
         token = create_access_token(
             identity=str(usuario_encontrado["id"]),
@@ -247,8 +210,6 @@ def login():
         return jsonify({
             "erro": str(e)
         }), 500
- 
-# ME
  
 
 @app.route('/me', methods=['GET'])
@@ -281,67 +242,6 @@ def me():
         }), 500
 
 
- 
-# ACCESS CONTROL / AUTH HELPERS
- 
-def require_roles(*allowed_roles):
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            # if server-side enforcement disabled, allow everything
-            if not SERVER_AUTH_ENABLED:
-                return fn(*args, **kwargs)
-
-            # ensure JWT present
-            try:
-                verify_jwt_in_request()
-            except Exception as e:
-                return jsonify({"erro": "Token ausente ou inválido"}), 401
-
-            # determine role either from token or from DB lookup
-            role = None
-            try:
-                if AUTH_ROLE_IN_TOKEN:
-                    claims = get_jwt() or {}
-                    role = (claims.get('role') or '').lower()
-                else:
-                    # lookup user role from DB
-                    usuario_id = get_jwt_identity()
-                    resp = supabase.table('usuario').select('tipousuario').eq('id', usuario_id).execute()
-                    data = resp.data
-                    if data and len(data) > 0:
-                        role = (data[0].get('tipousuario') or '').lower()
-            except Exception:
-                role = None
-
-            # if admin, allow
-            if role and role == 'admin':
-                return fn(*args, **kwargs)
-
-            allowed = [r.lower() for r in allowed_roles]
-            if not role or role not in allowed:
-                return jsonify({"erro": "Acesso negado"}), 403
-
-            return fn(*args, **kwargs)
-        wrapper.__name__ = fn.__name__
-        return wrapper
-    return decorator
-
-
-@app.route('/access-control', methods=['GET'])
-def access_control():
-    try:
-        import json, os
-        path = os.path.join(os.path.dirname(__file__), 'access_control.json')
-        with open(path, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-        return jsonify(data), 200
-    except Exception as e:
-        return jsonify({"erro": str(e)}), 500
-
-
- 
-# MEUS DESAFIOS
- 
 
 @app.route('/me/desafios', methods=['GET'])
 @jwt_required()
@@ -379,9 +279,6 @@ def meus_desafios():
         }), 500
 
 
- 
-# USUÁRIOS
- 
 
 @app.route('/usuarios', methods=['GET'])
 def obter_usuarios():
@@ -515,9 +412,6 @@ def deletar_usuario(id):
         }), 500
 
 
- 
-# EMPRESAS
- 
 
 @app.route('/empresas', methods=['GET'])
 def obter_empresas():
@@ -647,9 +541,6 @@ def deletar_empresa(id):
         }), 500
 
 
- 
-# INSTITUIÇÕES
- 
 
 @app.route('/instituicoes', methods=['GET'])
 def obter_instituicoes():
@@ -731,9 +622,6 @@ def criar_instituicao():
         }), 500
 
 
- 
-# DESAFIOS
- 
 
 @app.route('/desafios', methods=['GET'])
 def obter_desafios():
@@ -858,10 +746,6 @@ def deletar_desafio(id):
         return jsonify({
             "erro": str(e)
         }), 500
-
-
- 
-# PROPOSTAS
  
 
 @app.route('/propostas', methods=['GET'])
@@ -942,10 +826,6 @@ def criar_proposta():
         }), 500
 
 
- 
-# REQUISITOS
- 
-
 @app.route('/requisitos', methods=['GET'])
 def obter_requisitos():
 
@@ -1020,9 +900,6 @@ def criar_requisito():
         }), 500
 
 
- 
-# NOTIFICAÇÕES
- 
 
 @app.route('/notificacoes', methods=['GET'])
 def obter_notificacoes():
@@ -1120,10 +997,6 @@ def deletar_notificacao(id):
             "erro": str(e)
         }), 500
 
-
- 
-# CONFIRMAÇÕES EMPRESA
- 
 
 @app.route('/confirmacoes-empresa', methods=['GET'])
 def obter_confirmacoes_empresa():
@@ -1260,10 +1133,6 @@ def deletar_confirmacao_empresa(id):
         }), 500
 
 
- 
-# PROBLEMAS
- 
-
 @app.route('/problemas', methods=['GET'])
 def obter_problemas():
 
@@ -1309,9 +1178,6 @@ def obter_problema(id):
         }), 500
 
 
- 
-# ERROS
- 
 
 @app.errorhandler(404)
 def not_found(error):
@@ -1327,11 +1193,6 @@ def internal_error(error):
     return jsonify({
         "erro": "Erro interno do servidor"
     }), 500
-
-
- 
-# EXECUÇÃO
- 
 
 if __name__ == '__main__':
 
