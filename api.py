@@ -125,7 +125,7 @@ def login():
         senha = dados.get('senha')
 
         usuario_encontrado = None
-        tipo_usuario = None
+        tipo = None
 
 
         response_usuario = supabase.table("usuario") \
