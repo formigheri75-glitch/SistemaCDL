@@ -99,6 +99,34 @@ def upload_arquivo():
         }), 500
 
  
+@app.route('/propostas/<int:id>/arquivo', methods=['GET'])
+def obter_arquivo_proposta(id):
+
+    try:
+
+        response = supabase.table("proposta") \
+            .select("id, nomearquivo, arquivo") \
+            .eq("id", id) \
+            .execute()
+
+        if len(response.data) == 0:
+            return jsonify({
+                "erro": "Proposta não encontrada"
+            }), 404
+
+        proposta = response.data[0]
+
+        return jsonify({
+            "id": proposta["id"],
+            "nomearquivo": proposta["nomearquivo"],
+            "url": proposta["arquivo"]
+        }), 200
+
+    except Exception as e:
+        return jsonify({
+            "erro": str(e)
+        }), 500
+    
 @app.route('/')
 def index():
 
