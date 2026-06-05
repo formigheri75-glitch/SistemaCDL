@@ -50,33 +50,27 @@ def upload_arquivo():
     try:
 
         if 'arquivo' not in request.files:
+            return jsonify({"erro": "Nenhum arquivo enviado"}), 400
 
-            return jsonify({
-                "erro": "Nenhum arquivo enviado"
-            }), 400
+        proposta_id = request.form.get('propostaid')
+
+        if not proposta_id:
+            return jsonify({"erro": "propostaid é obrigatório"}), 400
 
         arquivo = request.files['arquivo']
-
-        if arquivo.filename == '':
-
-            return jsonify({
-                "erro": "Arquivo inválido"
-            }), 400
 
         nome_original = secure_filename(arquivo.filename)
 
         extensao = nome_original.split('.')[-1].lower()
+
         if extensao != 'zip':
+            return jsonify({"erro": "Apenas ZIP é permitido"}), 400
 
-            return jsonify({
-                "erro": "Apenas arquivos ZIP são permitidos"
-            }), 400
+        nome_storage = f"{uuid.uuid4()}.zip"
 
-        nome_arquivo = secure_filename(arquivo.filename)
+        caminho = f"propostas/{nome_storage}"
 
-        caminho = f"propostas/{nome_arquivo}"
-
-        response = supabase.storage.from_("arquivos").upload(
+        supabase.storage.from_("arquivos").upload(
             path=caminho,
             file=arquivo.read(),
             file_options={
@@ -86,20 +80,20 @@ def upload_arquivo():
 
         url = supabase.storage.from_("arquivos").get_public_url(caminho)
 
+        supabase.table("proposta") \
+            .update({
+                "arquivo": url,
+                "nomearquivo": nome_original
+            }) \
+            .eq("id", proposta_id) \
+            .execute()
+
         return jsonify({
-
             "mensagem": "Arquivo enviado com sucesso",
-            "arquivo": {
-                "nome_original": nome_original,
-                "nome_storage": nome_arquivo,
-                "caminho": caminho,
-                "url": url
-            }
-
-        }), 201
+            "arquivo": url
+        }), 200
 
     except Exception as e:
-
         return jsonify({
             "erro": str(e)
         }), 500
