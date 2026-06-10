@@ -47,7 +47,6 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação e autorização
             if (!window.ensureRole('coordenador')) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
@@ -82,7 +81,6 @@
                         this.loading = true;
                         try {
                             this.proposal = await ApiClient.get(`/propostas/${id}`);
-                            // resolve related desafio for display
                             const desafioId = this.proposal && (this.proposal.desafioid || this.proposal.desafioId || this.proposal.desafioID || this.proposal.desafio) || null;
                             if (desafioId) {
                                 this.desafioId = desafioId;
@@ -93,7 +91,7 @@
                                             this.desafioLink = `detalhesProblema.html?id=${encodeURIComponent(desafioId)}`;
                                         }
                                     } catch (e) {
-                                        // ignore
+                                        // ignora
                                     }
                             }
                         } catch (err) {

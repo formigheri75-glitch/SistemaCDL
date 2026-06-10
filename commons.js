@@ -12,36 +12,214 @@
     }
 })();
 
-// Componente de Navegação
+// Componente de Navegação Corrigido - Com Nomes Específicos
 const NavBar = {
     template: `
     <nav class="bg-slate-950 border-b border-slate-800 sticky top-0 z-50 shadow-lg">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex justify-between items-center h-16">
-                <div class="flex items-center gap-3 cursor-pointer" :onclick="getHomeUrl">
+                <div class="flex items-center gap-3 cursor-pointer" @click="goToHome">
                     <div class="text-2xl font-bold bg-gradient-to-r from-blue-500 to-cyan-400 bg-clip-text text-transparent">
                         Desafios
                     </div>
                 </div>
+                
                 <div class="hidden md:flex gap-1">
-                    <a href="index.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Início</a>
-                    <a v-if="!isLoggedIn" href="CadastroEmpresa.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Empresa</a>
-                    <a v-if="!isLoggedIn" href="CadastroInstituicao.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Instituição</a>
-                    <a v-if="!isLoggedIn" href="RecuperaSenha.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Recuperar senha</a>
+                    <template v-if="!isLoggedIn">
+                        <a href="index.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Inicio</a>
+                        <a href="CadastroEmpresa.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Cadastro Empresa</a>
+                        <a href="CadastroInstituicao.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Cadastro Instituicao</a>
+                        <a href="RecuperaSenha.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">Recuperar senha</a>
+                    </template>
+                    
+                    <template v-else>
+                        <a :href="dashboardLink" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                            Dashboard
+                        </a>
+                        
+                        <template v-if="userRole === 'empresa'">
+                            <a href="criaProblema.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                                Novo Desafio
+                            </a>
+                            <a href="propostas.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                                Propostas
+                            </a>
+                        </template>
+                        
+                        <template v-if="userRole === 'instituicao'">
+                            <a href="tela-propostas-instituicao.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                                Propostas Recebidas
+                            </a>
+                        </template>
+                        
+                        <template v-if="userRole === 'coordenador'">
+                            <a href="tela-propostas-coordenador.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                                Analise de Propostas
+                            </a>
+                        </template>
+                        
+                        <template v-if="userRole === 'admin'">
+                            <a href="aprovacoes.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                                Aprovacoes
+                            </a>
+                            <a href="usuarios.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                                Usuarios
+                            </a>
+                        </template>
+                        
+                        <a href="notificacoes.html" class="px-4 py-2 rounded-lg font-medium transition-all text-gray-300 hover:bg-slate-800">
+                            Notificacoes
+                        </a>
+                    </template>
                 </div>
+                
                 <div class="md:hidden">
-                    <button class="text-gray-300 hover:text-white">Menu</button>
+                    <button @click="toggleMobileMenu" class="text-gray-300 hover:text-white text-2xl">
+                        ☰
+                    </button>
                 </div>
+                
                 <div class="hidden md:flex items-center gap-3">
-                    <a id="navUserLink" href="javascript:void(0)" onclick="(function(){ const u=window.StorageManager.getUser(); if(u) window.location.href=window.AppRoutes.getHomeUrl(); else window.location.href='login.html'; })()" class="text-gray-300 hover:text-white" style="text-decoration:none;">
-                        <span id="navUserName">Entrar</span>
-                    </a>
-                    <button id="navLogoutBtn" onclick="window.StorageManager.logout()" class="ml-2 px-3 py-1 rounded bg-red-600 text-white" style="display:none">Sair</button>
+                    <template v-if="isLoggedIn">
+                        <div class="flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800">
+                            <span class="text-blue-400">{{ getUserIcon() }}</span>
+                            <span class="text-gray-300 text-sm font-medium">{{ getUserDisplayName() }}</span>
+                            <span class="text-xs text-cyan-400">({{ getUserRoleLabel() }})</span>
+                        </div>
+                        <button @click="logout" class="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white transition-all">
+                            Sair
+                        </button>
+                    </template>
+                    <template v-else>
+                        <a href="login.html" class="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white transition-all">
+                            Entrar
+                        </a>
+                    </template>
                 </div>
             </div>
         </div>
+        
+        <div v-if="mobileMenuOpen" class="md:hidden bg-slate-900 border-t border-slate-800">
+            <div class="px-4 py-2 space-y-1">
+                <template v-if="!isLoggedIn">
+                    <a href="index.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Inicio</a>
+                    <a href="CadastroEmpresa.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Cadastro Empresa</a>
+                    <a href="CadastroInstituicao.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Cadastro Instituicao</a>
+                    <a href="RecuperaSenha.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Recuperar senha</a>
+                </template>
+                <template v-else>
+                    <div class="px-4 py-2 border-b border-slate-700 mb-2">
+                        <div class="text-gray-300 font-medium">{{ getUserDisplayName() }}</div>
+                        <div class="text-xs text-cyan-400">{{ getUserRoleLabel() }}</div>
+                    </div>
+                    <a :href="dashboardLink" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Dashboard</a>
+                    <template v-if="userRole === 'empresa'">
+                        <a href="criaProblema.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Novo Desafio</a>
+                        <a href="propostas.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Propostas</a>
+                    </template>
+                    <template v-if="userRole === 'instituicao'">
+                        <a href="tela-propostas-instituicao.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Propostas Recebidas</a>
+                    </template>
+                    <template v-if="userRole === 'coordenador'">
+                        <a href="tela-propostas-coordenador.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Analise de Propostas</a>
+                    </template>
+                    <template v-if="userRole === 'admin'">
+                        <a href="aprovacoes.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Aprovacoes</a>
+                        <a href="usuarios.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Usuarios</a>
+                    </template>
+                    <a href="notificacoes.html" class="block px-4 py-2 text-gray-300 hover:bg-slate-800 rounded">Notificacoes</a>
+                    <hr class="border-slate-700 my-2">
+                    <button @click="logout" class="w-full text-left px-4 py-2 text-red-400 hover:bg-slate-800 rounded">Sair</button>
+                </template>
+            </div>
+        </div>
     </nav>
-    `
+    `,
+    
+    data() {
+        return {
+            mobileMenuOpen: false
+        };
+    },
+    
+    computed: {
+        isLoggedIn() {
+            return !!(StorageManager && StorageManager.getToken && StorageManager.getToken());
+        },
+        userRole() {
+            if (!this.isLoggedIn) return null;
+            return AppRoutes.getCurrentRole();
+        },
+        userData() {
+            return StorageManager.getUser() || {};
+        },
+        dashboardLink() {
+            if (!this.isLoggedIn) return 'login.html';
+            return AppRoutes.getHomeUrl(this.userRole);
+        }
+    },
+    
+    methods: {
+        goToHome() {
+            window.location.href = this.dashboardLink;
+        },
+        toggleMobileMenu() {
+            this.mobileMenuOpen = !this.mobileMenuOpen;
+        },
+        logout() {
+            if (StorageManager && StorageManager.logout) {
+                StorageManager.logout();
+            }
+        },
+        
+        getUserDisplayName() {
+            if (!this.isLoggedIn) return 'Entrar';
+            
+            const user = this.userData;
+            const role = this.userRole;
+            
+            if (role === 'empresa') {
+                return user.nomefantasia || user.nomeFantasia || user.razaosocial || user.email || 'Empresa';
+            }
+            
+            if (role === 'instituicao') {
+                return user.nomeinstituicao || user.nomeInstituicao || user.instituicao || user.email || 'Instituicao';
+            }
+            
+            if (role === 'coordenador' || role === 'admin') {
+                return user.nome || user.name || user.email || 'Usuario';
+            }
+            
+            return user.email || 'Usuario';
+        },
+        
+        getUserRoleLabel() {
+            const labels = {
+                empresa: 'Empresa',
+                instituicao: 'Instituicao',
+                coordenador: 'Coordenador',
+                admin: 'Admin'
+            };
+            return labels[this.userRole] || 'Usuario';
+        },
+        
+        getUserIcon() {
+            const icons = {
+                empresa: '🏢',
+                instituicao: '🎓',
+                coordenador: '🧭',
+                admin: '⚙️'
+            };
+            return icons[this.userRole] || '👤';
+        }
+    },
+    
+    mounted() {
+        window.addEventListener('storage', () => {
+            this.$forceUpdate();
+        });
+        this.$forceUpdate();
+    }
 };
 
 // Sidebar compartilhada para telas com navegação lateral
@@ -61,11 +239,9 @@ const SideNav = {
     },
     mounted() {
         try {
-            // update view when localStorage changes (login/logout in other tabs)
             window.addEventListener('storage', () => {
                 this.$forceUpdate && this.$forceUpdate();
             });
-            // initialize expanded state for groups that contain the active href
             try {
                 const menuInit = this.menuToRender || [];
                 menuInit.forEach((it, i) => {
@@ -73,12 +249,8 @@ const SideNav = {
                         this.expanded[i] = (this.resolvedActive && this.resolvedActive.parentIndex === i);
                     }
                 });
-            } catch (e) {
-                // ignore
-            }
-        } catch (e) {
-            // ignore
-        }
+            } catch (e) {}
+        } catch (e) {}
     },
     methods: {
         navigate(href) {
@@ -112,90 +284,51 @@ const SideNav = {
             return StorageManager.getUser() || {};
         },
         getUserRole() {
-            // Centralize role determination in AppRoutes.getCurrentRole()
             try {
+                const u = this.getUser() || {};
+                const explicit = (u.type || u.tipo || u.tipousuario || u.userType || localStorage.getItem('userType'));
+                if (explicit) return AppRoutes.normalizeRole(explicit);
                 return AppRoutes.getCurrentRole();
             } catch (e) {
                 const user = this.getUser();
                 return AppRoutes.normalizeRole(
-                    user.type ||
-                        user.role ||
-                        user.userType ||
-                        user.tipoUsuario ||
-                        localStorage.getItem('userType'),
+                    user && (user.type || user.role || user.userType || user.tipoUsuario) || localStorage.getItem('userType')
                 );
             }
         },
-        getUserName() {
+        getUserDisplayName() {
+            if (!this.isLoggedIn()) return 'Entrar';
+            
             const user = this.getUser();
             const role = this.getUserRole();
-
-            if (!user || Object.keys(user).length === 0) return 'Usuário';
-
-            const firstNonEmpty = (...keys) => {
-                for (const k of keys) {
-                    const v = user[k];
-                    if (v !== undefined && v !== null) {
-                        const s = String(v).trim();
-                        if (s) return s;
-                    }
-                }
-                return null;
-            };
-
-            // Prefer source (table) from login to decide which fields to show
-            const src = ((user && (user.sourceTable || user._source)) || localStorage.getItem('userSource') || '').toLowerCase();
-            let sourceRole = null;
-            if (src) {
-                if (src.includes('empresa')) sourceRole = 'empresa';
-                else if (src.includes('instituic')) sourceRole = 'instituicao';
-                else if (src.includes('coordenador')) sourceRole = 'coordenador';
-                else if (src.includes('admin')) sourceRole = 'admin';
+            
+            if (role === 'empresa') {
+                return user.nomefantasia || user.nomeFantasia || user.razaosocial || user.email || 'Empresa';
             }
-            const effectiveRole = sourceRole || role;
-            // DEBUG: report inference for troubleshooting
-            try { console.debug('getUserName:inference', { src: src, sourceRole, role, effectiveRole }); } catch(e){}
-
-            // Prefer role-specific display names (do not fallback to role label to avoid duplication)
-            if (effectiveRole === 'empresa') {
-                const val = firstNonEmpty('nomefantasia', 'nomeFantasia', 'NomeFantasia', 'fantasia', 'razaosocial', 'nome', 'name');
-                try { console.debug('getUserName:value', { effectiveRole, val }); } catch(e){}
-                return val || '';
+            
+            if (role === 'instituicao') {
+                return user.nomeinstituicao || user.nomeInstituicao || user.instituicao || user.email || 'Instituicao';
             }
-
-            if (effectiveRole === 'instituicao') {
-                const val = firstNonEmpty(
-                    'nomeinstituicao', 'nomeInstituicao', 'NomeInstituicao',
-                    'nome_instituicao', 'nome_instituição', 'instituicaoNome', 'instituicao_nome',
-                    'instituicao', 'sigla', 'nome', 'name', 'institutionName', 'institution_name'
-                );
-
-                // also try common nested shapes: user.instituicao.{nome|name}
-                if (!val && user.instituicao && typeof user.instituicao === 'object') {
-                    val = user.instituicao.nome || user.instituicao.name || user.instituicao.nomeInstituicao || user.instituicao.nomeinstituicao || null;
-                }
-                // try user.institution
-                if (!val && user.institution && typeof user.institution === 'object') {
-                    val = user.institution.name || user.institution.nome || null;
-                }
-
-                try { console.debug('getUserName:value', { effectiveRole, val }); } catch(e){}
-                return val || '';
+            
+            if (role === 'coordenador' || role === 'admin') {
+                return user.nome || user.name || user.email || 'Usuario';
             }
-
-            const val = firstNonEmpty('nome', 'name');
-            try { console.debug('getUserName:value', { effectiveRole, val }); } catch(e){}
-            return val || '';
+            
+            return user.email || 'Usuario';
         },
         getUserRoleLabel() {
             const labels = {
                 empresa: 'Empresa',
-                instituicao: 'Instituição',
+                instituicao: 'Instituicao',
                 coordenador: 'Coordenador',
                 admin: 'Administrador',
             };
-
-            return labels[this.getUserRole()] || 'Instituição';
+            try {
+                const info = window.resolveUserDisplay(this.getUser());
+                return info.roleLabel || (labels[this.getUserRole()] || 'Instituicao');
+            } catch (e) {
+                return labels[this.getUserRole()] || 'Instituicao';
+            }
         },
         getUserRoleIcon() {
             const icons = {
@@ -204,7 +337,6 @@ const SideNav = {
                 coordenador: '🧭',
                 admin: '⚙️',
             };
-
             return icons[this.getUserRole()] || '🎓';
         },
         getHomeUrl() {
@@ -222,16 +354,13 @@ const SideNav = {
             } catch (e) {
                 return this.items || [];
             }
-        }
-        ,
+        },
         resolvedActive() {
-            // determine which parent/child should be considered active
             try {
                 const menu = this.menuToRender || [];
                 const href = this.activeHref;
                 if (!href) return { parentIndex: null, childIndex: null };
 
-                // first look for child match (gives priority)
                 for (let i = 0; i < menu.length; i++) {
                     const it = menu[i];
                     if (it && it.children && it.children.length) {
@@ -243,7 +372,6 @@ const SideNav = {
                     }
                 }
 
-                // then look for parent match (first occurrence)
                 for (let i = 0; i < menu.length; i++) {
                     const it = menu[i];
                     if (it && it.href === href) return { parentIndex: i, childIndex: null };
@@ -260,7 +388,7 @@ const SideNav = {
         <a class="sidebar-user" :href="getHomeUrl()" @click.prevent="navigate(getHomeUrl())">
             <span class="sidebar-user-icon" aria-hidden="true">{{ getUserRoleIcon() }}</span>
             <span class="sidebar-user-content">
-                <span class="sidebar-user-name">{{ getUserName() }}</span>
+                <span class="sidebar-user-name">{{ getUserDisplayName() }}</span>
                 <span class="sidebar-user-role">{{ getUserRoleLabel() }}</span>
             </span>
         </a>
@@ -314,7 +442,6 @@ function mountVuePage(options) {
     return app;
 }
 
-// Helper to mount standard app pages with common pattern
 function mountStandardApp({ mountSelector = '#app', title, components = {}, data, methods = {}, mounted } = {}) {
     const { createApp } = Vue;
 
@@ -337,7 +464,6 @@ function mountStandardApp({ mountSelector = '#app', title, components = {}, data
     return app;
 }
 
-// Componente Input Reutilizável
 const FormInput = {
     template: `
     <div class="mb-4">
@@ -371,7 +497,6 @@ const FormInput = {
     emits: ['update:modelValue']
 };
 
-// Componente Cartão de Proposta
 const ProposalCard = {
     methods: {
         getDetailsLink() {
@@ -400,7 +525,6 @@ const ProposalCard = {
     `
 };
 
-// Componente Cartão de Desafio
 const ChallengeCard = {
     methods: {
         getDetailsHref() {
@@ -423,7 +547,6 @@ const ChallengeCard = {
     `
 };
 
-// Componente Cartão de Problema
 const ProblemCard = {
     methods: {
         getDetailsHref() {
@@ -449,7 +572,6 @@ const ProblemCard = {
     `
 };
 
-// Funções de Validação
 const ValidationFunctions = {
     validateEmail(email) {
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -465,54 +587,76 @@ const ValidationFunctions = {
     }
 };
 
-// Rotas por perfil de usuário
+window.debugAuthInfo = function() {
+    const user = StorageManager.getUser();
+    const source = localStorage.getItem('userSource');
+    const userType = localStorage.getItem('userType');
+    const role = AppRoutes.getCurrentRole();
+    const display = window.resolveUserDisplay(user);
+    
+    console.group('Auth Info');
+    console.log('Source Table:', source);
+    console.log('User Type:', userType);
+    console.log('Role:', role);
+    console.log('Display Name:', display.name);
+    console.log('Display Role:', display.roleLabel);
+    console.log('User Data:', user);
+    console.groupEnd();
+    
+    return { user, source, userType, role, display };
+};
+
 const AppRoutes = {
     normalizeRole(role) {
         const value = String(role || '').trim().toLowerCase();
-
+        
         if (['empresa', 'empresario', 'company'].includes(value)) return 'empresa';
-        if (['instituicao', 'instituição', 'institution'].includes(value)) {
-            return 'instituicao';
-        }
+        if (['instituicao', 'instituição', 'institution'].includes(value)) return 'instituicao';
         if (['coordenador', 'coordinator'].includes(value)) return 'coordenador';
         if (['admin', 'administrador'].includes(value)) return 'admin';
-
+        
         return 'instituicao';
     },
 
     getCurrentRole() {
         const user = StorageManager.getUser();
-
-        // Prefer explicit source table mapping when available
-        try {
-            const src = (user && (user.sourceTable || user._source)) || localStorage.getItem('userSource');
-            if (src) {
-                const s = String(src || '').toLowerCase();
-                if (s.includes('empresa')) return 'empresa';
-                if (s.includes('instituic')) return 'instituicao';
-                if (s.includes('coordenador')) return 'coordenador';
-                if (s.includes('admin')) return 'admin';
-                // if source is 'usuarios' or similar, fallthrough to type-based inference
-            }
-        } catch (e) {
-            // ignore and fallback to type-based inference
+        
+        if (user && user.tipo) {
+            return this.normalizeRole(user.tipo);
         }
-
-        return this.normalizeRole(
-            (user && (user.type || user.role || user.userType || user.tipoUsuario)) ||
-                localStorage.getItem('userType'),
-        );
+        
+        if (user && user.type) {
+            return this.normalizeRole(user.type);
+        }
+        
+        const storedType = localStorage.getItem('userType');
+        if (storedType) {
+            return this.normalizeRole(storedType);
+        }
+        
+        if (user && user.sourceTable) {
+            if (user.sourceTable === 'empresas') return 'empresa';
+            if (user.sourceTable === 'instituicoes') return 'instituicao';
+            if (user.sourceTable === 'usuarios') {
+                if (user.tipo === 'admin' || user.type === 'admin') return 'admin';
+                return 'coordenador';
+            }
+        }
+        
+        return 'instituicao';
     },
 
     getHomeUrl(role = this.getCurrentRole()) {
+        const normalizedRole = this.normalizeRole(role);
+        
         const routes = {
             empresa: 'empresaDashboard.html',
             instituicao: 'tela-inicial-instituicao.html',
             coordenador: 'tela-inicial-coordenador.html',
             admin: 'tela-admin.html'
         };
-
-        return routes[this.normalizeRole(role)] || routes.instituicao;
+        
+        return routes[normalizedRole] || routes.instituicao;
     },
 
     getNotificationsUrl() {
@@ -520,14 +664,16 @@ const AppRoutes = {
     },
 
     getProposalsUrl(role = this.getCurrentRole()) {
+        const normalizedRole = this.normalizeRole(role);
+        
         const routes = {
             empresa: 'propostas.html',
             instituicao: 'tela-propostas-instituicao.html',
             coordenador: 'tela-propostas-coordenador.html',
             admin: 'tela-admin.html'
         };
-
-        return routes[this.normalizeRole(role)] || routes.instituicao;
+        
+        return routes[normalizedRole] || routes.instituicao;
     },
 
     go(url) {
@@ -535,17 +681,11 @@ const AppRoutes = {
     }
 };
 
-// ===================================
-// UTILITÁRIOS COMPARTILHADOS
-// ===================================
-
-// Obter ID da query string
 window.getIdFromQuery = function() {
     const params = new URLSearchParams(window.location.search);
     return params.get('id');
 };
 
-// Formatar label de status
 window.getStatusLabel = function(status) {
     const value = String(status || '').toLowerCase();
     if (!value) return '';
@@ -555,7 +695,6 @@ window.getStatusLabel = function(status) {
     return status;
 };
 
-// Verificar autenticação e redirecionar para login se necessário
 window.checkAuth = function() {
     if (window.StorageManager && !window.StorageManager.getToken()) {
         window.location.href = 'login.html';
@@ -564,7 +703,6 @@ window.checkAuth = function() {
     return true;
 };
 
-// Carregar dados de proposta por ID
 window.loadProposta = async function(id) {
     try {
         if (id) {
@@ -579,11 +717,9 @@ window.loadProposta = async function(id) {
     }
 };
 
-// Carregar dados de desafio por ID
 window.loadDesafio = async function(id) {
     try {
         if (id) {
-            // Try /desafios first, fall back to /problemas
             try {
                 return await window.ApiClient.get(`/desafios/${id}`);
             } catch (e) {
@@ -594,7 +730,6 @@ window.loadDesafio = async function(id) {
                 }
             }
         } else {
-            // For lists scoped to current user, prefer existing /me/desafios
             const lista = await window.ApiClient.get('/me/desafios');
             return (lista && lista[0]) ? lista[0] : {};
         }
@@ -604,7 +739,6 @@ window.loadDesafio = async function(id) {
     }
 };
 
-// Fetch challenges list (try /desafios then /problemas)
 window.fetchDesafiosList = async function() {
     try {
         return await window.ApiClient.get('/desafios');
@@ -617,10 +751,6 @@ window.fetchDesafiosList = async function() {
         }
     }
 };
-
-// ===================================
-// VALIDAÇÃO DE FORMULÁRIO
-// ===================================
 
 window.FormValidator = {
     validateEmail(email) {
@@ -656,10 +786,6 @@ window.FormValidator = {
         return isEmail || isPhone;
     }
 };
-
-// ===================================
-// VUE MIXIN PARA FORMULÁRIOS DE AUTENTICAÇÃO
-// ===================================
 
 window.AuthFormMixin = {
     data() {
@@ -707,98 +833,161 @@ window.AuthFormMixin = {
     }
 };
 
-// ===================================
-// API E AUTENTICAÇÃO
-// ===================================
-
 // API_BASE_URL é definido em config.js e exportado para window.API_BASE_URL
 const API_BASE_URL = window.API_BASE_URL;
 
-// Gerenciador de Token JWT
 const StorageManager = {
     setToken(token) {
         localStorage.setItem('auth_token', token);
     },
+    
     getToken() {
         return localStorage.getItem('auth_token');
     },
+    
     clearToken() {
         localStorage.removeItem('auth_token');
     },
-    setUser(user) {
+    
+    setUser(user, sourceTable) {
         try {
-            const copy = Object.assign({}, user || {});
-
-            // normalize common id/email fields so downstream code can rely on copy.id and copy.email
-            try {
-                copy.id = copy.id || copy.ID || copy.usuarioid || copy.usuarioId || copy.userId || copy.user_id || copy.usuario_id || copy.id_usuario || null;
-                if (!copy.id && user && (user.id === 0 || user.id)) copy.id = user.id; // keep falsy zero if present
-            } catch (e) {}
-            try { copy.email = copy.email || copy.Email || copy.usuarioEmail || copy.userEmail || copy.mail || null; } catch(e){}
-
-            // if type is missing, attempt to infer/normalize from common fields
-            if (!copy.type) {
-                const inferred = (copy.tipoUsuario || copy.tipousuario || copy.role || copy.userType || copy.tipo || localStorage.getItem('userType')) || '';
-                let role = AppRoutes && AppRoutes.normalizeRole ? AppRoutes.normalizeRole(inferred) : (String(inferred || '').toLowerCase());
-
-                // further inference from profile fields
-                if (!role || role === 'instituicao') {
-                    if (copy.nomefantasia || copy.cnpj || copy.razaosocial) role = 'empresa';
-                    else if (copy.nomeinstituicao || copy.instituicao || copy.sigla) role = 'instituicao';
-                }
-
-                copy.type = role || 'instituicao';
+            console.log('SetUser - Recebido user:', user);
+            console.log('SetUser - sourceTable recebido:', sourceTable);
+            
+            const copy = {};
+            
+            if (user && user.email) {
+                copy.email = user.email;
             }
-
+            
+            let source = null;
+            let role = null;
+            
+            if (sourceTable === 'instituicoes') {
+                source = 'instituicoes';
+                role = 'instituicao';
+                if (user && user.nomeinstituicao) copy.nomeinstituicao = user.nomeinstituicao;
+            } else if (sourceTable === 'empresas') {
+                source = 'empresas';
+                role = 'empresa';
+                if (user && user.nomefantasia) copy.nomefantasia = user.nomefantasia;
+            } else if (sourceTable === 'usuarios') {
+                source = 'usuarios';
+                role = user?.tipo === 'admin' ? 'admin' : 'coordenador';
+                if (user && user.nome) copy.nome = user.nome;
+            } else if (user && user.tipo === 'instituicao') {
+                source = 'instituicoes';
+                role = 'instituicao';
+                if (user.nomeinstituicao) copy.nomeinstituicao = user.nomeinstituicao;
+            } else if (user && user.tipo === 'empresa') {
+                source = 'empresas';
+                role = 'empresa';
+                if (user.nomefantasia) copy.nomefantasia = user.nomefantasia;
+            } else if (user && user.nomeinstituicao) {
+                source = 'instituicoes';
+                role = 'instituicao';
+                copy.nomeinstituicao = user.nomeinstituicao;
+            } else if (user && user.nomefantasia) {
+                source = 'empresas';
+                role = 'empresa';
+                copy.nomefantasia = user.nomefantasia;
+            } else if (user && user.nome) {
+                source = 'usuarios';
+                role = 'coordenador';
+                copy.nome = user.nome;
+            } else {
+                source = 'instituicoes';
+                role = 'instituicao';
+            }
+            
+            copy.sourceTable = source;
+            copy.tipo = role;
+            copy.type = role;
+            
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('userType');
+            localStorage.removeItem('userSource');
+            
             localStorage.setItem('auth_user', JSON.stringify(copy));
-            localStorage.setItem('userType', copy.type);
-            // infer source table (where login/profile likely came from)
-            try {
-                let src = copy.sourceTable || copy._source || '';
-                if (!src) {
-                    // prefer explicit type when available
-                    const t = String(copy.type || '').toLowerCase();
-                    if (t.includes('empresa')) src = 'empresas';
-                    else if (t.includes('instituic') || t.includes('institui')) src = 'instituicoes';
-                    else if (t.includes('coordenador')) src = 'coordenadores';
-                    else if (t.includes('admin')) src = 'administradores';
-                    else {
-                        // fallback to field-based heuristics
-                        if (copy.nomefantasia || copy.nomeFantasia || copy.cnpj || copy.razaosocial) src = 'empresas';
-                        else if (copy.nomeinstituicao || copy.nomeInstituicao || copy.instituicaoNome || copy.instituicao) src = 'instituicoes';
-                        else src = 'usuarios';
-                    }
-                }
-                copy.sourceTable = src;
-                localStorage.setItem('userSource', src);
-                // update stored auth_user with sourceTable
-                localStorage.setItem('auth_user', JSON.stringify(copy));
-                try { console.debug('StorageManager.setUser', { type: copy.type, sourceTable: copy.sourceTable, sample: copy.nome || copy.nomeinstituicao || copy.nomefantasia || copy.name || copy.email }); } catch(e){}
-            } catch (e) {
-                // ignore
-            }
+            localStorage.setItem('userType', role);
+            localStorage.setItem('userSource', source);
+            
+            console.log('SetUser - Salvou:', { source, role, email: copy.email });
+            
         } catch (e) {
-            try { localStorage.setItem('auth_user', JSON.stringify(user)); } catch(_){}
-            if (user && user.type) localStorage.setItem('userType', user.type);
+            console.error('Erro ao salvar usuario:', e);
         }
     },
+    
     getUser() {
         const user = localStorage.getItem('auth_user');
-        return user ? JSON.parse(user) : null;
+        if (!user) return null;
+        try {
+            return JSON.parse(user);
+        } catch (e) {
+            return null;
+        }
     },
+    
+    getUserName() {
+        const user = this.getUser();
+        if (!user) return 'Entrar';
+        
+        if (user.nomefantasia) return user.nomefantasia;
+        if (user.nomeinstituicao) return user.nomeinstituicao;
+        if (user.nome) return user.nome;
+        
+        return user.email || 'Usuario';
+    },
+    
     logout() {
-        this.clearToken();
-        this.clearUser();
-        window.location.href = 'login.html';
-    },
-    clearUser() {
+        localStorage.removeItem('auth_token');
         localStorage.removeItem('auth_user');
         localStorage.removeItem('userType');
         localStorage.removeItem('userSource');
+        window.location.href = 'login.html';
     }
 };
 
-// Cliente HTTP com Autenticação
+// Função auxiliar para obter nome específico do usuário baseado no tipo
+window.getUserSpecificName = function(user = null) {
+    const userData = user || StorageManager.getUser();
+    if (!userData) return 'Usuário';
+    
+    const role = AppRoutes.getCurrentRole();
+    
+    switch(role) {
+        case 'empresa':
+            return userData.nomefantasia || 
+                   userData.nomeFantasia || 
+                   userData.fantasia || 
+                   userData.razaosocial || 
+                   userData.razaoSocial || 
+                   userData.nome || 
+                   userData.name || 
+                   'Empresa';
+            
+        case 'instituicao':
+            return userData.nomeinstituicao || 
+                   userData.nomeInstituicao || 
+                   userData.nome_instituicao || 
+                   userData.instituicaoNome || 
+                   userData.instituicao || 
+                   userData.nome || 
+                   userData.name || 
+                   'Instituição';
+            
+        case 'coordenador':
+            return userData.nome || userData.name || 'Coordenador';
+            
+        case 'admin':
+            return userData.nome || userData.name || userData.email || 'Administrador';
+            
+        default:
+            return userData.nome || userData.name || 'Usuário';
+    }
+};
+
 const ApiClient = {
     async fetch(path, options = {}) {
         const token = StorageManager.getToken();
@@ -817,7 +1006,6 @@ const ApiClient = {
                 headers
             });
             
-            // Se token expirou (401), logout
             if (response.status === 401 && token) {
                 StorageManager.logout();
                 return response;
@@ -867,7 +1055,6 @@ const ApiClient = {
     }
 };
 
-// Helper function to ensure user has required role(s) - redirect otherwise
 function ensureRole(allowedRoles) {
     if (!Array.isArray(allowedRoles)) {
         allowedRoles = [allowedRoles];
@@ -879,22 +1066,84 @@ function ensureRole(allowedRoles) {
         return false;
     }
     
-    const currentRole = AppRoutes.getCurrentRole();
-    if (!allowedRoles.includes(currentRole)) {
-        window.location.href = AppRoutes.getHomeUrl(currentRole);
-        return false;
+    const user = StorageManager.getUser();
+    let currentRole = null;
+    
+    if (user && user.tipo) {
+        currentRole = user.tipo;
+    } else if (user && user.type) {
+        currentRole = user.type;
+    } else {
+        currentRole = localStorage.getItem('userType');
     }
     
-    return true;
+    currentRole = AppRoutes.normalizeRole(currentRole);
+    
+    console.log('ensureRole - Role atual:', currentRole);
+    console.log('ensureRole - Roles permitidas:', allowedRoles);
+    
+    // ADMIN TEM ACESSO A TUDO
+    if (currentRole === 'admin') {
+        console.log('ensureRole - Admin tem acesso permitido');
+        return true;
+    }
+    
+    if (allowedRoles.includes(currentRole)) {
+        console.log('ensureRole - Acesso permitido');
+        return true;
+    }
+    
+    const homeUrl = AppRoutes.getHomeUrl(currentRole);
+    console.log('ensureRole - Acesso negado, redirecionando para:', homeUrl);
+    window.location.href = homeUrl;
+    return false;
 }
 
-// Simples função de validação usando access_control.json
 function checkPageAccess() {
     return window.validatePageAccess ? window.validatePageAccess() : true;
 }
 
+window.resolveUserDisplay = function(user) {
+    try {
+        const u = user || StorageManager.getUser() || {};
+        
+        let source = u.sourceTable || localStorage.getItem('userSource');
+        let name = '';
+        let role = '';
+        let roleLabel = '';
+        
+        if (source === 'empresas') {
+            name = u.nomefantasia || u.nomeFantasia || u.razaosocial || u.email || 'Empresa';
+            role = 'empresa';
+            roleLabel = 'Empresa';
+        } else if (source === 'instituicoes') {
+            name = u.nomeinstituicao || u.nomeInstituicao || u.instituicao || u.email || 'Instituicao';
+            role = 'instituicao';
+            roleLabel = 'Instituicao';
+        } else if (source === 'usuarios') {
+            name = u.nome || u.name || u.email || 'Usuario';
+            if (u.tipo === 'admin' || u.type === 'admin') {
+                role = 'admin';
+                roleLabel = 'Administrador';
+            } else {
+                role = 'coordenador';
+                roleLabel = 'Coordenador';
+            }
+        } else {
+            name = u.email || 'Usuario';
+            role = 'instituicao';
+            roleLabel = 'Instituicao';
+        }
+        
+        return { name, role, roleLabel, source };
+        
+    } catch (e) {
+        console.error('Erro no resolveUserDisplay:', e);
+        return { name: 'Usuario', role: 'instituicao', roleLabel: 'Instituicao', source: 'usuarios' };
+    }
+};
+
 if (typeof window !== 'undefined') {
-    // API_BASE_URL já é exportado pelo config.js, não redefinir aqui
     window.StorageManager = StorageManager;
     window.ApiClient = ApiClient;
     window.AppRoutes = AppRoutes;
@@ -902,6 +1151,7 @@ if (typeof window !== 'undefined') {
     window.SideNav = SideNav;
     window.buildSideNavItems = buildSideNavItems;
     window.mountVuePage = mountVuePage;
+    window.resolveUserDisplay = resolveUserDisplay;
     window.FormInput = FormInput;
     window.ProposalCard = ProposalCard;
     window.ChallengeCard = ChallengeCard;
@@ -912,7 +1162,6 @@ if (typeof window !== 'undefined') {
     window.checkPageAccess = checkPageAccess;
 }
 
-// Auth UI helpers and access control
 (function(){
     try{
         function refreshNavUser(){
@@ -921,54 +1170,14 @@ if (typeof window !== 'undefined') {
             if(!nameEl && !logoutBtn) return;
             const user = StorageManager.getUser();
             if(user){
-                // Prefer role-specific profile names (avoid showing email as primary label)
-                const firstNonEmpty = (...keys) => {
-                    for (const k of keys) {
-                        const v = user[k];
-                        if (v !== undefined && v !== null) {
-                            const s = String(v).trim();
-                            if (s) return s;
-                        }
-                    }
-                    return null;
-                };
-
-                let displayName = firstNonEmpty('nome', 'name') || '';
                 try {
-                    const role = AppRoutes.getCurrentRole();
-                    const src = ((user && (user.sourceTable || user._source)) || localStorage.getItem('userSource') || '').toLowerCase();
-                    let sourceRole = null;
-                    if (src) {
-                        if (src.includes('empresa')) sourceRole = 'empresa';
-                        else if (src.includes('instituic')) sourceRole = 'instituicao';
-                        else if (src.includes('coordenador')) sourceRole = 'coordenador';
-                        else if (src.includes('admin')) sourceRole = 'admin';
-                    }
-                    const effectiveRole = sourceRole || role;
-                    try { console.debug('refreshNavUser:inference', { user, src, sourceRole, role, effectiveRole }); } catch(e){}
-                    if (effectiveRole === 'empresa') {
-                        displayName = firstNonEmpty('nomefantasia', 'nomeFantasia', 'NomeFantasia', 'fantasia', 'razaosocial', 'nome', 'name') || '';
-                    }
-                    if (effectiveRole === 'instituicao') {
-                        displayName = firstNonEmpty(
-                            'nomeinstituicao', 'nomeInstituicao', 'NomeInstituicao',
-                            'nome_instituicao', 'nome_instituição', 'instituicaoNome', 'instituicao_nome',
-                            'instituicao', 'sigla', 'nome', 'name', 'institutionName'
-                        ) || null;
-
-                        if (!displayName && user.instituicao && typeof user.instituicao === 'object') {
-                            displayName = user.instituicao.nome || user.instituicao.name || user.instituicao.nomeInstituicao || user.instituicao.nomeinstituicao || displayName;
-                        }
-                        if (!displayName && user.institution && typeof user.institution === 'object') {
-                            displayName = user.institution.name || user.institution.nome || displayName;
-                        }
-                        displayName = displayName || '';
-                    }
-                } catch(e) {
-                    // ignore
+                    const info = window.resolveUserDisplay(user);
+                    if(nameEl) nameEl.textContent = info.name || 'Usuário';
+                    if(logoutBtn) logoutBtn.style.display = 'inline-block';
+                } catch (e) {
+                    if(nameEl) nameEl.textContent = 'Usuário';
+                    if(logoutBtn) logoutBtn.style.display = 'inline-block';
                 }
-                if(nameEl) nameEl.textContent = displayName;
-                if(logoutBtn) logoutBtn.style.display = 'inline-block';
             } else {
                 if(nameEl) nameEl.textContent = 'Entrar';
                 if(logoutBtn) logoutBtn.style.display = 'none';
@@ -977,14 +1186,13 @@ if (typeof window !== 'undefined') {
 
         window.refreshNavUser = refreshNavUser;
 
-        // Verificar acesso a uma página específica
         window.hasAccess = function(pageName, role) {
             try {
                 const accessControl = window.ACCESS_CONTROL;
                 if (!accessControl || !accessControl.pages) return false;
                 
                 const pageRoles = accessControl.pages[pageName];
-                if (!pageRoles) return false; // página não existe no mapa
+                if (!pageRoles) return false; 
                 
                 // admin tem acesso a tudo
                 if (accessControl.admin_has_access_to_all && role === 'admin') {
@@ -1004,7 +1212,6 @@ if (typeof window !== 'undefined') {
             }
         };
 
-        // Validar acesso e redirecionar se necessário
         window.validatePageAccess = function() {
             const token = StorageManager.getToken();
             const currentPage = window.location.pathname.split('/').pop() || 'index.html';
@@ -1033,7 +1240,6 @@ if (typeof window !== 'undefined') {
             return true;
         };
 
-        // access control helper: allowedRoles array or single role
         window.requireRole = function(allowedRoles){
             if(!allowedRoles) return;
             const roles = Array.isArray(allowedRoles) ? allowedRoles : [allowedRoles];
@@ -1044,14 +1250,12 @@ if (typeof window !== 'undefined') {
             }
             const role = AppRoutes.getCurrentRole();
             if(!roles.includes(role)){
-                // redirect to user's home
                 window.location.href = AppRoutes.getHomeUrl(role);
                 return false;
             }
             return true;
         };
 
-        // initialize shortly after load
         setTimeout(refreshNavUser, 50);
         window.addEventListener('storage', refreshNavUser);
     }catch(e){
@@ -1059,7 +1263,6 @@ if (typeof window !== 'undefined') {
     }
 })();
 
-// Admin menu factory for reuse across admin pages
 window.getAdminMenuItems = function(){
     return [
         { label: 'Dashboard geral', href: 'tela-admin.html' },
@@ -1080,7 +1283,6 @@ window.getAdminMenuItems = function(){
     ];
 };
 
-// helper to normalize and remove duplicate hrefs from any menu
 function _normalizeMenuGeneric(menu){
     const seen = new Set();
     const out = [];
@@ -1108,7 +1310,6 @@ function _normalizeMenuGeneric(menu){
     return out;
 }
 
-// Role-based menu factory for all roles
 window.getMenuForRole = function(role){
     role = String(role || '').toLowerCase();
     if(role === 'admin') return window.getAdminMenuItems();
@@ -1145,7 +1346,6 @@ window.getMenuForRole = function(role){
         ]);
     }
 
-    // default public menu
     const publicMenu = [
         { label: 'Início', href: 'index.html' },
         { label: 'Login', href: 'login.html' },
@@ -1153,13 +1353,11 @@ window.getMenuForRole = function(role){
         { label: 'Cadastro Instituição', href: 'CadastroInstituicao.html' }
     ];
 
-    // normalize to remove duplicate hrefs
     function normalizeMenu(menu){
         const seen = new Set();
         const out = [];
         for(const item of menu){
             const copy = Object.assign({}, item);
-            // if has children, normalize children first
             if(copy.children && Array.isArray(copy.children)){
                 const children = [];
                 for(const child of copy.children){
@@ -1169,16 +1367,13 @@ window.getMenuForRole = function(role){
                     children.push(child);
                 }
                 copy.children = children;
-                // if parent href duplicates a child or seen, remove parent href to avoid duplication
                 if(copy.href && seen.has(copy.href)){
                     delete copy.href;
                 }
-                // prefer to keep parents even if no href, as container for children
                 out.push(copy);
                 continue;
             }
 
-            // simple item
             if(copy.href){
                 if(seen.has(copy.href)) continue;
                 seen.add(copy.href);

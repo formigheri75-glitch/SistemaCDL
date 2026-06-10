@@ -249,7 +249,6 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
-                // Verificar autenticação e autorização
                 if (!window.ensureRole('empresa')) return;
 
                 if (window.messages) {
@@ -301,18 +300,16 @@
                                     return;
                                 }
                                 try {
-                                    // determine empresa id for the logged user
                                     const user = window.StorageManager.getUser() || {};
                                     let empresaId = null;
                                     try {
                                         const empresas = await window.ApiClient.get('/empresas');
                                         if (Array.isArray(empresas)) {
-                                            // try match by usuarioid or email
                                             const found = empresas.find(e => String(e.usuarioid || e.usuarioId || e.usuarioID || e.usuario) === String(user.id) || String(e.email) === String(user.email));
                                             if (found) empresaId = found.id || found.ID || found.empresaID || null;
                                         }
                                     } catch (err) {
-                                        // ignore, will validate below
+                                        // erro
                                     }
 
                                     if (!empresaId) {
@@ -322,7 +319,6 @@
                                         return;
                                     }
 
-                                    // compute datalimite from deadline days
                                     const days = parseInt(this.form.deadline) || 0;
                                     const lim = new Date();
                                     lim.setDate(lim.getDate() + days);
@@ -340,17 +336,15 @@
 
                                     const res = await window.ApiClient.post('/desafios', payload);
 
-                                    // determine created desafio id from response
                                     const created = res && res.dados && Array.isArray(res.dados) && res.dados[0] ? res.dados[0] : null;
                                     const desafioId = created && (created.id || created.ID || created.desafioid || created.desafioId) ? (created.id || created.ID || created.desafioid || created.desafioId) : null;
 
-                                    // if we have requirements, POST them to /requisitos
                                     if (desafioId && Array.isArray(this.form.requirements)) {
                                         await Promise.all(this.form.requirements.filter(r => r && r.trim()).map(async req => {
                                             try {
                                                 await window.ApiClient.post('/requisitos', { desafioid: desafioId, descricao: req });
                                             } catch (e) {
-                                                // ignore individual requisito errors
+                                                // erro
                                             }
                                         }));
                                     }

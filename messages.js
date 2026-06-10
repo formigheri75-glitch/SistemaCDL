@@ -330,7 +330,7 @@ const messages = {
     sair: "Sair",
   },
 
-  // Dashboard Empresa (rótulos específicos usados em empresaDashboard.html)
+  // Dashboard Empresa
   empresaDashboard: {
     title: "Dashboard Empresa",
     stats: {
@@ -405,7 +405,7 @@ const messages = {
     botaoEntrar: "Entrar no sistema",
   },
 
-  // Login Page
+  // Login
   login: {
     title: "Bem-vindo",
     subtitleEmpresa: "Acesse como Empresa",
@@ -686,7 +686,7 @@ const messages = {
     erroConfirm: "Senhas não conferem"
   },
 
-  // Dashboard (Estatísticas)
+  // Dashboard
   dashboard: {
     title: "Dashboard",
     ativos: "Ativos",
@@ -699,7 +699,7 @@ const messages = {
     subtitulo: "Acompanhe todos as métricas em tempo real",
   },
 
-  // Page 4 (Desafios)
+  // Desafios
   page4: {
     title: "Desafios Disponíveis",
     filtros: {
@@ -728,9 +728,8 @@ const messages = {
     confirmarSenha: "Confirme a senha",
   },
 
-  // Footer
+  // Rodape
   footer: "© 2024 Sistema de Desafios. Todos os direitos reservados.",
-  // Page-specific strings (migrated from hardcoded HTML)
   pages: {
     login: {
       pageTitle: "Login - Sistema de Desafios",
@@ -798,7 +797,6 @@ const messages = {
 
 window.messages = messages;
 
-// Exportar para uso em módulos
 
 if (typeof window !== "undefined") {
   window.messages = messages;
@@ -808,7 +806,6 @@ if (typeof module !== "undefined" && module.exports) {
   module.exports = messages;
 }
 
-// Backward-compatible aliases for keys changed during cleanup
 if (typeof messages !== "undefined") {
   messages.detalhesPropossta = messages.detalhesProposta;
 }

@@ -32,7 +32,6 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação e autorização
             if (!window.ensureRole('coordenador')) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }

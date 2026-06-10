@@ -104,7 +104,6 @@
         </div>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                // Verificar autenticação e autorização
                 if (!window.ensureRole('instituicao')) return;
 
                 mountVuePage({
@@ -119,7 +118,6 @@
                             ],
                             challenges: [],
                             notificationsCount: 0,
-                            // Coordinator management state
                             coordinators: [],
                             coordinatorModal: { open: false, editOpen: false, editMode: '' },
                             coordinatorForm: {},

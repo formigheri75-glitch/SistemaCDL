@@ -77,7 +77,6 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação e autorização
             if (!window.ensureRole('instituicao')) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
@@ -99,7 +98,6 @@
                     };
                 },
                 mounted: async function() {
-                    // read optional desafio filter from querystring
                     try {
                         const params = new URLSearchParams(window.location.search);
                         const d = params.get('desafio');

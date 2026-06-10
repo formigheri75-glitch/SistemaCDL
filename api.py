@@ -15,7 +15,9 @@ import uuid
 
 import os
 
-
+ 
+# CONFIGURAÇÕES
+ 
 
 load_dotenv()
 
@@ -28,7 +30,9 @@ app.config["JSON_SORT_KEYS"] = False
 
 jwt = JWTManager(app)
 
-
+ 
+# SUPABASE
+ 
 
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
@@ -38,7 +42,10 @@ supabase: Client = create_client(
     SUPABASE_KEY
 )
 
+# Server-side auth flags
+# Set SERVER_AUTH_ENABLED=true to enable server enforcement of roles
 SERVER_AUTH_ENABLED = os.getenv('SERVER_AUTH_ENABLED', 'false').lower() == 'true'
+# If true, include role in JWT at login time; otherwise decorator will fetch role from DB per-request
 AUTH_ROLE_IN_TOKEN = os.getenv('AUTH_ROLE_IN_TOKEN', 'true').lower() == 'true'
 
  
@@ -50,27 +57,40 @@ def upload_arquivo():
     try:
 
         if 'arquivo' not in request.files:
-            return jsonify({"erro": "Nenhum arquivo enviado"}), 400
 
-        proposta_id = request.form.get('propostaid')
-
-        if not proposta_id:
-            return jsonify({"erro": "propostaid é obrigatório"}), 400
+            return jsonify({
+                "erro": "Nenhum arquivo enviado"
+            }), 400
 
         arquivo = request.files['arquivo']
 
+        if arquivo.filename == '':
+
+            return jsonify({
+                "erro": "Arquivo inválido"
+            }), 400
+
+        # nome seguro
         nome_original = secure_filename(arquivo.filename)
 
+        # extensão
         extensao = nome_original.split('.')[-1].lower()
 
+        # permitir apenas zip
         if extensao != 'zip':
-            return jsonify({"erro": "Apenas ZIP é permitido"}), 400
 
-        nome_storage = f"{uuid.uuid4()}.zip"
+            return jsonify({
+                "erro": "Apenas arquivos ZIP são permitidos"
+            }), 400
 
-        caminho = f"propostas/{nome_storage}"
+        # nome único
+        nome_arquivo = secure_filename(arquivo.filename)
 
-        supabase.storage.from_("arquivos").upload(
+        # caminho no storage
+        caminho = f"propostas/{nome_arquivo}"
+
+        # upload supabase
+        response = supabase.storage.from_("arquivos").upload(
             path=caminho,
             file=arquivo.read(),
             file_options={
@@ -78,55 +98,32 @@ def upload_arquivo():
             }
         )
 
+        # URL pública
         url = supabase.storage.from_("arquivos").get_public_url(caminho)
 
-        supabase.table("proposta") \
-            .update({
-                "arquivo": url,
-                "nomearquivo": nome_original
-            }) \
-            .eq("id", proposta_id) \
-            .execute()
-
         return jsonify({
+
             "mensagem": "Arquivo enviado com sucesso",
-            "arquivo": url
-        }), 200
+            "arquivo": {
+                "nome_original": nome_original,
+                "nome_storage": nome_arquivo,
+                "caminho": caminho,
+                "url": url
+            }
+
+        }), 201
 
     except Exception as e:
+
         return jsonify({
             "erro": str(e)
         }), 500
 
+
+
+# HOME
  
-@app.route('/propostas/<int:id>/arquivo', methods=['GET'])
-def obter_arquivo_proposta(id):
 
-    try:
-
-        response = supabase.table("proposta") \
-            .select("id, nomearquivo, arquivo") \
-            .eq("id", id) \
-            .execute()
-
-        if len(response.data) == 0:
-            return jsonify({
-                "erro": "Proposta não encontrada"
-            }), 404
-
-        proposta = response.data[0]
-
-        return jsonify({
-            "id": proposta["id"],
-            "nomearquivo": proposta["nomearquivo"],
-            "url": proposta["arquivo"]
-        }), 200
-
-    except Exception as e:
-        return jsonify({
-            "erro": str(e)
-        }), 500
-    
 @app.route('/')
 def index():
 
@@ -134,104 +131,110 @@ def index():
         "mensagem": "Bem-vindo à API do Sistema CDL!"
     })
 
+
+ 
+# LOGIN
  
 
 @app.route('/login', methods=['POST'])
 def login():
-
     try:
-
         dados = request.get_json()
-
         email = dados.get('email')
         senha = dados.get('senha')
 
         usuario_encontrado = None
-        tipo = None
+        tipo_usuario = None
+        tabela_origem = None
+        dados_completos = None
 
+        # VERIFICAR PRIMEIRO NA TABELA INSTITUICAO
+        response_instituicao = supabase.table("instituicao").select("*").eq("email", email).execute()
+        if len(response_instituicao.data) > 0:
+            instituicao = response_instituicao.data[0]
+            if instituicao["senha"] == senha:
+                usuario_encontrado = instituicao
+                dados_completos = {
+                    "id": instituicao["id"],
+                    "email": instituicao["email"],
+                    "nomeinstituicao": instituicao.get("nomeinstituicao"),
+                    "cnpj": instituicao.get("cnpj"),
+                    "celular": instituicao.get("celular"),
+                    "cidade": instituicao.get("cidade"),
+                    "estado": instituicao.get("estado"),
+                    "endereco": instituicao.get("endereco"),
+                    "sourceTable": "instituicoes",
+                    "tipo": "instituicao"
+                }
+                tipo_usuario = "instituicao"
+                tabela_origem = "instituicoes"
 
-        response_usuario = supabase.table("usuario") \
-            .select("*") \
-            .eq("email", email) \
-            .execute()
-
-        if len(response_usuario.data) > 0:
-
-            usuario = response_usuario.data[0]
-
-            if usuario["senha"] == senha:
-
-                usuario_encontrado = usuario
-                tipo_usuario = usuario.get("tipousuario", "usuario")
-
-
+        # DEPOIS VERIFICAR NA TABELA EMPRESA
         if usuario_encontrado is None:
-
-            response_empresa = supabase.table("empresa") \
-                .select("*") \
-                .eq("email", email) \
-                .execute()
-
+            response_empresa = supabase.table("empresa").select("*").eq("email", email).execute()
             if len(response_empresa.data) > 0:
-
                 empresa = response_empresa.data[0]
-
                 if empresa["senha"] == senha:
-
                     usuario_encontrado = empresa
+                    dados_completos = {
+                        "id": empresa["id"],
+                        "email": empresa["email"],
+                        "nomefantasia": empresa.get("nomefantasia"),
+                        "razaosocial": empresa.get("razaosocial"),
+                        "cnpj": empresa.get("cnpj"),
+                        "celular": empresa.get("celular"),
+                        "cidade": empresa.get("cidade"),
+                        "estado": empresa.get("estado"),
+                        "endereco": empresa.get("endereco"),
+                        "areaatuacao": empresa.get("areaatuacao"),
+                        "sourceTable": "empresas",
+                        "tipo": "empresa"
+                    }
                     tipo_usuario = "empresa"
+                    tabela_origem = "empresas"
 
+        # DEPOIS VERIFICAR NA TABELA USUARIO
+        if usuario_encontrado is None:
+            response_usuario = supabase.table("usuario").select("*").eq("email", email).execute()
+            if len(response_usuario.data) > 0:
+                usuario = response_usuario.data[0]
+                if usuario["senha"] == senha:
+                    usuario_encontrado = usuario
+                    
+                    tipo_banco = usuario.get("tipo", "Coordenador")
+                    
+                    if tipo_banco == "Administrador":
+                        tipo_normalizado = "admin"
+                    else:
+                        tipo_normalizado = "coordenador"
+                    
+                    dados_completos = {
+                        "id": usuario["id"],
+                        "email": usuario["email"],
+                        "nome": usuario.get("nome"),
+                        "sourceTable": "usuarios",
+                        "tipo": tipo_normalizado
+                    }
+                    tipo_usuario = tipo_normalizado
+                    tabela_origem = "usuarios"
 
         if usuario_encontrado is None:
-
-            response_instituicao = supabase.table("instituicao") \
-                .select("*") \
-                .eq("email", email) \
-                .execute()
-
-            if len(response_instituicao.data) > 0:
-
-                instituicao = response_instituicao.data[0]
-
-                if instituicao["senha"] == senha:
-
-                    usuario_encontrado = instituicao
-                    tipo_usuario = "instituicao"
-
-
-        if usuario_encontrado is None:
-
-            return jsonify({
-                "erro": "Email ou senha inválidos"
-            }), 401
-
+            return jsonify({"erro": "Email ou senha inválidos"}), 401
 
         token = create_access_token(
             identity=str(usuario_encontrado["id"]),
-            additional_claims={
-                "role": tipo_usuario
-            }
+            additional_claims={"role": tipo_usuario, "sourceTable": tabela_origem}
         )
 
         return jsonify({
-
             "mensagem": "Login realizado com sucesso",
-
             "token": token,
-
-            "usuario": {
-                "id": usuario_encontrado["id"],
-                "email": usuario_encontrado["email"],
-                "tipo": tipo_usuario
-            }
-
+            "usuario": dados_completos
         }), 200
 
     except Exception as e:
-
-        return jsonify({
-            "erro": str(e)
-        }), 500
+        return jsonify({"erro": str(e)}), 500
+# ME
  
 
 @app.route('/me', methods=['GET'])
@@ -264,6 +267,67 @@ def me():
         }), 500
 
 
+ 
+# ACCESS CONTROL / AUTH HELPERS
+ 
+def require_roles(*allowed_roles):
+    def decorator(fn):
+        def wrapper(*args, **kwargs):
+            # if server-side enforcement disabled, allow everything
+            if not SERVER_AUTH_ENABLED:
+                return fn(*args, **kwargs)
+
+            # ensure JWT present
+            try:
+                verify_jwt_in_request()
+            except Exception as e:
+                return jsonify({"erro": "Token ausente ou inválido"}), 401
+
+            # determine role either from token or from DB lookup
+            role = None
+            try:
+                if AUTH_ROLE_IN_TOKEN:
+                    claims = get_jwt() or {}
+                    role = (claims.get('role') or '').lower()
+                else:
+                    # lookup user role from DB
+                    usuario_id = get_jwt_identity()
+                    resp = supabase.table('usuario').select('tipousuario').eq('id', usuario_id).execute()
+                    data = resp.data
+                    if data and len(data) > 0:
+                        role = (data[0].get('tipousuario') or '').lower()
+            except Exception:
+                role = None
+
+            # if admin, allow
+            if role and role == 'admin':
+                return fn(*args, **kwargs)
+
+            allowed = [r.lower() for r in allowed_roles]
+            if not role or role not in allowed:
+                return jsonify({"erro": "Acesso negado"}), 403
+
+            return fn(*args, **kwargs)
+        wrapper.__name__ = fn.__name__
+        return wrapper
+    return decorator
+
+
+@app.route('/access-control', methods=['GET'])
+def access_control():
+    try:
+        import json, os
+        path = os.path.join(os.path.dirname(__file__), 'access_control.json')
+        with open(path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data), 200
+    except Exception as e:
+        return jsonify({"erro": str(e)}), 500
+
+
+ 
+# MEUS DESAFIOS
+ 
 
 @app.route('/me/desafios', methods=['GET'])
 @jwt_required()
@@ -301,6 +365,9 @@ def meus_desafios():
         }), 500
 
 
+ 
+# USUÁRIOS
+ 
 
 @app.route('/usuarios', methods=['GET'])
 def obter_usuarios():
@@ -434,6 +501,9 @@ def deletar_usuario(id):
         }), 500
 
 
+ 
+# EMPRESAS
+ 
 
 @app.route('/empresas', methods=['GET'])
 def obter_empresas():
@@ -563,6 +633,9 @@ def deletar_empresa(id):
         }), 500
 
 
+ 
+# INSTITUIÇÕES
+ 
 
 @app.route('/instituicoes', methods=['GET'])
 def obter_instituicoes():
@@ -644,6 +717,9 @@ def criar_instituicao():
         }), 500
 
 
+ 
+# DESAFIOS
+ 
 
 @app.route('/desafios', methods=['GET'])
 def obter_desafios():
@@ -768,6 +844,10 @@ def deletar_desafio(id):
         return jsonify({
             "erro": str(e)
         }), 500
+
+
+ 
+# PROPOSTAS
  
 
 @app.route('/propostas', methods=['GET'])
@@ -848,6 +928,10 @@ def criar_proposta():
         }), 500
 
 
+ 
+# REQUISITOS
+ 
+
 @app.route('/requisitos', methods=['GET'])
 def obter_requisitos():
 
@@ -922,6 +1006,9 @@ def criar_requisito():
         }), 500
 
 
+ 
+# NOTIFICAÇÕES
+ 
 
 @app.route('/notificacoes', methods=['GET'])
 def obter_notificacoes():
@@ -1019,6 +1106,10 @@ def deletar_notificacao(id):
             "erro": str(e)
         }), 500
 
+
+ 
+# CONFIRMAÇÕES EMPRESA
+ 
 
 @app.route('/confirmacoes-empresa', methods=['GET'])
 def obter_confirmacoes_empresa():
@@ -1155,6 +1246,10 @@ def deletar_confirmacao_empresa(id):
         }), 500
 
 
+ 
+# PROBLEMAS
+ 
+
 @app.route('/problemas', methods=['GET'])
 def obter_problemas():
 
@@ -1200,6 +1295,9 @@ def obter_problema(id):
         }), 500
 
 
+ 
+# ERROS
+ 
 
 @app.errorhandler(404)
 def not_found(error):
@@ -1215,6 +1313,11 @@ def internal_error(error):
     return jsonify({
         "erro": "Erro interno do servidor"
     }), 500
+
+
+ 
+# EXECUÇÃO
+ 
 
 if __name__ == '__main__':
 

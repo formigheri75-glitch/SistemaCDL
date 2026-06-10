@@ -28,7 +28,6 @@
 
                         <div v-if="desafioTitle" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ desafioTitle }}</div>
 
-                        <!-- Filter Section -->
                         <div class="filter-section">
                             <span class="filter-label"
                                 >{{ msg.propostas.filtro.label }}</span
@@ -59,7 +58,6 @@
                             </button>
                         </div>
 
-                        <!-- Proposals Grid -->
                         <div
                             v-if="filteredProposals.length > 0"
                             class="proposals-grid"
@@ -72,7 +70,6 @@
                             ></proposal-card>
                         </div>
 
-                        <!-- Empty State -->
                         <div v-else class="empty-state">
                             <p>{{ msg.propostas.vazio }}</p>
                         </div>
@@ -85,7 +82,6 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
-                // Verificar autenticação e autorização
                 if (!window.ensureRole('empresa')) return;
 
                 if (window.messages) {
@@ -107,7 +103,6 @@
                             };
                         },
                         async mounted() {
-                            // read optional desafio filter from querystring
                             try {
                                 const params = new URLSearchParams(window.location.search);
                                 const d = params.get('desafio');
@@ -130,7 +125,6 @@
                                         detailsLink: 'detalhesPropossta.html'
                                     }));
 
-                                    // resolve related desafios to get the challenge title
                                     const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
                                     const desafiosMap = {};
                                     await Promise.all(desafioIds.map(async id => {
@@ -138,17 +132,16 @@
                                             const d = await window.loadDesafio(id);
                                             if (d) desafiosMap[id] = d;
                                         } catch (e) {
-                                            // ignore
+                                            // ignora
                                         }
                                     }));
 
-                                    // if a desafio filter was provided but not present in the proposals list, try to fetch it
                                     if (this.desafioQueryId && !desafiosMap[this.desafioQueryId]) {
                                         try {
                                             const df = await window.loadDesafio(this.desafioQueryId);
                                             if (df) desafiosMap[this.desafioQueryId] = df;
                                         } catch (e) {
-                                            // ignore
+                                            // ignora
                                         }
                                     }
 
@@ -163,7 +156,6 @@
                                         desafioId: p.desafioId || null
                                     }));
 
-                                    // expose desafio title for UI if filtering
                                     if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
                                         this.desafioTitle = desafiosMap[this.desafioQueryId].titulo || desafiosMap[this.desafioQueryId].desafioTitulo || null;
                                     } else {

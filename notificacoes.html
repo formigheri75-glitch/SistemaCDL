@@ -61,7 +61,6 @@
         </div>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                // Verificar autenticação
                 if (!window.checkAuth()) return;
 
                 if (!window.messages) return console.error();
@@ -134,7 +133,6 @@
                     },
                     mounted: async function() {
                         try {
-                            // Get current user's ID for filtering
                             const currentUser = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
                             const currentUserId = currentUser && (currentUser.id || currentUser.usuarioId);
 
@@ -153,11 +151,9 @@
                                     isRead: Boolean(n.lida ?? n.Lida ?? n.read ?? n.isRead),
                                 }));
 
-                            // Collect unique IDs to resolve related entities
                             const usuarioIds = Array.from(new Set(raw.map(r => r.usuarioId).filter(Boolean)));
                             const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
 
-                            // Helper to fetch entities by id list
                             const fetchByIds = async (basePath, ids) => {
                                 const map = {};
                                 await Promise.all(ids.map(async id => {
@@ -165,7 +161,7 @@
                                         const ent = await window.ApiClient.get(`${basePath}/${id}`);
                                         if (ent) map[id] = ent;
                                     } catch (e) {
-                                        // ignore single-entity errors
+                                        // ignora
                                     }
                                 }));
                                 return map;
@@ -173,14 +169,13 @@
 
                             const usuariosMap = await fetchByIds('/usuarios', usuarioIds);
 
-                            // resolve desafios/problemas using loadDesafio helper (tries /desafios then /problemas)
                             const desafiosMap = {};
                             await Promise.all(desafioIds.map(async id => {
                                 try {
                                     const d = await window.loadDesafio(id);
                                     if (d) desafiosMap[id] = d;
                                 } catch (e) {
-                                    // ignore
+                                    // ignora
                                 }
                             }));
 
@@ -188,7 +183,7 @@
                                 ...n,
                                 user: usuariosMap[n.usuarioId] || null,
                                 challenge: desafiosMap[n.desafioId] || null,
-                                // derive display fields
+                                
                                 title: n.title || (desafiosMap[n.desafioId] && (desafiosMap[n.desafioId].titulo || desafiosMap[n.desafioId].titulo)) || window.messages.notificacoes.defaultTitle,
                                 description: n.description || '',
                             }));

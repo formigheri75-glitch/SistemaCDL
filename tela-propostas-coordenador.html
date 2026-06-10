@@ -37,7 +37,6 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação e autorização
             if (!window.ensureRole('coordenador')) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
@@ -58,7 +57,6 @@
                     };
                 },
                 mounted: async function() {
-                    // Get user's institution
                     try {
                         const user = window.StorageManager.getUser() || {};
                         if (!user.id) {
@@ -66,10 +64,8 @@
                             return;
                         }
 
-                        // Determine role to allow admin to see all proposals
                         const role = window.AppRoutes ? window.AppRoutes.getCurrentRole() : (user.type || user.role || '').toLowerCase();
 
-                        // Find user's institution (used only for non-admins)
                         let userInstituicaoId = null;
                         if (role !== 'admin') {
                             const instituicoes = await window.ApiClient.get('/instituicoes');
@@ -88,7 +84,6 @@
                             }
                         }
 
-                        // read optional desafio filter from querystring
                         try {
                             const params = new URLSearchParams(window.location.search);
                             const d = params.get('desafio');
@@ -101,7 +96,6 @@
 
                         const raw = (propostas || [])
                             .filter(p => {
-                                // Admin sees all proposals; coordenador sees only proposals from their institution
                                 if (role === 'admin') return true;
                                 const propInstId = p.instituicaoid || p.instituicaoID || p.instituicaoId;
                                 return String(propInstId) === String(userInstituicaoId);
@@ -135,7 +129,6 @@
                             desafioId: p.desafioId || null,
                         }));
 
-                        // capture filter title if we have it
                         if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
                             this.filtroDesafioTitle = desafiosMap[this.desafioQueryId].titulo || null;
                         }

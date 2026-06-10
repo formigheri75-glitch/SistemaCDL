@@ -155,7 +155,6 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
-                // Verificar autenticação e autorização
                 if (!window.ensureRole('empresa')) return;
 
                 if (window.messages) {
@@ -219,7 +218,7 @@
                         },
                         methods: {
                             performSearch() {
-                                // Search is already reactive through computed property
+                                
                             },
                             selectInstitution(id) {
                                 window.location.href =

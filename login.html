@@ -615,212 +615,148 @@
         }
 
         async function handleLogin(event) {
-            event.preventDefault();
+    event.preventDefault();
+    clearLoginStatus();
+    
+    const email = loginState.elements.email.value;
+    const senha = loginState.elements.senha.value;
+    const submitBtn = loginState.elements.entrarBtn;
+    const loginTexts = loginState.texts || getLoginTexts();
+    
+    submitBtn.textContent = loginTexts.loading;
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`${apiBase}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                senha: senha
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
             clearLoginStatus();
-            
-            const email = loginState.elements.email.value;
-            const senha = loginState.elements.senha.value;
-            const submitBtn = loginState.elements.entrarBtn;
-            const loginTexts = loginState.texts || getLoginTexts();
-            
-            submitBtn.textContent = loginTexts.loading;
-            submitBtn.disabled = true;
-            
+            window.StorageManager.setToken(data.token);
+
+            let profile = {};
+
             try {
-                const response = await fetch(`${apiBase}/login`, {
-                    method: 'POST',
+                const meResponse = await fetch(`${apiBase}/me`, {
                     headers: {
-                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${data.token}`,
                     },
-                    body: JSON.stringify({
-                        email: email,
-                        senha: senha
-                    })
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    clearLoginStatus();
-                    window.StorageManager.setToken(data.token);
 
-                    let profile = {};
-
-                    try {
-                        const meResponse = await fetch(`${apiBase}/me`, {
-                            headers: {
-                                Authorization: `Bearer ${data.token}`,
-                            },
-                        });
-
-                        if (meResponse.ok) {
-                            profile = await meResponse.json();
-                        }
-                    } catch (profileError) {
-                        console.warn('Não foi possível carregar o perfil do usuário:', profileError);
-                    }
-
-                    let userType = (profile && (profile.tipoUsuario || profile.tipousuario)) || (data && data.usuario && data.usuario.tipo) || data.tipoUsuario || data.userType;
-
-                    // If backend didn't provide an explicit tipo, infer from profile fields
-                    if (!userType) {
-                        if (profile) {
-                            if (profile.nomefantasia || profile.cnpj || profile.razaosocial) userType = 'empresa';
-                            else if (profile.nomeinstituicao || profile.instituicao || profile.sigla) userType = 'instituicao';
-                            else if (profile.coordenador || profile.tipo === 'coordenador') userType = 'coordenador';
-                        }
-                    }
-
-                    userType = userType || 'instituicao';
-
-                    const normalizedRole = window.AppRoutes
-                        ? window.AppRoutes.normalizeRole(userType)
-                        : String(userType || '').toLowerCase();
-
-                    // Prefer storing the full profile returned by /me when available
-                    // Infer the source table from the returned record's columns when possible.
-                    const loginTipo = (data && data.usuario && data.usuario.tipo) ? String(data.usuario.tipo).toLowerCase() : null;
-                    const mapTipoToSource = (t) => {
-                        if (!t) return null;
-                        if (t.includes('empresa')) return 'empresas';
-                        if (t.includes('instituic')) return 'instituicoes';
-                        if (t.includes('coordenador')) return 'coordenadores';
-                        if (t.includes('admin')) return 'administradores';
-                        return 'usuarios';
-                    };
-
-                    const inferSourceFromRecord = (rec) => {
-                        if (!rec || typeof rec !== 'object') return null;
-                        const keys = Object.keys(rec).map(k => String(k).toLowerCase());
-                        if (keys.some(k => ['nomefantasia','cnpj','razaosocial','razao_social'].includes(k))) return 'empresas';
-                        if (keys.some(k => ['nomeinstituicao','nome_instituicao','nome_instituição','instituicaonome','instituicao_nome','instituicao','sigla'].includes(k))) return 'instituicoes';
-                        if (keys.some(k => ['coordenador','coordenadores'].includes(k))) return 'coordenadores';
-                        if (keys.some(k => ['tipousuario','tipousuario','tipo','usuarioid','usuario_id'].includes(k))) return 'usuarios';
-                        // check nested objects
-                        if (rec.instituicao && typeof rec.instituicao === 'object') return 'instituicoes';
-                        if (rec.empresa && typeof rec.empresa === 'object') return 'empresas';
-                        return null;
-                    };
-
-                    // prefer structure-based inference from profile, then login returned tipo, then normalizedRole
-                    let inferredSource = inferSourceFromRecord(profile) || mapTipoToSource(loginTipo) || mapTipoToSource(normalizedRole);
-
-                    // DEBUG: print login response and inferred values
-                    try { console.debug('login:debug', { data, profile, loginTipo, normalizedRole, inferredSource }); } catch(e) {}
-
-                    if (profile && Object.keys(profile).length > 0) {
-                        // normalize property names
-                        profile.type = normalizedRole;
-                        if (inferredSource) profile.sourceTable = inferredSource;
-
-                        // If empresa, try to load canonical empresa record to get nomefantasia
-                        if (normalizedRole === 'empresa') {
-                            try {
-                                const possibleIds = [profile.id, profile.empresaid, profile.empresa_id, data.empresaId, data.empresa_id].filter(Boolean);
-                                let empresaData = null;
-                                for (let pid of possibleIds) {
-                                    try {
-                                        empresaData = await window.ApiClient.get(`/empresas/${pid}`);
-                                        if (empresaData) break;
-                                    } catch (e) {
-                                        // try next
-                                    }
-                                }
-
-                                if (empresaData && typeof empresaData === 'object') {
-                                    // merge empresa fields into profile for display
-                                    profile = Object.assign({}, profile, empresaData);
-                                    profile.type = normalizedRole;
-                                }
-                            } catch (e) {
-                                // ignore fetch errors
-                            }
-                        }
-                        // If instituicao, try to load canonical instituicao record to get nomeinstituicao
-                        if (normalizedRole === 'instituicao') {
-                            try {
-                                const possibleIdsInst = [profile.id, profile.instituicaoid, profile.instituicao_id, profile.instituicaoid, data.instituicaoId, data.instituicao_id, (data && data.usuario && data.usuario.id) || null].filter(Boolean);
-                                let instituicaoData = null;
-                                for (let pid of possibleIdsInst) {
-                                    try {
-                                        instituicaoData = await window.ApiClient.get(`/instituicoes/${pid}`);
-                                        if (instituicaoData) break;
-                                    } catch (e) {
-                                        // try next
-                                    }
-                                }
-
-                                if (instituicaoData && typeof instituicaoData === 'object') {
-                                    profile = Object.assign({}, profile, instituicaoData);
-                                    profile.type = normalizedRole;
-                                }
-                            } catch (e) {
-                                // ignore fetch errors
-                            }
-                        }
-                        window.StorageManager.setUser(profile);
-                    } else {
-                        const currentUser = window.StorageManager.getUser() || {};
-                        currentUser.email = email;
-                        currentUser.type = normalizedRole;
-                        // infer source from login response `data.usuario` if profile missing
-                        const loginRec = data && data.usuario ? data.usuario : null;
-                        const fallbackSource = inferSourceFromRecord(loginRec) || inferredSource;
-                        if (fallbackSource) currentUser.sourceTable = fallbackSource;
-                        if (profile && profile.nome) currentUser.nome = profile.nome;
-
-                        // Try to fetch canonical record when we inferred source but /me didn't return profile
-                        try {
-                            if (fallbackSource === 'empresas') {
-                                const idToTry = (loginRec && (loginRec.id || loginRec.empresaId || loginRec.empresaid)) || null;
-                                if (idToTry) {
-                                    const empresaData = await window.ApiClient.get(`/empresas/${idToTry}`);
-                                    if (empresaData && typeof empresaData === 'object') {
-                                        Object.assign(currentUser, empresaData);
-                                        currentUser.type = normalizedRole;
-                                        currentUser.sourceTable = 'empresas';
-                                    }
-                                }
-                            }
-                            if (fallbackSource === 'instituicoes') {
-                                const idToTry = (loginRec && (loginRec.id || loginRec.instituicaoId || loginRec.instituicaoid || loginRec.instituicao_id)) || null;
-                                if (idToTry) {
-                                    const instData = await window.ApiClient.get(`/instituicoes/${idToTry}`);
-                                    if (instData && typeof instData === 'object') {
-                                        Object.assign(currentUser, instData);
-                                        currentUser.type = normalizedRole;
-                                        currentUser.sourceTable = 'instituicoes';
-                                    }
-                                }
-                            }
-                        } catch (e) {
-                            // ignore fetch errors
-                        }
-
-                        window.StorageManager.setUser(currentUser);
-                    }
-
-                    showLoginSuccess(loginTexts.success + ' ' + loginTexts.redirectMessage);
-
-                    setTimeout(() => {
-                        const redirectUrl = window.AppRoutes
-                            ? window.AppRoutes.getHomeUrl(normalizedRole)
-                            : 'tela-inicial-instituicao.html';
-
-                        window.location.href = redirectUrl;
-                    }, 800);
-                } else {
-                    const errMsg = (data && (data.erro || data.error)) || 'Erro ao autenticar';
-                    showLoginError(loginTexts.errorPrefix + ' ' + errMsg);
+                if (meResponse.ok) {
+                    profile = await meResponse.json();
                 }
-            } catch (error) {
-                console.error('Erro ao fazer login:', error);
-                showLoginError(loginTexts.connectionError + ' ' + apiBase);
-            } finally {
-                submitBtn.textContent = loginTexts.entrar;
-                submitBtn.disabled = false;
+            } catch (profileError) {
+                console.warn('Não foi possível carregar o perfil do usuário:', profileError);
             }
+
+            const loginTipo = (data && data.usuario && data.usuario.tipo) ? String(data.usuario.tipo).toLowerCase() : null;
+            let userType = loginTipo || (profile && (profile.tipoUsuario || profile.tipousuario || profile.tipo)) || data.tipoUsuario || data.userType;
+
+            if (!userType) {
+                if (profile) {
+                    if (profile.nomefantasia || profile.cnpj || profile.razaosocial) userType = 'empresa';
+                    else if (profile.nomeinstituicao || profile.instituicao || profile.sigla) userType = 'instituicao';
+                    else if (profile.coordenador || profile.tipo === 'coordenador') userType = 'coordenador';
+                }
+            }
+
+            userType = userType || 'instituicao';
+
+            const normalizedRole = window.AppRoutes
+                ? window.AppRoutes.normalizeRole(userType)
+                : String(userType || '').toLowerCase();
+
+            // CRIAR USUARIO NOVO DO ZERO - SEM HERDAR DADOS ANTIGOS
+            const novoUsuario = {
+                email: email
+            };
+            
+            // FORCAR PELO loginTipo
+            if (loginTipo === 'instituicao') {
+                novoUsuario.sourceTable = 'instituicoes';
+                novoUsuario.tipo = 'instituicao';
+                novoUsuario.type = 'instituicao';
+                if (profile && profile.nomeinstituicao) novoUsuario.nomeinstituicao = profile.nomeinstituicao;
+            } else if (loginTipo === 'empresa') {
+                novoUsuario.sourceTable = 'empresas';
+                novoUsuario.tipo = 'empresa';
+                novoUsuario.type = 'empresa';
+                if (profile && profile.nomefantasia) novoUsuario.nomefantasia = profile.nomefantasia;
+            } else if (loginTipo === 'admin') {
+                novoUsuario.sourceTable = 'usuarios';
+                novoUsuario.tipo = 'admin';
+                novoUsuario.type = 'admin';
+                if (profile && profile.nome) novoUsuario.nome = profile.nome;
+            } else {
+                novoUsuario.sourceTable = 'usuarios';
+                novoUsuario.tipo = 'coordenador';
+                novoUsuario.type = 'coordenador';
+                if (profile && profile.nome) novoUsuario.nome = profile.nome;
+            }
+            
+            // Se não veio loginTipo mas tem profile com campos específicos
+            if (!loginTipo) {
+                if (profile && profile.nomeinstituicao) {
+                    novoUsuario.sourceTable = 'instituicoes';
+                    novoUsuario.tipo = 'instituicao';
+                    novoUsuario.type = 'instituicao';
+                    novoUsuario.nomeinstituicao = profile.nomeinstituicao;
+                } else if (profile && profile.nomefantasia) {
+                    novoUsuario.sourceTable = 'empresas';
+                    novoUsuario.tipo = 'empresa';
+                    novoUsuario.type = 'empresa';
+                    novoUsuario.nomefantasia = profile.nomefantasia;
+                } else if (profile && profile.nome) {
+                    novoUsuario.sourceTable = 'usuarios';
+                    novoUsuario.tipo = normalizedRole === 'admin' ? 'admin' : 'coordenador';
+                    novoUsuario.type = normalizedRole === 'admin' ? 'admin' : 'coordenador';
+                    novoUsuario.nome = profile.nome;
+                }
+            }
+            
+            console.log('Criando novo usuario:', novoUsuario);
+            
+            // LIMPAR DADOS ANTIGOS
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('userType');
+            localStorage.removeItem('userSource');
+            
+            // SALVAR NOVO USUARIO
+            window.StorageManager.setUser(novoUsuario, novoUsuario.sourceTable);
+
+            showLoginSuccess(loginTexts.success + ' ' + loginTexts.redirectMessage);
+
+            setTimeout(() => {
+                const redirectUrl = window.AppRoutes
+                    ? window.AppRoutes.getHomeUrl(normalizedRole)
+                    : 'tela-inicial-instituicao.html';
+
+                window.location.href = redirectUrl;
+            }, 800);
+        } else {
+            const errMsg = (data && (data.erro || data.error)) || 'Erro ao autenticar';
+            showLoginError(loginTexts.errorPrefix + ' ' + errMsg);
         }
+    } catch (error) {
+        console.error('Erro ao fazer login:', error);
+        showLoginError(loginTexts.connectionError + ' ' + apiBase);
+    } finally {
+        submitBtn.textContent = loginTexts.entrar;
+        submitBtn.disabled = false;
+    }
+}
+
 
         function openModal() {
             const modal = document.getElementById('modal');

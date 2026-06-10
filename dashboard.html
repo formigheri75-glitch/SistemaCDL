@@ -109,7 +109,6 @@
         </div>
 
         <script>
-            // Verificar autenticação e autorização
             if (!window.ensureRole('admin')) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }

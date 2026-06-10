@@ -75,7 +75,6 @@
                                 const user = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
                                 if (!user) return null;
 
-                                // First, check if the user object already contains a direct institution id
                                 const possibleUserInstIds = [
                                     user.instituicaoid, user.instituicaoId, user.instituicaoID,
                                     user.instituicao, user.institutionId, user.institution_id
@@ -84,7 +83,6 @@
                                     return possibleUserInstIds[0];
                                 }
 
-                                // Next, try to match by email or other identifiers against /instituicoes
                                 const instituicoes = await window.ApiClient.get('/instituicoes');
                                 if (Array.isArray(instituicoes)) {
                                     const found = instituicoes.find(i => 
@@ -101,16 +99,13 @@
                     },
                     mounted: async function() {
                         try {
-                            // Determine user's institution
                             this.userInstituicaoId = await this.getUserInstituicaoId();
 
-                            // Get all challenges and proposals
                             const [desafios, propostas] = await Promise.all([
                                 window.fetchDesafiosList(),
                                 window.ApiClient.get('/propostas')
                             ]);
 
-                            // Desafios são públicos/globalmente visíveis — sempre mostrar todos os desafios aqui
                             this.challenges = (desafios || []).map(d => ({
                                 id: d.id,
                                 title: d.titulo || d.nome || 'Desafio',

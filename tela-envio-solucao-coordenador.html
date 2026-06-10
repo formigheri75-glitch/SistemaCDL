@@ -57,7 +57,6 @@
             </div>
         </div>
         <script>
-            // Verificar autenticação e autorização
             if (!window.ensureRole('coordenador')) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
@@ -126,7 +125,6 @@
                             const challengeId = this.getChallengeId();
                             const user = window.StorageManager.getUser() || {};
 
-                            // determine instituicao id for logged user
                             let instituicaoId = null;
                             try {
                                 const insts = await ApiClient.get('/instituicoes');
@@ -135,7 +133,7 @@
                                     if (found) instituicaoId = found.id || found.ID || null;
                                 }
                             } catch (e) {
-                                // ignore
+                                // ignora
                             }
 
                             if (!instituicaoId) {
