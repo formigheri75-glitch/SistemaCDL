@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Propostas Recebidas</title>
+        <link
+            href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
+            rel="stylesheet"
+        />
+        <link href="theme.css" rel="stylesheet" />
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+            <script src="config.js"></script>
+            <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                    <side-nav
+                        :brand="msg.nav.brand"
+                        :items="menuItems"
+                        active-href="propostas.html"
+                    ></side-nav>
+                <div class="content">
+                    <div class="container">
+                        <h1>{{ msg.propostas.title }}</h1>
+
+                        <div v-if="desafioTitle" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ desafioTitle }}</div>
+
+                        <filter-section
+                            :label="msg.propostas.filtro.label"
+                            :options="[
+                                { value: 'all', label: msg.propostas.filtro.todas, count: proposals.length },
+                                { value: 'pending', label: msg.propostas.filtro.pendentes, count: pendingCount },
+                                { value: 'accepted', label: msg.propostas.filtro.aceitas, count: acceptedCount },
+                            ]"
+                            :active-value="selectedFilter"
+                            @update:activeValue="selectedFilter = $event"
+                        ></filter-section>
+
+                        <div
+                            v-if="filteredProposals.length > 0"
+                            class="proposals-grid"
+                        >
+                            <proposal-card
+                                v-for="proposal in filteredProposals"
+                                :key="proposal.id"
+                                :proposal="proposal"
+                                :getStatusLabel="getStatusLabel"
+                            ></proposal-card>
+                        </div>
+
+                        <div v-else class="empty-state">
+                            <p>{{ msg.propostas.vazio }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const { createApp } = Vue;
+
+            document.addEventListener("DOMContentLoaded", function () {
+                if (!window.ensureRole('empresa')) return;
+
+                if (window.messages) {
+                    createApp({
+                            components: { SideNav, ProposalCard, FilterSection, StatusBadge, EmptyState },
+                        data() {
+                            return {
+                                msg: window.messages,
+                                    menuItems: [
+                                        { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
+                                        { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
+                                        { label: window.messages.nav.propostas, href: 'propostas.html' },
+                                    ],
+                                selectedFilter: "all",
+                                proposals: [],
+                                desafioQueryId: null,
+                                loading: true,
+                                error: null,
+                            };
+                        },
+                        async mounted() {
+                            try {
+                                const params = new URLSearchParams(window.location.search);
+                                const d = params.get('desafio');
+                                if (d) this.desafioQueryId = d;
+                            } catch (e) {
+                                this.desafioQueryId = null;
+                            }
+
+                            let minhaEmpresaId = await window.getLoggedEmpresaId();
+
+                            try {
+                                    const data = await window.ApiClient.get('/propostas');
+
+                                    const raw = (data || []).map(p => ({
+                                        id: p.id,
+                                        instituicaoId: p.instituicaoid || p.instituicaoID || p.instituicaoId || null,
+                                        desafioId: p.desafioid || p.desafioID || p.desafioId || null,
+                                        institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
+                                        description: p.descricao || '',
+                                        statusRaw: p.statusproposta || p.status || 'pending',
+                                        rating: p.rating || 0,
+                                        detailsLink: 'detalhesPropossta.html'
+                                    }));
+
+                                    const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
+                                    const desafiosMap = {};
+                                    await Promise.all(desafioIds.map(async id => {
+                                        try {
+                                            const d = await window.loadDesafio(id);
+                                            if (d) desafiosMap[id] = d;
+                                        } catch (e) { /* ignora */ }
+                                    }));
+
+                                    if (this.desafioQueryId && !desafiosMap[this.desafioQueryId]) {
+                                        try {
+                                            const df = await window.loadDesafio(this.desafioQueryId);
+                                            if (df) desafiosMap[this.desafioQueryId] = df;
+                                        } catch (e) { /* ignora */ }
+                                    }
+
+                                    let allMapped = raw.map(p => ({
+                                        id: p.id,
+                                        institution: p.institution,
+                                        description: p.description,
+                                        status: String(p.statusRaw).toLowerCase().includes('aceit') ? 'accepted' : 'pending',
+                                        rating: p.rating,
+                                        detailsLink: p.detailsLink,
+                                        challengeTitle: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : null,
+                                        desafioId: p.desafioId || null
+                                    }));
+
+                                    // Filtrar propostas cujo desafio tem empresaid = empresa logada
+                                    if (minhaEmpresaId) {
+                                        allMapped = allMapped.filter(p => {
+                                            const d = desafiosMap[p.desafioId];
+                                            return d && String(d.empresaid || d.empresaID || d.empresaId) === String(minhaEmpresaId);
+                                        });
+                                    }
+
+                                    this.proposals = allMapped;
+
+                                    if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
+                                        this.desafioTitle = desafiosMap[this.desafioQueryId].titulo || desafiosMap[this.desafioQueryId].desafioTitulo || null;
+                                    } else {
+                                        this.desafioTitle = null;
+                                    }
+                                } catch (error) {
+                                    console.error('Erro ao carregar propostas:', error);
+                                    this.error = 'Erro ao carregar propostas.';
+                                    this.proposals = [];
+                                } finally {
+                                    this.loading = false;
+                                }
+                        },
+                        computed: {
+                            filteredProposals() {
+                                let list = this.proposals;
+                                if (this.selectedFilter !== 'all') {
+                                    list = list.filter(p => p.status === this.selectedFilter);
+                                }
+                                if (this.desafioQueryId) {
+                                    list = list.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                                }
+                                return list;
+                            },
+                            pendingCount() {
+                                return this.proposals.filter(
+                                    (p) => p.status === "pending",
+                                ).length;
+                            },
+                            acceptedCount() {
+                                return this.proposals.filter(
+                                    (p) => p.status === "accepted",
+                                ).length;
+                            },
+                        },
+                        methods: {
+                            getStatusLabel(status) {
+                                const labels = {
+                                    pending: this.msg.propostas.status.pending,
+                                    accepted:
+                                        this.msg.propostas.status.accepted,
+                                    rejected:
+                                        this.msg.propostas.status.rejected,
+                                };
+                                return labels[status] || status;
+                            },
+                            viewProposal(id) {
+                                window.location.href =
+                                    "detalhesPropossta.html?proposal=" + id;
+                            },
+                        },
+                    }).mount("#app");
+                }
+            });
+        </script>
+    </body>
+</html>

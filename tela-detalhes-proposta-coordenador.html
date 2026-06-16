@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Detalhes da Proposta - Coordenador</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-propostas-coordenador.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="detail-hero">
+                        <div class="detail-top">
+                            <div class="detail-title"><h3>Detalhes da proposta</h3><h5 v-if="proposal && (proposal.titulo || proposal.title)">{{ proposal.titulo || proposal.title }}</h5></div>
+                            <div class="detail-meta">
+                                <span class="status">{{ proposal ? statusLabel(proposal.status) : 'Carregando...' }}</span>
+                                <div v-if="desafioTitle" class="meta-item">Desafio: <a :href="desafioLink">{{ desafioTitle }}</a></div>
+                            </div>
+                        </div>
+                        <div class="detail-intro">
+                            <div class="illustration"></div>
+                            <div>
+                                <p>{{ proposal ? proposal.descricao : msg.pages.telaDetalhesPropostaCoordenador.descricaoPadrao }}</p>
+                                <div class="button-group">
+                                    <button class="btn btn-primary" type="button" @click="edit" :disabled="loading">{{ msg.pages.telaDetalhesPropostaCoordenador.editar }}</button>
+                                    <button class="btn btn-secondary" type="button" @click="back">{{ msg.pages.telaDetalhesPropostaCoordenador.voltar }}</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="detail-grid">
+                        <div class="detail-box card"><h4>Plano de implementação</h4><p>{{ proposal && proposal.plano ? proposal.plano : 'Etapas, escopo e entregáveis da solução.' }}</p></div>
+                        <div class="detail-box card"><h4>Resultados esperados</h4><p>{{ proposal && proposal.resultados ? proposal.resultados : 'Impacto, métricas e validação prevista.' }}</p></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            if (!window.ensureRole('coordenador')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            const { createApp } = Vue;
+            createApp({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+                            { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
+                        ],
+                        proposal: null,
+                        loading: false,
+                        desafioTitle: null,
+                        desafioId: null,
+                        desafioLink: null,
+                    };
+                },
+                methods: {
+                    statusLabel: window.getStatusLabel,
+                    getQueryId() {
+                        const params = new URLSearchParams(window.location.search);
+                        return params.get('id');
+                    },
+                    async load() {
+                        const id = this.getQueryId();
+                        if (!id) return;
+                        this.loading = true;
+                        try {
+                            this.proposal = await ApiClient.get(`/propostas/${id}`);
+                            const desafioId = this.proposal && (this.proposal.desafioid || this.proposal.desafioId || this.proposal.desafioID || this.proposal.desafio) || null;
+                            if (desafioId) {
+                                this.desafioId = desafioId;
+                                try {
+                                        const d = await window.loadDesafio(desafioId);
+                                        if (d) {
+                                            this.desafioTitle = d.titulo || d.desafioTitulo || null;
+                                            this.desafioLink = `detalhesProblema.html?id=${encodeURIComponent(desafioId)}`;
+                                        }
+                                    } catch (e) {
+                                        // ignora
+                                    }
+                            }
+                        } catch (err) {
+                            console.error('Erro ao carregar proposta', err);
+                        } finally {
+                            this.loading = false;
+                        }
+                    },
+                    edit() {
+                        const id = this.getQueryId();
+                        window.location.href = `tela-envio-solucao-coordenador.html?id=${id}`;
+                    },
+                    back() {
+                        const base = 'tela-propostas-coordenador.html';
+                        if (this.desafioId) window.location.href = `${base}?desafio=${encodeURIComponent(this.desafioId)}`;
+                        else window.location.href = base;
+                    }
+                },
+                mounted() {
+                    this.load();
+                }
+            }).mount('#app');
+            document.title = 'Detalhes da Proposta - Coordenador';
+        </script>
+    </body>
+</html>

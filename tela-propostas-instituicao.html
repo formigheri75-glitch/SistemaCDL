@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Propostas - Instituição</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-propostas-instituicao.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="container">
+                        <h1>{{ msg.pages.telaPropostasInstituicao.title }}</h1>
+
+                        <!-- Filter Section -->
+                        <div class="filter-section">
+                            <span class="filter-label"
+                                >{{ msg.propostas.filtro.label }}</span
+                            >
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'all' }"
+                                @click="selectedFilter = 'all'"
+                            >
+                                {{ msg.propostas.filtro.todas }} ({{
+                                proposals.length }})
+                            </button>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'pending' }"
+                                @click="selectedFilter = 'pending'"
+                            >
+                                {{ msg.propostas.filtro.pendentes }} ({{
+                                pendingCount }})
+                            </button>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'accepted' }"
+                                @click="selectedFilter = 'accepted'"
+                            >
+                                {{ msg.propostas.filtro.aceitas }} ({{
+                                acceptedCount }})
+                            </button>
+                        </div>
+                        <div v-if="desafioQueryId" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ filtroDesafioTitle || desafioQueryId }}</div>
+
+                        <!-- Proposals Grid -->
+                        <div
+                            v-if="filteredProposals.length > 0"
+                            class="proposals-grid"
+                        >
+                            <proposal-card
+                                v-for="proposal in filteredProposals"
+                                :key="proposal.id"
+                                :proposal="proposal"
+                                :getStatusLabel="getStatusLabel"
+                            ></proposal-card>
+                        </div>
+
+                        <!-- Empty State -->
+                        <div v-else class="empty-state">
+                            <p>{{ msg.pages.telaPropostasInstituicao.vazio }}</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            if (!window.ensureRole('instituicao')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            mountVuePage({
+                components: { SideNav, ProposalCard },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
+                            { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
+                        ],
+                        selectedFilter: 'all',
+                        proposals: [],
+                        desafioQueryId: null,
+                        filtroDesafioTitle: null,
+                    };
+                },
+                mounted: async function() {
+                    try {
+                        const params = new URLSearchParams(window.location.search);
+                        const d = params.get('desafio');
+                        if (d) this.desafioQueryId = d;
+                    } catch (e) {
+                        this.desafioQueryId = null;
+                    }
+
+                    // Descobrir o ID da instituição logada
+                    let minhaInstituicaoId = null;
+                    try {
+                        const user = window.StorageManager.getUser() || {};
+                        const instituicoes = await window.ApiClient.get('/instituicoes');
+                        if (Array.isArray(instituicoes)) {
+                            const found = instituicoes.find(i =>
+                                String(i.usuarioid || i.usuarioId || i.usuarioID || '') === String(user.id) ||
+                                String(i.email || '').toLowerCase() === String(user.email || '').toLowerCase()
+                            );
+                            if (found) minhaInstituicaoId = found.id || found.ID || null;
+                        }
+                    } catch (e) {
+                        console.warn('Não foi possível identificar a instituição:', e);
+                    }
+
+                    try {
+                        const propostas = await window.ApiClient.get('/propostas');
+
+                        // Filtrar apenas propostas da instituição logada
+                        const propostasFiltradas = (propostas || []).filter(p => {
+                            if (!minhaInstituicaoId) return true; // fallback: mostra todas
+                            const propInstId = p.instituicaoid || p.instituicaoID || p.instituicaoId;
+                            return String(propInstId) === String(minhaInstituicaoId);
+                        });
+
+                        const raw = propostasFiltradas.map(p => ({
+                            id: p.id,
+                            desafioId: p.desafioid || p.desafioID || p.desafioId || null,
+                            institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
+                            description: p.descricao || '',
+                            statusRaw: p.statusproposta || p.status || 'pending',
+                            detailsLink: 'tela-detalhes-proposta-coordenador.html'
+                        }));
+
+                        const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
+                        const desafiosMap = {};
+                        await Promise.all(desafioIds.map(async id => {
+                            try {
+                                const d = await window.loadDesafio(id);
+                                if (d) desafiosMap[id] = d;
+                            } catch (e) {}
+                        }));
+
+                        this.proposals = raw.map(p => ({
+                            id: p.id,
+                            institution: p.institution,
+                            description: p.description,
+                            status: String(p.statusRaw).toLowerCase().includes('aceit') ? 'accepted' : 'pending',
+                            detailsLink: p.detailsLink,
+                            challengeTitle: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : null,
+                            desafioId: p.desafioId || null
+                        }));
+
+                        if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
+                            this.filtroDesafioTitle = desafiosMap[this.desafioQueryId].titulo || null;
+                        }
+
+                        if (this.desafioQueryId) {
+                            this.proposals = this.proposals.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                        }
+                    } catch (e) {
+                        console.error('Erro ao carregar propostas:', e);
+                        this.proposals = [];
+                    }
+                },
+                computed: {
+                    filteredProposals() {
+                        let list = this.proposals;
+                        if (this.selectedFilter !== 'all') {
+                            list = list.filter(p => p.status === this.selectedFilter);
+                        }
+                        if (this.desafioQueryId) {
+                            list = list.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                        }
+                        return list;
+                    },
+                    pendingCount() {
+                        return this.proposals.filter(p => p.status === 'pending').length;
+                    },
+                    acceptedCount() {
+                        return this.proposals.filter(p => p.status === 'accepted').length;
+                    },
+                },
+                methods: {
+                    getStatusLabel: window.getStatusLabel,
+                },
+                title: 'Propostas - Instituição',
+            });
+        </script>
+    </body>
+</html>

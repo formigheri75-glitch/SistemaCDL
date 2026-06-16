@@ -1,0 +1,320 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Criar Problema</title>
+        <link
+            href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
+            rel="stylesheet"
+        />
+        <link href="theme.css" rel="stylesheet" />
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.nav.brand"
+                    :items="menuItems"
+                    active-href="criaProblema.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="container container-narrow">
+                        <h1>{{ msg.criaProblema.title }}</h1>
+
+                        <div class="form-wrapper">
+                            <div v-if="showAlert" :class="['alert', alertType]">{{ alertMessage }}</div>
+
+                            <form @submit.prevent="submitForm">
+                                <div class="form-group">
+                                    <label for="title">{{ msg.criaProblema.titulo }}</label>
+                                    <input type="text" id="title" v-model="form.title" :placeholder="msg.criaProblema.tituloPlaceholder" required />
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="description">{{ msg.criaProblema.descricao }}</label>
+                                    <textarea id="description" v-model="form.description" :placeholder="msg.criaProblema.descricaoPlaceholder" required></textarea>
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="prazo">Prazo</label>
+                                    <input
+                                        type="date"
+                                        id="prazo"
+                                        v-model="form.prazo"
+                                        required
+                                    />
+                                </div>
+
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="category"
+                                            >{{ msg.criaProblema.categoria
+                                            }}</label
+                                        >
+                                        <select
+                                            id="category"
+                                            v-model="form.category"
+                                            required
+                                        >
+                                            <option value="">
+                                                {{
+                                                msg.criaProblema.seleccionarCategoria
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.categorias.backend">
+                                                {{
+                                                msg.criaProblema.categorias.backend
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.categorias.frontend">
+                                                {{
+                                                msg.criaProblema.categorias.frontend
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.categorias.mobile">
+                                                {{
+                                                msg.criaProblema.categorias.mobile
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.categorias.devops">
+                                                {{
+                                                msg.criaProblema.categorias.devops
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.categorias.data">
+                                                {{
+                                                msg.criaProblema.categorias.data
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.categorias.design">
+                                                {{
+                                                msg.criaProblema.categorias.design
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.categorias.outro">
+                                                {{
+                                                msg.criaProblema.categorias.outro
+                                                }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="priority"
+                                            >{{ msg.criaProblema.prioridade
+                                            }}</label
+                                        >
+                                        <select
+                                            id="priority"
+                                            v-model="form.priority"
+                                            required
+                                        >
+                                            <option value="">
+                                                {{
+                                                msg.criaProblema.seleccionarPrioridade
+                                                }}
+                                            </option>
+                                            <option :value="msg.criaProblema.prioridades.baixa">
+                                                {{ msg.criaProblema.prioridades.baixa }}
+                                            </option>
+                                            <option :value="msg.criaProblema.prioridades.media">
+                                                {{ msg.criaProblema.prioridades.media }}
+                                            </option>
+                                            <option :value="msg.criaProblema.prioridades.alta">
+                                                {{ msg.criaProblema.prioridades.alta }}
+                                            </option>
+                                            <option :value="msg.criaProblema.prioridades.critica">
+                                                {{ msg.criaProblema.prioridades.critica }}
+                                            </option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Requirements -->
+                                <div class="form-group">
+                                    <label
+                                        >{{ msg.criaProblema.requisitos
+                                        }}</label
+                                    >
+                                    <div class="requirements-section">
+                                        <div
+                                            v-for="(req, index) in form.requirements"
+                                            :key="index"
+                                            class="requirement-item"
+                                        >
+                                            <input
+                                                type="text"
+                                                v-model="form.requirements[index]"
+                                                placeholder="Ex: Suportar 10000 requisições/segundo"
+                                            />
+                                            <button
+                                                type="button"
+                                                class="btn btn-secondary"
+                                                @click="removeRequirement(index)"
+                                            >
+                                                {{ msg.criaProblema.remover }}
+                                            </button>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            class="btn btn-secondary"
+                                            @click="addRequirement"
+                                        >
+                                            {{
+                                            msg.criaProblema.adicionarRequisito
+                                            }}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <!-- Buttons -->
+                                <div class="button-group">
+                                    <button type="submit" class="btn btn-primary">
+                                        {{ msg.criaProblema.publicar }}
+                                    </button>
+                                    <button
+                                        type="button"
+                                        class="btn btn-secondary"
+                                        @click="cancelForm"
+                                    >
+                                        {{ msg.criaProblema.cancelar }}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            const { createApp } = Vue;
+
+            document.addEventListener("DOMContentLoaded", function () {
+                if (!window.ensureRole('empresa')) return;
+
+                if (window.messages) {
+                    createApp({
+                        components: { SideNav },
+                        data() {
+                            return {
+                                msg: window.messages,
+                                menuItems: [
+                                    { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
+                                    { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
+                                    { label: window.messages.nav.propostas, href: 'propostas.html' },
+                                ],
+                                form: {
+                                    title: "",
+                                    description: "",
+                                    prazo: "",
+                                    category: "",
+                                    priority: "",
+                                    requirements: [""],
+                                },
+                                showAlert: false,
+                                alertMessage: "",
+                                alertType: "success",
+                            };
+                        },
+                        methods: {
+                            addRequirement() {
+                                this.form.requirements.push("");
+                            },
+                            removeRequirement(index) {
+                                this.form.requirements.splice(index, 1);
+                            },
+                            async submitForm() {
+                                if (
+                                    !this.form.title ||
+                                    !this.form.description ||
+                                    !this.form.category ||
+                                    !this.form.priority ||
+                                    !this.form.prazo
+                                ) {
+                                    this.alertMessage =
+                                        this.msg.criaProblema.erro;
+                                    this.alertType = "error";
+                                    this.showAlert = true;
+                                    return;
+                                }
+                                try {
+                                    const user = window.StorageManager.getUser() || {};
+                                    let empresaId = null;
+                                    try {
+                                        if (user.sourceTable === 'empresas' && user.id) {
+                                            empresaId = user.id;
+                                        } else {
+                                            const empresas = await window.ApiClient.get('/empresas');
+                                            if (Array.isArray(empresas)) {
+                                                const found = empresas.find(e => 
+                                                    String(e.id || e.ID) === String(user.id) || 
+                                                    String(e.email || '').toLowerCase() === String(user.email || '').toLowerCase()
+                                                );
+                                                if (found) empresaId = found.id || found.ID || null;
+                                            }
+                                        }
+                                    } catch (err) {
+                                        // erro
+                                    }
+
+                                    if (!empresaId) {
+                                        this.alertMessage = 'Não foi possível determinar a empresa associada ao usuário. Faça login como empresa ou verifique seu cadastro.';
+                                        this.alertType = 'error';
+                                        this.showAlert = true;
+                                        return;
+                                    }
+
+                                    const payload = {
+                                        empresaid: empresaId,
+                                        titulo: this.form.title,
+                                        descricao: this.form.description,
+                                        categoria: this.form.category,
+                                        nivelprioridade: this.form.priority,
+                                        status: 'aberto',
+                                        datacriacao: new Date().toISOString(),
+                                        prazo: this.form.prazo
+                                    };
+
+                                    const res = await window.ApiClient.post('/desafios', payload);
+
+                                    const created = res && res.dados && Array.isArray(res.dados) && res.dados[0] ? res.dados[0] : null;
+                                    const desafioId = created && (created.id || created.ID || created.desafioid || created.desafioId) ? (created.id || created.ID || created.desafioid || created.desafioId) : null;
+
+                                    if (desafioId && Array.isArray(this.form.requirements)) {
+                                        await Promise.all(this.form.requirements.filter(r => r && r.trim()).map(async req => {
+                                            try {
+                                                await window.ApiClient.post('/requisitos', { desafioid: desafioId, descricao: req });
+                                            } catch (e) {
+                                                // erro
+                                            }
+                                        }));
+                                    }
+
+                                    this.alertMessage = this.msg.criaProblema.sucesso;
+                                    this.alertType = 'success';
+                                    this.showAlert = true;
+
+                                    setTimeout(() => {
+                                        window.location.href = 'empresaDashboard.html';
+                                    }, 1500);
+                                } catch (error) {
+                                    this.alertMessage = (error && error.message) ? error.message : this.msg.criaProblema.erro;
+                                    this.alertType = 'error';
+                                    this.showAlert = true;
+                                }
+                            },
+                            cancelForm() {
+                                window.location.href = "empresaDashboard.html";
+                            },
+                        },
+                    }).mount("#app");
+                }
+            });
+        </script>
+    </body>
+</html>

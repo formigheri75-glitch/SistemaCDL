@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Recuperar Senha - Sistema de Desafios</title>
+</head>
+<body class="auth-layout auth-layout--recovery">
+    <div id="app"></div>
+
+    <script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        const App = {
+            template: `
+            <div class="auth-page">
+                <main class="auth-shell">
+                    <section class="auth-hero">
+                        <span class="auth-hero-badge">{{ msg.recuperaSenha.badge }}</span>
+                        <h1>{{ msg.recuperaSenha.title }}</h1>
+                        <p>{{ msg.recuperaSenha.subtitulo }}</p>
+                        <p class="auth-hero-copy">{{ msg.recuperaSenha.description }}</p>
+                    </section>
+
+                    <section class="auth-panel">
+                        <div class="auth-card">
+                            <div class="auth-card-top">
+                                <div class="auth-brand-inline">
+                                    <span>{{ msg.recuperaSenha.brand }}</span>
+                                </div>
+                                <a class="btn btn-secondary" href="login.html">{{ msg.recuperaSenha.voltarLogin }}</a>
+                            </div>
+
+                            <div class="auth-form-header">
+                                <div class="auth-form-kicker">{{ msg.recuperaSenha.kicker }}</div>
+                                <h2 class="auth-form-title">{{ msg.recuperaSenha.title }}</h2>
+                                <p class="auth-form-subtitle">{{ msg.recuperaSenha.subtitulo }}</p>
+                            </div>
+
+                            <form class="auth-form auth-form--single" @submit.prevent="step === 'email' ? requestCode() : resetPassword()">
+                                <div v-if="success" class="form-success">✓ {{ success }}</div>
+                                <div v-if="error" class="form-error">{{ error }}</div>
+
+                                <template v-if="step === 'email'">
+                                    <div class="form-group form-full">
+                                        <label>{{ msg.recuperaSenha.label }}</label>
+                                        <input type="text" v-model="form.contato" :placeholder="msg.recuperaSenha.placeholder" :class="{ error: errors.contato }" :disabled="loading">
+                                        <div v-if="errors.contato" class="form-error">{{ errors.contato }}</div>
+                                    </div>
+                                    <button class="btn btn-primary" :disabled="loading">{{ loading ? 'Enviando...' : msg.recuperaSenha.recuperar }}</button>
+                                </template>
+
+                                <template v-if="step === 'reset'">
+                                    <div class="form-group form-full">
+                                        <label>Código de recuperação</label>
+                                        <input type="text" v-model="form.codigo" placeholder="Digite o código recebido" required />
+                                    </div>
+                                    <div class="form-group form-full">
+                                        <label>Nova senha</label>
+                                        <input type="password" v-model="form.novaSenha" placeholder="Mínimo 6 caracteres" required />
+                                    </div>
+                                    <div class="form-group form-full">
+                                        <label>Confirmar nova senha</label>
+                                        <input type="password" v-model="form.confirmarSenha" placeholder="Repita a senha" required />
+                                    </div>
+                                    <button class="btn btn-primary" :disabled="loading">{{ loading ? 'Redefinindo...' : 'Redefinir senha' }}</button>
+                                    <button type="button" class="btn btn-secondary" @click="step = 'email'; error = ''; success = ''" style="margin-top: 0.5rem;">Voltar</button>
+                                </template>
+                            </form>
+
+                            <div class="auth-recovery-links">
+                                <p>{{ msg.recuperaSenha.lembrou }}</p>
+                                <a href="login.html">{{ msg.recuperaSenha.voltarLogin }}</a>
+                            </div>
+                        </div>
+                    </section>
+                </main>
+
+                <footer class="auth-footer">
+                    <p>{{ msg.footer }}</p>
+                </footer>
+            </div>
+            `,
+            mixins: [window.AuthFormMixin],
+            data() { 
+                return { 
+                    msg: messages,
+                    step: 'email',
+                    form: { contato: '', codigo: '', novaSenha: '', confirmarSenha: '' },
+                    error: '',
+                    loading: false
+                } 
+            },
+            methods: { 
+                clearErrors() {
+                    this.errors = {};
+                    this.error = '';
+                },
+                async requestCode() {
+                    this.clearErrors();
+                    
+                    if (!window.FormValidator.validateRequired(this.form.contato)) {
+                        this.setFieldError('contato', this.msg.validacao.campoObrigatorio);
+                        return;
+                    }
+                    
+                    if (!window.FormValidator.validateEmailOrPhone(this.form.contato)) {
+                        this.setFieldError('contato', this.msg.recuperaSenha.erro);
+                        return;
+                    }
+                    
+                    this.loading = true;
+                    try {
+                        const response = await window.ApiClient.post('/usuarios/recuperar-senha', { contato: this.form.contato });
+                        this.success = 'Código enviado! (simulação)';
+                        this.step = 'reset';
+                    } catch (err) {
+                        this.error = err && err.message ? err.message : 'Erro ao solicitar recuperação.';
+                    } finally {
+                        this.loading = false;
+                    }
+                },
+                async resetPassword() {
+                    this.clearErrors();
+                    
+                    if (!this.form.codigo || !this.form.novaSenha || !this.form.confirmarSenha) {
+                        this.error = 'Preencha todos os campos.';
+                        return;
+                    }
+                    
+                    if (this.form.novaSenha.length < 6) {
+                        this.error = 'Senha deve ter no mínimo 6 caracteres.';
+                        return;
+                    }
+                    
+                    if (this.form.novaSenha !== this.form.confirmarSenha) {
+                        this.error = 'Senhas não conferem.';
+                        return;
+                    }
+                    
+                    this.loading = true;
+                    try {
+                        await window.ApiClient.post('/usuarios/redefinir-senha', {
+                            email: this.form.contato,
+                            codigo: this.form.codigo,
+                            nova_senha: this.form.novaSenha
+                        });
+                        this.success = 'Senha redefinida com sucesso! Redirecionando...';
+                        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                    } catch (err) {
+                        this.error = err && err.message ? err.message : 'Erro ao redefinir senha.';
+                    } finally {
+                        this.loading = false;
+                    }
+                }
+            }
+        };
+
+        mountVuePage(App);
+    </script>
+</body>
+</html>

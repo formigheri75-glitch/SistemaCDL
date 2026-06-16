@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Início - Instituição</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-inicial-instituicao.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="hero-stats">
+                        <div class="stat"><strong>{{ stats.total }}</strong><span>{{ msg.pages.telaInicialInstituicao.desafiosDisponiveis }}</span></div>
+                        <div class="stat"><strong>{{ stats.pendentes }}</strong><span>{{ msg.pages.telaInicialInstituicao.propostasPendentes }}</span></div>
+                        <div class="stat"><strong>{{ stats.notificacoes }}</strong><span>{{ msg.pages.telaInicialInstituicao.notificacoes }}</span></div>
+                    </div>
+                    <div class="section-head">
+                        <h2>{{ msg.pages.telaInicialInstituicao.desafiosDisponiveis }}</h2>
+                        <div class="flex gap-2">
+                            <a class="mini-btn" href="notificacoes.html">{{ msg.pages.telaInicialInstituicao.verNotificacoes }}</a>
+                            <button class="mini-btn" @click.prevent="openCoordinatorManager">Gerenciar Coordenadores</button>
+                        </div>
+                    </div>
+                    <div class="list cards-grid">
+                        <challenge-card
+                            v-for="challenge in challenges"
+                            :key="challenge.title"
+                            :challenge="challenge"
+                            icon="🎯"
+                            detailsLink="tela-detalhes-desafio-instituicao.html"
+                        ></challenge-card>
+                    </div>
+                    <!-- Coordenator manager modal -->
+                    <div v-if="coordinatorModal.open" class="modal-overlay" style="position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.6); display:grid; place-items:center;" @click.self="closeCoordinatorManager">
+                        <div class="modal-card" style="background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:2rem; max-width:900px; width:95%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                                <h3 style="font-size:1.25rem; font-weight:700; color:var(--color-text-primary);">👥 Gerenciar Coordenadores</h3>
+                                <button class="mini-btn" @click.prevent="closeCoordinatorManager" style="font-size:1.2rem;">✕</button>
+                            </div>
+
+                            <div v-if="coordinatorSaveSuccess" class="form-success" style="margin-bottom:1rem;">{{ coordinatorSaveSuccess }}</div>
+                            <div v-if="coordinatorSaveError" class="form-error" style="margin-bottom:1rem;">{{ coordinatorSaveError }}</div>
+
+                            <div style="margin-bottom:1rem;">
+                                <button class="btn btn-primary" @click.prevent="openNewCoordinator">+ Novo Coordenador</button>
+                            </div>
+
+                            <div v-if="coordinatorLoading" style="text-align:center; padding:2rem; color:var(--color-text-muted);">Carregando coordenadores...</div>
+                            <div v-else-if="coordinators.length === 0" class="empty-state" style="padding:2rem;">
+                                <p>Nenhum coordenador cadastrado para esta instituição.</p>
+                            </div>
+                            <div v-else class="overflow-x-auto">
+                                <table class="table" style="width:100%; border-collapse:collapse;">
+                                    <thead>
+                                        <tr style="border-bottom:2px solid var(--color-border);">
+                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">ID</th>
+                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">Nome</th>
+                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">Email</th>
+                                            <th style="padding:0.75rem 0.5rem; text-align:right; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">Ações</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="c in coordinators" :key="c.id" style="border-bottom:1px solid var(--color-border); transition:background 0.2s;" @mouseenter="$event.target.style.background='var(--color-primary-10)'" @mouseleave="$event.target.style.background='transparent'">
+                                            <td style="padding:0.75rem 0.5rem; color:var(--color-text-muted);">{{ c.id }}</td>
+                                            <td style="padding:0.75rem 0.5rem; color:var(--color-text-primary); font-weight:500;">{{ c.nome || c.name }}</td>
+                                            <td style="padding:0.75rem 0.5rem; color:var(--color-text-secondary);">{{ c.email }}</td>
+                                            <td style="padding:0.75rem 0.5rem; text-align:right;">
+                                                <button class="mini-btn" @click.prevent="editCoordinator(c)" style="margin-right:0.5rem;">✏️ Editar</button>
+                                                <button class="mini-btn danger" @click.prevent="deleteCoordinator(c)" style="background:var(--color-error-light); color:var(--color-error);">🗑️ Excluir</button>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <div style="margin-top:1.5rem; text-align:right;">
+                                <button class="btn btn-secondary" @click.prevent="closeCoordinatorManager">Fechar</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New/Edit coordinator modal -->
+                    <div v-if="coordinatorModal.editOpen" class="modal-overlay" style="position:fixed; inset:0; z-index:1001; background:rgba(0,0,0,0.6); display:grid; place-items:center;" @click.self="closeCoordinatorEdit">
+                        <div class="modal-card" style="background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:2rem; max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                                <h3 style="font-size:1.15rem; font-weight:700; color:var(--color-text-primary);">{{ coordinatorModal.editMode==='create' ? '➕ Novo Coordenador' : '✏️ Editar Coordenador' }}</h3>
+                                <button class="mini-btn" @click.prevent="closeCoordinatorEdit" style="font-size:1.2rem;">✕</button>
+                            </div>
+
+                            <form @submit.prevent="saveCoordinator">
+                                <div class="form-group">
+                                    <label style="display:block; margin-bottom:0.4rem; color:var(--color-text-secondary); font-size:0.9rem;">Nome completo</label>
+                                    <input v-model="coordinatorForm.nome" class="w-full" required style="width:100%; padding:0.65rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Nome do coordenador" />
+                                </div>
+                                <div class="form-group" style="margin-top:1rem;">
+                                    <label style="display:block; margin-bottom:0.4rem; color:var(--color-text-secondary); font-size:0.9rem;">Email</label>
+                                    <input v-model="coordinatorForm.email" class="w-full" type="email" required style="width:100%; padding:0.65rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="email@exemplo.com" />
+                                </div>
+                                <div class="form-group" style="margin-top:1rem;">
+                                    <label style="display:block; margin-bottom:0.4rem; color:var(--color-text-secondary); font-size:0.9rem;">Senha <span v-if="coordinatorModal.editMode==='create'" style="color:var(--color-error);">*</span></label>
+                                    <input v-model="coordinatorForm.senha" type="password" class="w-full" :required="coordinatorModal.editMode==='create'" style="width:100%; padding:0.65rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Mínimo 6 caracteres" />
+                                    <small v-if="coordinatorModal.editMode==='edit'" style="color:var(--color-text-muted); font-size:0.8rem;">Deixe em branco para manter a senha atual.</small>
+                                </div>
+                                <input type="hidden" v-model="coordinatorForm.instituicao" />
+                                <div style="margin-top:1.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
+                                    <button type="button" class="btn btn-secondary" @click.prevent="closeCoordinatorEdit">Cancelar</button>
+                                    <button type="submit" class="btn btn-primary">{{ coordinatorModal.editMode==='create' ? 'Criar Coordenador' : 'Salvar Alterações' }}</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (!window.ensureRole('instituicao')) return;
+
+                mountVuePage({
+                    components: { SideNav, ChallengeCard },
+                    data() {
+                        return {
+                            msg: window.messages,
+                            menuItems: [
+                                { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
+                                { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
+                                { label: 'Notificações', href: 'notificacoes.html' },
+                            ],
+                            challenges: [],
+                            notificationsCount: 0,
+                            coordinators: [],
+                            coordinatorModal: { open: false, editOpen: false, editMode: '' },
+                            coordinatorForm: {},
+                            coordinatorLoading: false,
+                            coordinatorSaveSuccess: '',
+                            coordinatorSaveError: '',
+                        };
+                    },
+                    computed: {
+                        stats() {
+                            return {
+                                total: this.challenges.length,
+                                pendentes: this.challenges.filter(c => c.status === 'pendente' || c.status === 'aberto').length,
+                                notificacoes: this.notificationsCount,
+                            };
+                        },
+                    },
+                    mounted: async function() {
+                        try {
+                            const desafios = await window.fetchDesafiosList();
+                            this.challenges = (desafios || []).map(d => ({
+                                id: d.id,
+                                title: d.titulo || d.nome || 'Desafio',
+                                description: d.descricao || '',
+                                meta: d.areaconhecimento || d.statusdesafio || d.status || '',
+                                status: d.statusdesafio || d.status || 'aberto',
+                            }));
+                        } catch (e) {
+                            console.error('Erro ao carregar desafios:', e);
+                            this.challenges = window.messages.telaInicialDesafios.challenges || [];
+                        }
+
+                        try {
+                            const notificacoes = await window.ApiClient.get('/notificacoes');
+                            this.notificationsCount = (notificacoes || []).length;
+                        } catch (e) {
+                            this.notificationsCount = 0;
+                        }
+                    },
+                    methods: {
+                        async getUserInstituicaoId() {
+                            try {
+                                const auth = JSON.parse(localStorage.getItem('auth_user') || 'null');
+                                if (!auth) return null;
+                                return auth.instituicao || auth.instituicaoid || auth.instituicaoId || auth.instituicao_id || auth.id || (auth.usuario && (auth.usuario.instituicao || auth.usuario.id)) || null;
+                            } catch (e) {
+                                return null;
+                            }
+                        },
+                        openCoordinatorManager() {
+                            this.coordinatorModal.open = true;
+                            this.loadCoordinators();
+                        },
+                        closeCoordinatorManager() {
+                            this.coordinatorModal.open = false;
+                        },
+                        async loadCoordinators() {
+                            try {
+                                this.coordinatorLoading = true;
+                                const instId = await this.getUserInstituicaoId();
+                                if (!instId) {
+                                    this.coordinators = [];
+                                    return;
+                                }
+                                const users = await window.ApiClient.get('/usuarios');
+                                this.coordinators = (users || []).filter(u => (String(u.tipousuario || u.tipo || '').toLowerCase() === 'coordenador') && (String(u.instituicao || u.instituicaoid || '') === String(instId)));
+                            } catch (e) {
+                                console.error('Erro ao carregar coordenadores:', e);
+                                this.coordinators = [];
+                            } finally {
+                                this.coordinatorLoading = false;
+                            }
+                        },
+                        async openNewCoordinator() {
+                            this.coordinatorModal.editMode = 'create';
+                            this.coordinatorModal.editOpen = true;
+                            const instId = await this.getUserInstituicaoId();
+                            this.coordinatorForm = { nome: '', email: '', senha: '', telefone: '', cpf: '', cargo: '', departamento: '', ativo: true, instituicao: instId };
+                        },
+                        editCoordinator(c) {
+                            this.coordinatorModal.editMode = 'edit';
+                            this.coordinatorModal.editOpen = true;
+                            this.coordinatorForm = {
+                                id: c.id,
+                                nome: c.nome || c.name || c.Nome || '',
+                                email: c.email || '',
+                                telefone: c.telefone || c.phone || '',
+                                cpf: c.cpf || '',
+                                cargo: c.cargo || '',
+                                departamento: c.departamento || '',
+                                ativo: typeof c.ativo === 'boolean' ? c.ativo : (c.ativo === 'false' || c.ativo === '0' ? false : true),
+                                instituicao: c.instituicao || c.instituicaoid || c.instituicaoId || ''
+                            };
+                        },
+                        closeCoordinatorEdit() { this.coordinatorModal.editOpen = false; this.coordinatorForm = {}; this.coordinatorSaveError = ''; this.coordinatorSaveSuccess = ''; },
+                        async saveCoordinator() {
+                            this.coordinatorSaveError = '';
+                            this.coordinatorSaveSuccess = '';
+                            if (!this.coordinatorForm.nome || !this.coordinatorForm.email) {
+                                this.coordinatorSaveError = 'Nome e email são obrigatórios.';
+                                return;
+                            }
+                            if (this.coordinatorModal.editMode === 'create' && (!this.coordinatorForm.senha || this.coordinatorForm.senha.length < 6)) {
+                                this.coordinatorSaveError = 'Senha deve ter no mínimo 6 caracteres.';
+                                return;
+                            }
+                            try {
+                                const instId = this.coordinatorForm.instituicao || await this.getUserInstituicaoId();
+                                if (!instId) throw new Error('Instituição não encontrada');
+                                const payload = {
+                                    nome: this.coordinatorForm.nome,
+                                    email: this.coordinatorForm.email,
+                                    senha: this.coordinatorForm.senha,
+                                    tipousuario: 'coordenador',
+                                    instituicao: instId,
+                                    ativo: true
+                                };
+                                if (this.coordinatorModal.editMode === 'create') {
+                                    await window.ApiClient.post('/usuarios', payload);
+                                    this.coordinatorSaveSuccess = 'Coordenador criado com sucesso!';
+                                } else {
+                                    const id = this.coordinatorForm.id;
+                                    if (!payload.senha) delete payload.senha;
+                                    await window.ApiClient.put(`/usuarios/${id}`, payload);
+                                    this.coordinatorSaveSuccess = 'Coordenador atualizado com sucesso!';
+                                }
+                                this.closeCoordinatorEdit();
+                                await this.loadCoordinators();
+                                setTimeout(() => { this.coordinatorSaveSuccess = ''; }, 3000);
+                            } catch (e) {
+                                console.error('Erro ao salvar coordenador:', e);
+                                this.coordinatorSaveError = 'Erro: ' + (e.message || e);
+                            }
+                        },
+                        async deleteCoordinator(c) {
+                            if (!confirm(`Excluir coordenador "${c.nome || c.name || ''}"?`)) return;
+                            try {
+                                await window.ApiClient.delete(`/usuarios/${c.id}`);
+                                this.coordinatorSaveSuccess = 'Coordenador excluído.';
+                                await this.loadCoordinators();
+                                setTimeout(() => { this.coordinatorSaveSuccess = ''; }, 3000);
+                            } catch (e) {
+                                console.error('Erro ao excluir coordenador:', e);
+                                this.coordinatorSaveError = 'Erro ao excluir coordenador: ' + (e.message || e);
+                            }
+                        }
+                    },
+                    title: 'Início - Instituição',
+                });
+            });
+        </script>
+    </body>
+</html>

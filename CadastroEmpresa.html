@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Cadastro Empresa - Sistema de Desafios</title>
+    <style>
+        body {
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+            font-family: var(--font-family);
+        }
+        main {
+            max-width: 42rem;
+            margin: 0 auto;
+            padding: 3rem 1rem;
+        }
+        .form-group input.error {
+            border-color: var(--color-error);
+        }
+        .form-error {
+            color: #fca5a5;
+            font-size: 0.875rem;
+            margin-top: 0.25rem;
+        }
+        .form-success {
+            background: var(--color-success-light);
+            border: 1px solid var(--color-success);
+            color: var(--color-success);
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin-bottom: 1rem;
+        }
+        .button {
+            width: 100%;
+            background: linear-gradient(to right, var(--color-primary), var(--color-primary-dark));
+            color: white;
+            font-weight: bold;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .button:hover {
+            transform: scale(1.05);
+        }
+        .button:active {
+            transform: scale(0.98);
+        }
+        footer {
+            border-top: 1px solid var(--color-border);
+            background: var(--color-bg-primary);
+            margin-top: 5rem;
+        }
+        footer p {
+            max-width: 80rem;
+            margin: 0 auto;
+            padding: 2rem 1rem;
+            text-align: center;
+            color: var(--color-text-muted);
+            font-size: 0.875rem;
+        }
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+        }
+    </style>
+</head>
+<body class="auth-layout">
+    <div id="app"></div>
+
+    <script src="messages.js"></script>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script>
+        const { createApp } = Vue;
+
+        const App = {
+            template: `
+            <div class="auth-page">
+                <main class="auth-shell">
+                    <section class="auth-hero">
+                        <span class="auth-hero-badge">{{ msg.cadastroEmpresa.badge }}</span>
+                        <h1>{{ msg.cadastroEmpresa.kicker }}</h1>
+                        <p>{{ msg.cadastroEmpresa.subtitle }}</p>
+                        <p class="auth-hero-copy">{{ msg.cadastroEmpresa.description }}</p>
+                    </section>
+
+                    <section class="auth-panel">
+                        <div class="auth-card">
+                            <div class="auth-card-top">
+                                <div class="auth-brand-inline">
+                                    <span>{{ msg.cadastroEmpresa.brand }}</span>
+                                </div>
+                                <a class="auth-back-btn" href="login.html">{{ msg.cadastroEmpresa.voltarLogin }}</a>
+                            </div>
+
+                            <div class="auth-form-header">
+                                <div class="auth-form-kicker">{{ msg.cadastroEmpresa.kicker }}</div>
+                                <h2 class="auth-form-title">{{ msg.cadastroEmpresa.title }}</h2>
+                                <p class="auth-form-subtitle">{{ msg.cadastroEmpresa.formSubtitle }}</p>
+                            </div>
+
+                            <form class="auth-form" @submit.prevent="submit">
+                                <div v-if="success" class="form-success">✓ {{ success }}</div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.nome }}</label>
+                                        <input type="text" v-model="form.nomefantasia" :placeholder="msg.cadastroEmpresa.nome" :class="{ error: errors.nomefantasia }">
+                                    <div v-if="errors.nome" class="form-error">{{ errors.nome }}</div>
+                                </div>
+
+                                    <div class="form-group">
+                                        <label>{{ msg.cadastroEmpresa.razaosocial }}</label>
+                                        <input type="text" v-model="form.razaosocial" :placeholder="msg.cadastroEmpresa.razaosocial" :class="{ error: errors.razaosocial }">
+                                        <div v-if="errors.razaosocial" class="form-error">{{ errors.razaosocial }}</div>
+                                    </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.cnpj }}</label>
+                                    <input type="text" v-model="form.cnpj" :placeholder="msg.cadastroEmpresa.placeholderCNPJ" :class="{ error: errors.cnpj }">
+                                    <div v-if="errors.cnpj" class="form-error">{{ errors.cnpj }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.telefone }}</label>
+                                    <input type="tel" v-model="form.telefone" :placeholder="msg.cadastroEmpresa.placeholderTelefone" :class="{ error: errors.telefone }">
+                                    <div v-if="errors.telefone" class="form-error">{{ errors.telefone }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.cidade }}</label>
+                                    <input type="text" v-model="form.cidade" :placeholder="msg.cadastroEmpresa.placeholderCidade" :class="{ error: errors.cidade }">
+                                    <div v-if="errors.cidade" class="form-error">{{ errors.cidade }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.estado }}</label>
+                                    <input type="text" v-model="form.estado" :placeholder="msg.cadastroEmpresa.placeholderEstado" :class="{ error: errors.estado }">
+                                    <div v-if="errors.estado" class="form-error">{{ errors.estado }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.endereco }}</label>
+                                    <input type="text" v-model="form.endereco" :placeholder="msg.cadastroEmpresa.placeholderEndereco" :class="{ error: errors.endereco }">
+                                    <div v-if="errors.endereco" class="form-error">{{ errors.endereco }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.areaatuacao }}</label>
+                                    <input type="text" v-model="form.areaatuacao" :placeholder="msg.cadastroEmpresa.placeholderAreaAtuacao" :class="{ error: errors.areaatuacao }">
+                                    <div v-if="errors.areaatuacao" class="form-error">{{ errors.areaatuacao }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.email }}</label>
+                                    <input type="email" v-model="form.email" :placeholder="msg.cadastroEmpresa.placeholderEmail" :class="{ error: errors.email }">
+                                    <div v-if="errors.email" class="form-error">{{ errors.email }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.senha }}</label>
+                                    <input type="password" v-model="form.senha" :placeholder="msg.cadastroEmpresa.placeholderSenha" :class="{ error: errors.senha }">
+                                    <div v-if="errors.senha" class="form-error">{{ errors.senha }}</div>
+                                </div>
+
+                                <div class="form-group">
+                                    <label>{{ msg.cadastroEmpresa.confirmarSenha }}</label>
+                                    <input type="password" v-model="form.confirma" :placeholder="msg.cadastroEmpresa.placeholderConfirmarSenha" :class="{ error: errors.confirma }">
+                                    <div v-if="errors.confirma" class="form-error">{{ errors.confirma }}</div>
+                                </div>
+
+                                <button class="submit-btn">{{ msg.cadastroEmpresa.cadastrar }}</button>
+                            </form>
+                        </div>
+                    </section>
+                </main>
+
+                <footer class="auth-footer">
+                    <p>{{ msg.footer }}</p>
+                </footer>
+            </div>
+            `,
+            mixins: [window.AuthFormMixin],
+            data() { 
+                return { 
+                    msg: messages,
+                    form: { nomefantasia: '', razaosocial: '', cnpj: '', telefone: '', cidade: '', estado: '', endereco: '', areaatuacao: '', email: '', senha: '', confirma: '' }
+                } 
+            },
+            methods: { 
+                goHome() { window.location.href = 'index.html'; },
+                async submit() {
+                    this.clearErrors();
+                    
+                    if (!window.FormValidator.validateRequired(this.form.nomefantasia)) {
+                        this.setFieldError('nomefantasia', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.razaosocial)) {
+                        this.setFieldError('razaosocial', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.cnpj)) {
+                        this.setFieldError('cnpj', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.telefone)) {
+                        this.setFieldError('telefone', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.cidade)) {
+                        this.setFieldError('cidade', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.estado)) {
+                        this.setFieldError('estado', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.endereco)) {
+                        this.setFieldError('endereco', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.email)) {
+                        this.setFieldError('email', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    } else if (!window.FormValidator.validateEmail(this.form.email)) {
+                        this.setFieldError('email', this.msg.cadastroEmpresa.validacao.emailInvalido);
+                    }
+                    if (!window.FormValidator.validateRequired(this.form.senha)) {
+                        this.setFieldError('senha', this.msg.cadastroEmpresa.validacao.campoObrigatorio);
+                    } else if (!window.FormValidator.validatePassword(this.form.senha)) {
+                        this.setFieldError('senha', this.msg.cadastroEmpresa.validacao.senhaCurta);
+                    }
+                    if (!window.FormValidator.validatePasswordMatch(this.form.senha, this.form.confirma)) {
+                        this.setFieldError('confirma', this.msg.cadastroEmpresa.validacao.senhasNaoCorrespondem);
+                    }
+                    
+                    if (this.hasErrors()) return;
+
+                    try {
+                        await this.submitForm('/empresas', {
+                            razaosocial: this.form.razaosocial,
+                            nomefantasia: this.form.nomefantasia,
+                            cnpj: this.form.cnpj,
+                            email: this.form.email,
+                            celular: this.form.telefone,
+                            cidade: this.form.cidade,
+                            estado: this.form.estado,
+                            endereco: this.form.endereco,
+                            areaatuacao: this.form.areaatuacao,
+                            senha: this.form.senha
+                        });
+
+                        this.success = this.msg.cadastroEmpresa.sucesso + ' Redirecionando para login...';
+                        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                    } catch (error) {
+                        this.setFieldError('submit', error.message || this.msg.cadastroEmpresa.validacao.erroGenerico);
+                    }
+                }
+            }
+        };
+
+        mountVuePage(App);
+    </script>
+</body>
+</html>

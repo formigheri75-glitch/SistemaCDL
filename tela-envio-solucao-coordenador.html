@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Envio da Solução - Coordenador</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-propostas-coordenador.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="form-wrapper">
+                        <h1>Envio da solução</h1>
+                        
+                        <!-- Exibição do desafio selecionado -->
+                        <div v-if="desafio" class="challenge-info">
+                            <h3>Desafio selecionado</h3>
+                            <div class="challenge-details">
+                                <div class="challenge-field">
+                                    <label>Título:</label>
+                                    <span>{{ desafio.titulo }}</span>
+                                </div>
+                                <div class="challenge-field">
+                                    <label>Descrição:</label>
+                                    <span>{{ desafio.descricao }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-else class="form-error">Carregando desafio...</div>
+
+                        <div v-if="success" class="form-success">{{ success }}</div>
+                        <div v-if="error" class="form-error">{{ error }}</div>
+
+                        <div class="form-group"><label>Nome da Equipe</label><input type="text" v-model="form.titulo" placeholder="Digite o nome da equipe" /></div>
+                        <div class="form-group"><label>Descrição</label><textarea v-model="form.descricao" placeholder="Explique a solução"></textarea></div>
+                        <div class="form-group">
+                            <label>Arquivo da solução</label>
+                            <div class="file-upload-wrapper">
+                                <input type="file" ref="fileInput" accept=".zip" @change="handleFileChange" />
+                                <div v-if="form.arquivo" class="file-info">
+                                    <span class="file-name">{{ form.arquivo.name }}</span>
+                                    <span class="file-size">({{ formatFileSize(form.arquivo.size) }})</span>
+                                    <button type="button" class="file-remove" @click="removeFile">&times;</button>
+                                </div>
+                                <div v-if="fileError" class="file-error">{{ fileError }}</div>
+                                <small class="file-hint">Formato permitido: ZIP. Tamanho máximo: 10MB.</small>
+                            </div>
+                        </div>
+                        <div class="button-group">
+                            <button class="btn btn-primary" type="button" @click="submit" :disabled="loading">{{ loading ? msg.pages.telaEnvioSolucaoCoordenador.enviando : msg.pages.telaEnvioSolucaoCoordenador.enviarSolucao }}</button>
+                            <button class="btn btn-secondary" type="button" @click="cancel">{{ msg.pages.telaEnvioSolucaoCoordenador.cancelar }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            if (!window.ensureRole('coordenador')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            const { createApp } = Vue;
+            createApp({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+                            { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
+                        ],
+                        desafio: null,
+                        form: {
+                            titulo: '',
+                            descricao: '',
+                            arquivo: null
+                        },
+                        loading: false,
+                        success: '',
+                        error: '',
+                        fileError: '',
+                        MAX_FILE_SIZE: 10 * 1024 * 1024, // 10MB
+                        ALLOWED_EXTENSIONS: ['.zip'],
+                    };
+                },
+                async mounted() {
+                    const challengeId = this.getChallengeId();
+                    if (challengeId) {
+                        try {
+                            this.desafio = await window.loadDesafio(challengeId);
+                        } catch (err) { this.error = 'Erro ao carregar desafio'; }
+                    }
+                },
+                methods: {
+                    getChallengeId() {
+                        const params = new URLSearchParams(window.location.search);
+                        return params.get('id') || params.get('propostaId');
+                    },
+                    handleFileChange(event) {
+                        const file = event.target.files[0];
+                        this.fileError = '';
+                        if (!file) return;
+
+                        const extension = '.' + file.name.split('.').pop().toLowerCase();
+                        if (!this.ALLOWED_EXTENSIONS.includes(extension)) {
+                            this.fileError = 'Tipo de arquivo não permitido. Formato aceito: ZIP.';
+                            this.form.arquivo = null;
+                            this.$refs.fileInput.value = '';
+                            return;
+                        }
+
+                        if (file.size > this.MAX_FILE_SIZE) {
+                            this.fileError = 'Arquivo muito grande. O tamanho máximo é 10MB.';
+                            this.form.arquivo = null;
+                            this.$refs.fileInput.value = '';
+                            return;
+                        }
+
+                        this.form.arquivo = file;
+                    },
+                    removeFile() {
+                        this.form.arquivo = null;
+                        this.fileError = '';
+                        if (this.$refs.fileInput) {
+                            this.$refs.fileInput.value = '';
+                        }
+                    },
+                    formatFileSize(bytes) {
+                        if (bytes < 1024) return bytes + ' B';
+                        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+                        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+                    },
+                    cancel() {
+                        this.form = { titulo: '', descricao: '', arquivo: null };
+                        this.error = '';
+                        this.success = '';
+                        this.fileError = '';
+                        if (this.$refs.fileInput) this.$refs.fileInput.value = '';
+                        try {
+                            if (window.history && window.history.length > 1) {
+                                window.history.back();
+                            } else {
+                                window.location.href = 'tela-propostas-coordenador.html';
+                            }
+                        } catch (e) {
+                            window.location.href = 'tela-propostas-coordenador.html';
+                        }
+                    },
+                    async submit() {
+                        this.error = '';
+                        this.success = '';
+                        this.fileError = '';
+                        if (!this.form.titulo || !this.form.descricao) {
+                            this.error = 'Nome da equipe e descrição são obrigatórios.';
+                            return;
+                        }
+                        this.loading = true;
+                        try {
+                            const challengeId = this.getChallengeId();
+                            const user = window.StorageManager.getUser() || {};
+
+                            let instituicaoId = null;
+                            try {
+                                const insts = await ApiClient.get('/instituicoes');
+                                if (Array.isArray(insts)) {
+                                    const found = insts.find(i => String(i.usuarioid || i.usuarioId || i.usuario) === String(user.id) || String(i.email) === String(user.email));
+                                    if (found) instituicaoId = found.id || found.ID || null;
+                                }
+                            } catch (e) {}
+
+                            if (!instituicaoId) {
+                                this.error = 'Não foi possível determinar a instituição associada ao usuário. Faça login como instituição ou verifique seu cadastro.';
+                                this.loading = false;
+                                return;
+                            }
+
+                            // Upload do arquivo primeiro, se houver
+                            let nomeArquivo = null;
+                            let arquivoUrl = null;
+
+                            if (this.form.arquivo) {
+                                const formData = new FormData();
+                                formData.append('arquivo', this.form.arquivo);
+
+                                const token = window.StorageManager.getToken();
+                                const uploadResponse = await fetch(window.API_BASE_URL + '/upload-arquivo', {
+                                    method: 'POST',
+                                    headers: {
+                                        'Authorization': 'Bearer ' + token
+                                    },
+                                    body: formData
+                                });
+
+                                if (uploadResponse.ok) {
+                                    const uploadData = await uploadResponse.json();
+                                    nomeArquivo = uploadData.arquivo && uploadData.arquivo.nome_original;
+                                    arquivoUrl = uploadData.arquivo && uploadData.arquivo.url;
+                                } else {
+                                    const uploadErr = await uploadResponse.json().catch(() => ({}));
+                                    this.error = uploadErr.erro || 'Erro ao fazer upload do arquivo.';
+                                    this.loading = false;
+                                    return;
+                                }
+                            }
+
+                            const payload = {
+                                desafioid: challengeId ? Number(challengeId) : null,
+                                instituicaoid: instituicaoId,
+                                titulo: this.form.titulo,
+                                descricao: this.form.descricao,
+                                nomearquivo: nomeArquivo,
+                                arquivo: arquivoUrl
+                            };
+                            await ApiClient.post('/propostas', payload);
+                            this.success = window.messages.pages.telaEnvioSolucaoCoordenador.sucesso;
+                            this.cancel();
+                        } catch (err) {
+                            this.error = err && err.message ? err.message : window.messages.pages.telaEnvioSolucaoCoordenador.erro;
+                        } finally {
+                            this.loading = false;
+                        }
+                    }
+                }
+            }).mount('#app');
+            document.title = 'Envio da Solução - Coordenador';
+        </script>
+    </body>
+</html>

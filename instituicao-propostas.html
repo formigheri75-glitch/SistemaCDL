@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Propostas - Admin (Instituições)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.tela.brand" :items="menuItems" active-href="instituicao-propostas.html"></side-nav>
+            <div class="content">
+                <div class="section-head"><h2>Propostas (Instituições)</h2></div>
+
+                <!-- Filtros -->
+                <div class="filter-section">
+                    <span class="filter-label">Status:</span>
+                    <button class="filter-button" :class="{ active: filtroStatus === 'todos' }" @click="filtroStatus = 'todos'">Todas ({{ proposals.length }})</button>
+                    <button class="filter-button" :class="{ active: filtroStatus === 'pendente' }" @click="filtroStatus = 'pendente'">Pendentes</button>
+                    <button class="filter-button" :class="{ active: filtroStatus === 'aprovada' }" @click="filtroStatus = 'aprovada'">Aprovadas</button>
+                    <button class="filter-button" :class="{ active: filtroStatus === 'rejeitada' }" @click="filtroStatus = 'rejeitada'">Rejeitadas</button>
+                </div>
+
+                <div class="list cards-grid" v-if="proposalsFiltradas.length">
+                    <div v-for="p in proposalsFiltradas" :key="p.id" class="proposal-card card">
+                        <div class="proposal-icon">📋</div>
+                        <div class="proposal-main">
+                            <h3>{{ p.titulo }}</h3>
+                            <p>{{ p.descricao }}</p>
+                            <div class="challenge-meta">
+                                <span><strong>Instituição:</strong> {{ p.instituicaoNome || '-' }}</span>
+                                <span><strong>Desafio:</strong> {{ p.desafioTitulo || '-' }}</span>
+                            </div>
+                        </div>
+                        <div class="proposal-actions">
+                            <span class="status-pill" :class="p.status === 'aprovada' || p.status === 'accepted' ? 'approved' : (p.status === 'rejeitada' ? 'rejected' : 'analysis')">
+                                {{ p.statusLabel }}
+                            </span>
+                            <a class="mini-btn" :href="'detalhesPropossta.html?id=' + p.id">Ver</a>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="empty-state"><p>Nenhuma proposta encontrada.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.ensureRole('admin')) return;
+
+            mountVuePage({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: window.getAdminMenuItems(),
+                        proposals: [],
+                        instituicoes: [],
+                        desafiosMap: {},
+                        filtroStatus: 'todos',
+                    };
+                },
+                computed: {
+                    proposalsFiltradas() {
+                        if (this.filtroStatus === 'todos') return this.proposals;
+                        return this.proposals.filter(p => {
+                            const lbl = window.getStatusLabel(p.statusRaw).toLowerCase();
+                            return lbl === this.filtroStatus;
+                        });
+                    }
+                },
+                async mounted() {
+                    try {
+                        const [props, insts, des] = await Promise.all([
+                            window.ApiClient.get('/propostas'),
+                            window.ApiClient.get('/instituicoes'),
+                            window.fetchDesafiosList()
+                        ]);
+                        this.instituicoes = insts || [];
+                        (des || []).forEach(d => { if (d.id) this.desafiosMap[d.id] = d; });
+
+                        this.proposals = (props || []).map(p => {
+                            const instId = p.instituicaoid || p.instituicaoID || p.instituicaoId;
+                            const inst = (this.instituicoes || []).find(i => String(i.id) === String(instId));
+                            const desafio = p.desafioid ? this.desafiosMap[p.desafioid] : null;
+                            return {
+                                id: p.id,
+                                titulo: p.titulo || 'Proposta',
+                                descricao: p.descricao || '',
+                                statusRaw: p.statusproposta || p.status || '',
+                                statusLabel: window.getStatusLabel(p.statusproposta || p.status) || 'Pendente',
+                                instituicaoNome: inst ? (inst.nomeinstituicao || inst.nome) : 'N/A',
+                                desafioTitulo: desafio ? desafio.titulo : 'N/A',
+                            };
+                        });
+                    } catch (e) { console.error('Erro ao carregar propostas', e); }
+                },
+                methods: { getStatusLabel: window.getStatusLabel },
+                title: 'Propostas - Admin'
+            });
+        });
+    </script>
+</body>
+</html>

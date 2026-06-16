@@ -1,0 +1,264 @@
+﻿<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
+            rel="stylesheet"
+        />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Detalhes do Problema</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.nav.brand"
+                    :items="menuItems"
+                    active-href="empresaDashboard.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="container">
+                        <div class="header">
+                            <h1>{{ problema.title || problema.titulo || msg.detalhesProblema.titulo }}</h1>
+                            <span class="status-badge active"
+                                >{{ problema.statusdesafio || problema.status || msg.detalhesProblema.status }}</span
+                            >
+                        </div>
+
+                        <div class="content-wrapper">
+                            <div class="main-content">
+                                <div class="detail-card">
+                                    <h2>
+                                        {{ msg.detalhesProblema.descricao }}
+                                    </h2>
+                                    <p>{{ problema.description || problema.descricao || 'Descrição não informada.' }}</p>
+                                </div>
+
+                                <div class="detail-card">
+                                    <h2>
+                                        {{ msg.detalhesProblema.requisitos }}
+                                    </h2>
+                                    <ul v-if="requisitos.length" class="requirements-list">
+                                        <li v-for="req in requisitos" :key="req.id">{{ req.descricao || req.descricao }}</li>
+                                    </ul>
+                                    <p v-else class="text-gray-400">Nenhum requisito cadastrado para este desafio.</p>
+                                </div>
+
+
+                                <div class="detail-card">
+                                    <h2>
+                                        {{ msg.detalhesProblema.propostas }}
+                                    </h2>
+
+                                    <div v-if="desafioAceito" class="alert" style="background:var(--color-success-20); border:1px solid var(--color-success); border-radius:var(--radius-md); padding:1rem; margin-bottom:1rem;">
+                                        ✅ Este desafio já possui uma solução aceita. Novas propostas estão bloqueadas.
+                                    </div>
+
+                                    <div v-if="propostas.length" class="proposals-list">
+                                        <div v-for="prop in propostas" :key="prop.id" class="proposal-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid var(--color-border); gap:1rem;">
+                                            <div style="flex:1;">
+                                                <strong>{{ prop.titulo || 'Proposta' }}</strong>
+                                                <span class="status-pill" :class="prop.statusClass" style="margin-left:0.75rem; font-size:0.75rem;">{{ prop.statusLabel }}</span>
+                                                <div style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">{{ prop.instituicaoNome || 'Instituição' }}</div>
+                                            </div>
+                                            <div style="display:flex; gap:0.5rem; flex-shrink:0;">
+                                                <a class="mini-btn" :href="'detalhesPropossta.html?id=' + prop.id">Ver</a>
+                                                <button
+                                                    v-if="isEmpresa && !desafioAceito && prop.podeAceitar"
+                                                    class="mini-btn primary"
+                                                    @click.prevent="aceitarProposta(prop)"
+                                                    :disabled="prop.aceitando"
+                                                >{{ prop.aceitando ? '...' : '✔ Aceitar' }}</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p v-else style="margin:1rem 0; color:var(--color-text-muted);">Nenhuma proposta recebida ainda.</p>
+                                </div>
+                            </div>
+
+
+                            <aside class="info-panel">
+                                <h3>Informações</h3>
+
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        {{ msg.detalhesProblema.info.categoria
+                                        }}
+                                    </div>
+                                    <div class="info-value">{{ problema.areaconhecimento || 'Geral' }}</div>
+                                </div>
+
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        {{ msg.detalhesProblema.info.prioridade
+                                        }}
+                                    </div>
+                                    <div class="info-value" style="color: var(--color-error)">{{ problema.nivelprioridade || problema.priority || problema.nivelproblema || 'Alta' }}</div>
+                                </div>
+
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        {{ msg.detalhesProblema.info.prazo }}
+                                    </div>
+                                    <div class="info-value">{{ prazoFormatado || 'Não definido' }}</div>
+                                </div>
+
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        {{ msg.detalhesProblema.info.propostas
+                                        }}
+                                    </div>
+                                    <div class="info-value">{{ totalPropostas }}</div>
+                                </div>
+
+                                <div class="info-item">
+                                    <div class="info-label">
+                                        {{ msg.detalhesProblema.info.dataCriacao
+                                        }}
+                                    </div>
+                                    <div class="info-value">{{ dataCriacaoFormatada || 'N/A' }}</div>
+                                </div>
+
+                                <div class="button-group">
+                                    <a
+                                        v-if="isEmpresa"
+                                        href="detalhesProblema.html"
+                                        class="btn btn-primary"
+                                    >
+                                        {{ msg.detalhesProblema.editar }}
+                                    </a>
+                                    <a
+                                        href="empresaDashboard.html"
+                                        class="btn btn-secondary"
+                                    >
+                                        {{ msg.detalhesProblema.voltar }}
+                                    </a>
+                                </div>
+                            </aside>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            if (!window.ensureRole(['empresa', 'admin'])) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            if (window.messages) {
+                mountStandardApp({
+                    components: { SideNav },
+                    title: window.messages.detalhesProblema.titulo,
+                    data: () => ({
+                        menuItems: [
+                            { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
+                            { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
+                            { label: window.messages.nav.propostas, href: 'propostas.html' },
+                        ],
+                        problema: {},
+                        requisitos: [],
+                        propostas: [],
+                        userRole: null,
+                    }),
+                    methods: {
+                        getIdFromQuery: window.getIdFromQuery,
+                        getUserRole() {
+                            const user = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
+                            const role = user && (user.type || user.role || user.tipoUsuario) || localStorage.getItem('userType') || 'instituicao';
+                            return window.AppRoutes && window.AppRoutes.normalizeRole ? window.AppRoutes.normalizeRole(role) : String(role).toLowerCase();
+                        },
+                        async loadProblema() {
+                            const id = window.getIdFromQuery();
+                            this.problema = await window.loadDesafio(id);
+                            this.userRole = this.getUserRole();
+
+                            // Carregar requisitos deste desafio
+                            try {
+                                const todosRequisitos = await window.ApiClient.get('/requisitos');
+                                this.requisitos = (todosRequisitos || []).filter(r => String(r.desafioid || r.desafioID || r.desafioId) === String(id));
+                            } catch (e) {
+                                this.requisitos = [];
+                            }
+
+                            // Carregar propostas deste desafio
+                            try {
+                                const todasPropostas = await window.ApiClient.get('/propostas');
+                                const propostasDoDesafio = (todasPropostas || []).filter(p => String(p.desafioid || p.desafioID || '') === String(id));
+                                this.propostas = propostasDoDesafio.map(p => {
+                                    const statusStr = String(p.statusproposta || p.status || '').toLowerCase();
+                                    let sc = 'analysis';
+                                    if (statusStr.includes('aceit') || statusStr.includes('aprov')) sc = 'approved';
+                                    else if (statusStr.includes('reje') || statusStr.includes('reprov')) sc = 'rejected';
+                                    return {
+                                        id: p.id,
+                                        titulo: p.titulo || 'Proposta',
+                                        instituicaoNome: p.instituicaoNome || p.instituicao || '',
+                                        statusRaw: statusStr,
+                                        statusLabel: window.getStatusLabel(statusStr) || 'Pendente',
+                                        statusClass: sc,
+                                        podeAceitar: !statusStr.includes('aceit'),
+                                        aceitando: false,
+                                    };
+                                });
+                            } catch (e) {
+                                this.propostas = [];
+                            }
+                        },
+                        async aceitarProposta(prop) {
+                            if (prop.aceitando) return;
+                            prop.aceitando = true;
+                            try {
+                                await window.ApiClient.put(`/propostas/${prop.id}`, { statusproposta: 'aceita' });
+                                await window.ApiClient.put(`/desafios/${this.problema.id}`, { statusdesafio: 'aceito' });
+                                // Notificar instituição
+                                try {
+                                    await window.ApiClient.post('/notificacoes', {
+                                        desafioid: this.problema.id,
+                                        descricao: `Sua proposta "${prop.titulo}" foi aceita!`,
+                                        tabelafonte: 'empresa'
+                                    });
+                                } catch(e) { /* ignora */ }
+                                prop.statusRaw = 'aceita';
+                                prop.statusLabel = 'Aprovada';
+                                prop.podeAceitar = false;
+                                this.problema.statusdesafio = 'aceito';
+                            } catch(e) {
+                                alert('Erro ao aceitar proposta: ' + (e.message || e));
+                            } finally {
+                                prop.aceitando = false;
+                            }
+                        },
+                    },
+                    computed: {
+                        isEmpresa() {
+                            return this.userRole === 'empresa';
+                        },
+                        desafioAceito() {
+                            const s = String(this.problema && (this.problema.statusdesafio || this.problema.status) || '').toLowerCase();
+                            return s.includes('aceit') || s.includes('concl');
+                        },
+                        totalPropostas() {
+                            return this.propostas.length;
+                        },
+                        prazoFormatado() {
+                            return window.formatarData(this.problema && (this.problema.datalimite || this.problema.prazo), 'Nao definido');
+                        },
+                        dataCriacaoFormatada() {
+                            return window.formatarData(this.problema && (this.problema.createdAt || this.problema.datacriacao || this.problema.dataCriacao), 'N/A');
+                        }
+                    },
+                    mounted: async function() {
+                        await this.loadProblema();
+                    }
+                });
+            }
+        </script>
+    </body>
+</html>

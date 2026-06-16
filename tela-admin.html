@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Admin | Sistema de Desafios</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    brand="Admin"
+                    :items="menuItems"
+                    active-href="tela-admin.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="hero-stats">
+                        <div class="stat"><strong>{{ stats.empresas }}</strong><span>Empresas</span></div>
+                        <div class="stat"><strong>{{ stats.instituicoes }}</strong><span>Instituições</span></div>
+                        <div class="stat"><strong>{{ stats.coordenadores }}</strong><span>Coordenadores</span></div>
+                        <div class="stat"><strong>{{ stats.pendentes }}</strong><span>Pendentes</span></div>
+                        <div class="stat"><strong>{{ stats.propostas }}</strong><span>Propostas</span></div>
+                        <div class="stat"><strong>{{ stats.desafios }}</strong><span>Desafios</span></div>
+                    </div>
+
+                    <div v-if="stats.pendentes > 0" class="alert" style="background: var(--color-warning-light); border: 1px solid var(--color-warning); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                        <span style="font-size: 1.5rem;">⚠️</span>
+                        <span><strong>{{ stats.pendentes }} cadastro(s) pendente(s) de aprovação!</strong></span>
+                        <a href="aprovacoes.html" class="btn btn-primary" style="margin-left: auto;">Ir para Aprovações</a>
+                    </div>
+
+                    <div class="section-head">
+                        <h2>Ações rápidas</h2>
+                    </div>
+                    <div class="list cards-grid" style="margin-bottom: 2rem;">
+                        <a class="card" href="aprovacoes.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--color-warning);">
+                            <h3>📋 Aprovações Pendentes</h3>
+                            <p>Aprovar ou rejeitar cadastros de empresas e instituições.</p>
+                            <span v-if="stats.pendentes > 0" class="status-pill analysis">{{ stats.pendentes }} pendente(s)</span>
+                        </a>
+                        <a class="card" href="usuarios.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--color-primary);">
+                            <h3>👥 Gerenciar Usuários</h3>
+                            <p>Listar, criar, editar e remover usuários, empresas e instituições.</p>
+                        </a>
+                    </div>
+
+
+                </div>
+            </div>
+        </div>
+        <script>
+            if (!window.ensureRole('admin')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            mountVuePage({
+                components: { SideNav },
+                data() {
+                    return {
+                        menuItems: window.getAdminMenuItems(),
+
+                        stats: {
+                            empresas: 0,
+                            instituicoes: 0,
+                            coordenadores: 0,
+                            pendentes: 0,
+                            propostas: 0,
+                            desafios: 0,
+                        },
+                    };
+                },
+                mounted: async function() {
+                    try {
+                        const [empresas, instituicoes, usuarios, notificacoes, propostas, desafios] = await Promise.all([
+                            window.ApiClient.get('/empresas').catch(() => []),
+                            window.ApiClient.get('/instituicoes').catch(() => []),
+                            window.ApiClient.get('/usuarios').catch(() => []),
+                            window.ApiClient.get('/notificacoes').catch(() => []),
+                            window.ApiClient.get('/propostas').catch(() => []),
+                            window.fetchDesafiosList().catch(() => []),
+                        ]);
+
+                        this.stats.empresas = (empresas || []).length;
+                        this.stats.instituicoes = (instituicoes || []).length;
+                        this.stats.coordenadores = (usuarios || []).filter(u => {
+                            const t = String(u.tipousuario || u.tipoUsuario || u.type || '').toLowerCase();
+                            return t === 'coordenador';
+                        }).length;
+
+                        // Calcular pendências
+                        const empresasPend = (empresas || []).filter(e => (e.status || '').toLowerCase() === 'pendente').length;
+                        const instPend = (instituicoes || []).filter(i => (i.status || '').toLowerCase() === 'pendente').length;
+                        this.stats.pendentes = empresasPend + instPend;
+
+                        this.stats.propostas = (propostas || []).length;
+                        this.stats.desafios = (desafios || []).length;
+                    } catch (e) {
+                        console.error('Erro ao carregar estatísticas admin:', e);
+                    }
+                },
+                methods: {}
+            });
+        </script>
+    </body>
+</html>

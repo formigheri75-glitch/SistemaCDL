@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://fonts.googleapis.com/css?family=Inter&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Login - Sistema de Desafios</title>
+    <script src="images.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script>
+        if (window.images && window.images.login_background) {
+            document.documentElement.style.setProperty('--login-bg', `url('${window.images.login_background}')`);
+        }
+        if (window.images && window.images.login_logo) {
+            document.documentElement.style.setProperty('--login-logo', `url('${window.images.login_logo}')`);
+        }
+    </script>
+    <style>
+        body {
+            font-family: var(--font-family);
+            background: var(--color-bg-primary);
+            color: var(--color-text-primary);
+        }
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            grid-template-columns: 1fr 566px;
+            position: relative;
+            overflow: hidden;
+        }
+        .left-section {
+            background: var(--login-bg) center/cover no-repeat;
+            padding: clamp(20px, 4vw, 60px) clamp(40px, 8vw, 80px);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            align-items: flex-start;
+            position: relative;
+            min-height: 100vh;
+            width: 100%;
+            padding-top: clamp(40px, 6vw, 80px);
+        }
+        .left-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(232,239,248,0.4) 0%, rgba(219,234,254,0.4) 100%);
+            z-index: 0;
+        }
+        .left-content {
+            position: relative;
+            z-index: 1;
+            background: rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(3px);
+            padding: clamp(20px, 4vw, 40px);
+            border-radius: 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        .logo {
+            width: clamp(150px, 20vw, 280px);
+            height: auto;
+            aspect-ratio: 253/142;
+            background: var(--login-logo);
+            background-repeat: no-repeat;
+            background-position: center;
+            background-size: contain;
+            margin-bottom: clamp(15px, 3vh, 30px);
+            filter: drop-shadow(0 18px 30px rgba(15, 23, 42, 0.35));
+        }
+        .left-content h1 {
+            color: var(--color-primary);
+            font-weight: 600;
+            font-size: clamp(40px, 8vw, 65px);
+            line-height: 1.1;
+            margin-bottom: clamp(10px, 2vh, 20px);
+            text-shadow: 0 2px 10px rgba(15, 23, 42, 0.16);
+        }
+        .left-content p {
+            color: var(--color-primary-dark);
+            font-weight: 300;
+            font-size: clamp(18px, 5vw, 35px);
+            line-height: 1.3;
+            max-width: 600px;
+            text-shadow: 0 1px 8px rgba(15, 23, 42, 0.12);
+            margin-bottom: 0;
+        }
+        .right-section {
+            background: var(--color-bg-tertiary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: clamp(30px, 5vh, 60px);
+            min-width: 300px;
+        }
+        .form-card {
+            width: 100%;
+            max-width: 455px;
+            background: var(--color-bg-secondary);
+            border: 1px solid var(--color-border);
+            border-radius: 61px;
+            padding: clamp(30px, 5vh, 60px);
+            display: flex;
+            flex-direction: column;
+            gap: clamp(20px, 3vh, 30px);
+        }
+        .form-card h2 {
+            color: var(--color-text-primary);
+            font-weight: 700;
+            font-size: clamp(20px, 8vw, 30px);
+            text-align: center;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(8px, 1.5vh, 15px);
+        }
+        .form-label {
+            color: var(--color-text-secondary);
+            font-weight: 700;
+            font-size: clamp(13px, 2vw, 17px);
+        }
+        .form-input {
+            width: 100%;
+            height: clamp(50px, 8vh, 70px);
+            background: var(--color-bg-secondary);
+            border: 2px solid var(--color-border);
+            border-radius: 10px;
+            padding: clamp(10px, 2vh, 20px);
+            color: var(--color-text-primary);
+            font-family: var(--font-family);
+            font-size: clamp(13px, 2vw, 16px);
+            transition: all 0.3s ease;
+        }
+        .form-input::placeholder {
+            color: var(--color-text-muted);
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px var(--color-primary-light);
+        }
+        .submit-btn {
+            width: 100%;
+            height: clamp(50px, 8vh, 70px);
+            background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            font-weight: 600;
+            font-size: clamp(16px, 3vw, 28px);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: clamp(10px, 2vh, 20px) 0;
+        }
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(59, 130, 246, 0.3);
+        }
+        .submit-btn:active {
+            transform: translateY(0px);
+        }
+        .form-links {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(12px, 2vh, 20px);
+            margin-top: clamp(10px, 2vh, 20px);
+        }
+        .forgot-link {
+            text-align: right;
+        }
+        .forgot-link a {
+            color: var(--color-primary);
+            font-weight: 700;
+            font-size: clamp(12px, 2vw, 16px);
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .forgot-link a:hover {
+            color: var(--color-primary-dark);
+        }
+        .signup-link {
+            text-align: center;
+            font-size: clamp(12px, 2vw, 16px);
+            color: var(--color-text-muted);
+        }
+        .signup-link a {
+            color: var(--color-primary);
+            cursor: pointer;
+            font-weight: 600;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        .signup-link a:hover {
+            color: var(--color-primary-dark);
+        }
+
+        .login-status {
+            display: none;
+            padding: 12px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .login-status.error {
+            background: rgba(220, 38, 38, 0.06);
+            border: 1px solid rgba(220, 38, 38, 0.12);
+            color: #b91c1c;
+        }
+
+        .login-status.success {
+            background: rgba(22, 163, 74, 0.08);
+            border: 1px solid rgba(22, 163, 74, 0.2);
+            color: #166534;
+        }
+        @media (max-width: 1024px) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: 1fr auto;
+            }
+            .left-section {
+                grid-row: 1;
+                min-height: 40vh;
+                background: var(--login-bg) center/contain no-repeat;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                padding: clamp(20px, 4vw, 40px);
+            }
+            .left-content {
+                text-align: center;
+                max-width: 100%;
+            }
+            .left-section::before {
+                background: linear-gradient(135deg, rgba(232,239,248,0.7) 0%, rgba(219,234,254,0.7) 100%);
+            }
+            .right-section {
+                grid-row: 2;
+                width: 100%;
+                min-height: 60vh;
+            }
+        }
+
+        @media (max-width: 768px) and (orientation: portrait) {
+            .container {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto 1fr;
+            }
+            .left-section {
+                grid-row: 1;
+                min-height: auto;
+                padding: clamp(15px, 3vw, 25px);
+                background: var(--login-bg) center/cover no-repeat;
+            }
+            .left-content {
+                padding: clamp(15px, 3vw, 25px);
+                text-align: center;
+            }
+            .logo {
+                width: clamp(80px, 20vw, 150px);
+                margin-bottom: clamp(10px, 2vh, 20px);
+            }
+            .left-content h1 {
+                font-size: clamp(20px, 5vw, 32px);
+                margin-bottom: clamp(10px, 2vh, 20px);
+            }
+            .left-content p {
+                font-size: clamp(14px, 3vw, 18px);
+                max-width: 100%;
+            }
+            .right-section {
+                grid-row: 2;
+                padding: clamp(20px, 4vw, 40px);
+            }
+            .form-card {
+                padding: clamp(20px, 4vw, 35px);
+                border-radius: 30px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+            .left-section {
+                min-height: auto;
+                padding: clamp(20px, 3vh, 30px);
+            }
+            .left-content {
+                padding: clamp(15px, 3vw, 25px);
+                border-radius: 15px;
+            }
+            .form-card {
+                border-radius: 40px;
+                padding: clamp(20px, 4vh, 40px);
+            }
+            .logo {
+                width: clamp(100px, 25vw, 200px);
+                margin-bottom: clamp(15px, 3vh, 25px);
+            }
+            .left-content h1 {
+                font-size: clamp(24px, 6vw, 40px);
+            }
+            .left-content p {
+                font-size: clamp(14px, 4vw, 20px);
+            }
+        }
+
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 30px;
+            padding: clamp(40px, 8vw, 60px);
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.3s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .modal-content h2 {
+            font-size: clamp(20px, 5vw, 28px);
+            color: #0f172a;
+            margin-bottom: clamp(30px, 5vh, 40px);
+            font-weight: 700;
+        }
+
+        .modal-buttons {
+            display: flex;
+            flex-direction: column;
+            gap: clamp(20px, 3vh, 30px);
+        }
+
+        .modal-btn {
+            padding: clamp(15px, 3vh, 20px);
+            font-size: clamp(14px, 3vw, 18px);
+            font-weight: 600;
+            border: none;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            color: white;
+        }
+
+        .modal-btn.empresa {
+            background: var(--color-primary);
+        }
+
+        .modal-btn.empresa:hover {
+            background: var(--color-primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(59, 130, 246, 0.3);
+        }
+
+        .modal-btn.instituicao {
+            background: var(--color-secondary);
+        }
+
+        .modal-btn.instituicao:hover {
+            background: #7c3aed;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(139, 92, 246, 0.3);
+        }
+
+        .modal-divider {
+            color: var(--color-text-muted);
+            margin: clamp(10px, 2vh, 20px) 0;
+            font-size: clamp(12px, 2vw, 16px);
+        }
+    </style>
+</head>
+<body>
+    <script src="messages.js"></script>
+    <div class="container">
+        <div class="left-section">
+            <div class="logo"></div>
+            <div class="left-content">
+                <h1 id="homeTitle">{{ msg.pages.login.homeTitle }}</h1>
+                <p id="homeSubtitle">{{ msg.pages.login.homeSubtitle }}</p>
+            </div>
+        </div>
+        <div class="right-section">
+            <form id="loginForm" class="form-card">
+                <h2 id="loginTitle">{{ msg.pages.login.loginTitle }}</h2>
+                <div class="form-group">
+                    <label class="form-label" id="emailLabel">{{ msg.pages.login.emailLabel }}</label>
+                    <input type="email" class="form-input" id="email" :placeholder="msg.pages.login.emailPlaceholder" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label" id="senhaLabel">{{ msg.pages.login.senhaLabel }}</label>
+                    <input type="password" class="form-input" id="senha" :placeholder="msg.pages.login.passwordPlaceholder" required>
+                </div>
+                <div id="loginStatus" class="login-status" role="alert" aria-live="assertive" style="display:none;"></div>
+                <button type="submit" class="btn-primary" id="entrarBtn">{{ msg.pages.login.entrarBtn }}</button>
+                <div class="form-links">
+                    <div class="forgot-link">
+                        <a href="recuperaSenha.html" id="esqueceuLink">{{ msg.pages.login.forgotPassword }}</a>
+                    </div>
+                    <div class="signup-link">
+                        <span id="naoTemConta">{{ msg.pages.login.noAccountPrefix }} <a href="javascript:void(0)" onclick="openModal()" id="cadastreLink">{{ msg.pages.login.signUp }}</a></span>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">{{ msg.pages.login.modalTitle }}</h2>
+            <div class="modal-buttons">
+                <a href="cadastroEmpresa.html" class="btn btn-primary" id="modalEmpresa">{{ msg.pages.login.modalEmpresa }}</a>
+                <div class="modal-divider" id="modalDivider">{{ msg.pages.login.modalDivider }}</div>
+                <a href="cadastroInstituicao.html" class="btn btn-secondary" id="modalInstituicao">{{ msg.pages.login.modalInstituicao }}</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Configuração da API (use a configuração global definida em config.js / commons.js)
+        const apiBase = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : 'https://sistemacdl.onrender.com';
+
+        const loginState = {
+            elements: {},
+            texts: null,
+        };
+
+        function getLoginTexts() {
+            const loginPage = window.messages && window.messages.pages ? window.messages.pages.login : {};
+            const loginTexts = window.messages && window.messages.login ? window.messages.login : {};
+
+            return {
+                pageTitle: loginPage.pageTitle,
+                homeTitle: loginPage.homeTitle,
+                homeSubtitle: loginPage.homeSubtitle,
+                loginTitle: loginPage.loginTitle,
+                emailLabel: loginPage.emailLabel,
+                emailPlaceholder: loginPage.emailPlaceholder,
+                senhaLabel: loginPage.senhaLabel,
+                passwordPlaceholder: loginPage.passwordPlaceholder,
+                entrarBtn: loginPage.entrarBtn,
+                forgotPassword: loginPage.forgotPassword,
+                noAccountPrefix: loginPage.noAccountPrefix,
+                signUp: loginPage.signUp,
+                modalTitle: loginPage.modalTitle,
+                modalDivider: loginPage.modalDivider,
+                modalEmpresa: loginPage.modalEmpresa,
+                modalInstituicao: loginPage.modalInstituicao,
+                title: loginTexts.title,
+                email: loginTexts.email,
+                senha: loginTexts.senha,
+                entrar: loginTexts.entrar,
+                loading: loginTexts.loading,
+                success: loginTexts.success,
+                redirectMessage: loginTexts.redirectMessage,
+                errorPrefix: loginTexts.errorPrefix,
+                connectionError: loginTexts.connectionError,
+            };
+        }
+
+        function cacheLoginElements() {
+            loginState.elements = {
+                form: document.getElementById('loginForm'),
+                title: document.getElementById('loginTitle'),
+                homeTitle: document.getElementById('homeTitle'),
+                homeSubtitle: document.getElementById('homeSubtitle'),
+                emailLabel: document.getElementById('emailLabel'),
+                senhaLabel: document.getElementById('senhaLabel'),
+                entrarBtn: document.getElementById('entrarBtn'),
+                email: document.getElementById('email'),
+                senha: document.getElementById('senha'),
+                esqueceuLink: document.getElementById('esqueceuLink'),
+                naoTemConta: document.getElementById('naoTemConta'),
+                modalTitle: document.getElementById('modalTitle'),
+                modalDivider: document.getElementById('modalDivider'),
+                modalEmpresa: document.getElementById('modalEmpresa'),
+                modalInstituicao: document.getElementById('modalInstituicao'),
+                modal: document.getElementById('modal'),
+                loginStatus: document.getElementById('loginStatus'),
+            };
+        }
+
+        function renderLoginTexts() {
+            loginState.texts = getLoginTexts();
+
+            const elements = loginState.elements;
+            const texts = loginState.texts;
+
+            document.title = texts.pageTitle;
+            elements.homeTitle.textContent = texts.homeTitle;
+            elements.homeSubtitle.textContent = texts.homeSubtitle;
+            elements.title.textContent = texts.loginTitle || texts.title;
+            elements.emailLabel.textContent = texts.emailLabel || texts.email;
+            elements.senhaLabel.textContent = texts.senhaLabel || texts.senha;
+            elements.entrarBtn.textContent = texts.entrarBtn || texts.entrar;
+            elements.email.placeholder = texts.emailPlaceholder;
+            elements.senha.placeholder = texts.passwordPlaceholder;
+            elements.esqueceuLink.textContent = texts.forgotPassword;
+            elements.naoTemConta.innerHTML =
+                texts.noAccountPrefix +
+                ' <a href="javascript:void(0)" onclick="openModal()" id="cadastreLink">' +
+                texts.signUp +
+                '</a>';
+            elements.modalTitle.textContent = texts.modalTitle;
+            elements.modalDivider.textContent = texts.modalDivider;
+            elements.modalEmpresa.textContent = texts.modalEmpresa;
+            elements.modalInstituicao.textContent = texts.modalInstituicao;
+        }
+
+        function initLoginPage() {
+            // If already logged in (token cached), redirect to user's home
+            try {
+                if (window.StorageManager && window.StorageManager.getToken && window.StorageManager.getToken()) {
+                    const storedUser = window.StorageManager.getUser() || {};
+                    const role = window.AppRoutes
+                        ? window.AppRoutes.normalizeRole(storedUser.type || storedUser.role || storedUser.userType || localStorage.getItem('userType'))
+                        : 'instituicao';
+
+                    const redirectUrl = window.AppRoutes ? window.AppRoutes.getHomeUrl(role) : 'tela-inicial-instituicao.html';
+                    window.location.href = redirectUrl;
+                    return;
+                }
+            } catch (e) {
+                // ignore and continue to render login
+            }
+            if (!window.messages) {
+                console.error('Messages not loaded');
+                return;
+            }
+
+            cacheLoginElements();
+            renderLoginTexts();
+
+            // Bind submit handler reliably
+            try {
+                const formEl = loginState.elements.form || document.getElementById('loginForm');
+                if (formEl && !formEl.__loginBound) {
+                    formEl.addEventListener('submit', handleLogin);
+                    formEl.__loginBound = true;
+                }
+            } catch (e) {
+                console.warn('Não foi possível vincular o submit do formulário:', e);
+            }
+
+            loginState.elements.modal.addEventListener('click', function(event) {
+                if (event.target === loginState.elements.modal) {
+                    closeModal();
+                }
+            });
+        }
+
+        initLoginPage();
+
+        function showLoginStatus(message, type) {
+            const el = loginState.elements.loginStatus;
+            if (!el) return;
+            el.textContent = message || '';
+            el.classList.remove('success', 'error');
+            el.classList.add(type === 'success' ? 'success' : 'error');
+            el.style.display = 'block';
+        }
+
+        function showLoginError(message) {
+            showLoginStatus(message, 'error');
+        }
+
+        function showLoginSuccess(message) {
+            showLoginStatus(message, 'success');
+        }
+
+        function clearLoginStatus() {
+            const el = loginState.elements.loginStatus;
+            if (!el) return;
+            el.textContent = '';
+            el.classList.remove('success', 'error');
+            el.style.display = 'none';
+        }
+
+        async function handleLogin(event) {
+    event.preventDefault();
+    clearLoginStatus();
+    
+    const email = loginState.elements.email.value;
+    const senha = loginState.elements.senha.value;
+    const submitBtn = loginState.elements.entrarBtn;
+    const loginTexts = loginState.texts || getLoginTexts();
+    
+    submitBtn.textContent = loginTexts.loading;
+    submitBtn.disabled = true;
+    
+    try {
+        const response = await fetch(`${apiBase}/login`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                email: email,
+                senha: senha
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            clearLoginStatus();
+            window.StorageManager.setToken(data.token);
+
+            let profile = {};
+
+            try {
+                const meResponse = await fetch(`${apiBase}/me`, {
+                    headers: {
+                        Authorization: `Bearer ${data.token}`,
+                    },
+                });
+
+                if (meResponse.ok) {
+                    profile = await meResponse.json();
+                }
+            } catch (profileError) {
+                console.warn('Não foi possível carregar o perfil do usuário:', profileError);
+            }
+
+            const loginTipo = (data && data.usuario && data.usuario.tipo) ? String(data.usuario.tipo).toLowerCase() : null;
+            let userType = loginTipo || (profile && (profile.tipoUsuario || profile.tipousuario || profile.tipo)) || data.tipoUsuario || data.userType;
+
+            if (!userType) {
+                if (profile) {
+                    if (profile.nomefantasia || profile.cnpj || profile.razaosocial) userType = 'empresa';
+                    else if (profile.nomeinstituicao || profile.instituicao || profile.sigla) userType = 'instituicao';
+                    else if (profile.coordenador || profile.tipo === 'coordenador') userType = 'coordenador';
+                }
+            }
+
+            userType = userType || 'instituicao';
+
+            const normalizedRole = window.AppRoutes
+                ? window.AppRoutes.normalizeRole(userType)
+                : String(userType || '').toLowerCase();
+
+            // CRIAR USUARIO NOVO DO ZERO - SEM HERDAR DADOS ANTIGOS
+            const novoUsuario = {
+                email: email
+            };
+            
+            // FORCAR PELO loginTipo
+            if (loginTipo === 'instituicao') {
+                novoUsuario.sourceTable = 'instituicoes';
+                novoUsuario.tipo = 'instituicao';
+                novoUsuario.type = 'instituicao';
+                if (profile && profile.nomeinstituicao) novoUsuario.nomeinstituicao = profile.nomeinstituicao;
+            } else if (loginTipo === 'empresa') {
+                novoUsuario.sourceTable = 'empresas';
+                novoUsuario.tipo = 'empresa';
+                novoUsuario.type = 'empresa';
+                if (profile && profile.nomefantasia) novoUsuario.nomefantasia = profile.nomefantasia;
+            } else if (loginTipo === 'admin') {
+                novoUsuario.sourceTable = 'usuarios';
+                novoUsuario.tipo = 'admin';
+                novoUsuario.type = 'admin';
+                if (profile && profile.nome) novoUsuario.nome = profile.nome;
+            } else {
+                novoUsuario.sourceTable = 'usuarios';
+                novoUsuario.tipo = 'coordenador';
+                novoUsuario.type = 'coordenador';
+                if (profile && profile.nome) novoUsuario.nome = profile.nome;
+            }
+            
+            // Se não veio loginTipo mas tem profile com campos específicos
+            if (!loginTipo) {
+                if (profile && profile.nomeinstituicao) {
+                    novoUsuario.sourceTable = 'instituicoes';
+                    novoUsuario.tipo = 'instituicao';
+                    novoUsuario.type = 'instituicao';
+                    novoUsuario.nomeinstituicao = profile.nomeinstituicao;
+                } else if (profile && profile.nomefantasia) {
+                    novoUsuario.sourceTable = 'empresas';
+                    novoUsuario.tipo = 'empresa';
+                    novoUsuario.type = 'empresa';
+                    novoUsuario.nomefantasia = profile.nomefantasia;
+                } else if (profile && profile.nome) {
+                    novoUsuario.sourceTable = 'usuarios';
+                    novoUsuario.tipo = normalizedRole === 'admin' ? 'admin' : 'coordenador';
+                    novoUsuario.type = normalizedRole === 'admin' ? 'admin' : 'coordenador';
+                    novoUsuario.nome = profile.nome;
+                }
+            }
+            
+            console.log('Criando novo usuario:', novoUsuario);
+            
+            // LIMPAR DADOS ANTIGOS
+            localStorage.removeItem('auth_user');
+            localStorage.removeItem('userType');
+            localStorage.removeItem('userSource');
+            
+            // SALVAR NOVO USUARIO
+            window.StorageManager.setUser(novoUsuario, novoUsuario.sourceTable);
+
+            showLoginSuccess(loginTexts.success + ' ' + loginTexts.redirectMessage);
+
+            setTimeout(() => {
+                const redirectUrl = window.AppRoutes
+                    ? window.AppRoutes.getHomeUrl(normalizedRole)
+                    : 'tela-inicial-instituicao.html';
+
+                window.location.href = redirectUrl;
+            }, 800);
+        } else {
+            const errMsg = (data && (data.erro || data.error)) || 'Erro ao autenticar';
+            showLoginError(loginTexts.errorPrefix + ' ' + errMsg);
+        }
+    } catch (error) {
+        console.error('Erro ao fazer login:', error);
+        showLoginError(loginTexts.connectionError + ' ' + apiBase);
+    } finally {
+        submitBtn.textContent = loginTexts.entrar;
+        submitBtn.disabled = false;
+    }
+}
+
+
+        function openModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.add('active');
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('modal');
+            modal.classList.remove('active');
+        }
+    </script>
+</body>
+</html>

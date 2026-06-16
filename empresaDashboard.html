@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <link
+            href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
+            rel="stylesheet"
+        />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Dashboard Empresa</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.nav.brand"
+                    :items="menuItems"
+                    active-href="empresaDashboard.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="container container-wide">
+                        <h1>{{ msg.empresaDashboard.title }}</h1>
+
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.problemas }}</div>
+                                <div class="stat-label">
+                                    {{ msg.empresaDashboard.stats.problemas }}
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.solucoes }}</div>
+                                <div class="stat-label">
+                                    {{ msg.empresaDashboard.stats.solucoes }}
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.selecionadas }}</div>
+                                <div class="stat-label">
+                                    {{ msg.empresaDashboard.stats.selecionadas
+                                    }}
+                                </div>
+                            </div>
+                            <div class="stat-card">
+                                <div class="stat-number">{{ stats.implementadas }}</div>
+                                <div class="stat-label">
+                                    {{ msg.empresaDashboard.stats.implementadas
+                                    }}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="section-head">
+                            <h2>{{ msg.empresaDashboard.meusproblemas }}</h2>
+                            <a href="criaProblema.html" class="btn btn-primary">{{ msg.empresaDashboard.novoProblema }}</a>
+                        </div>
+
+                        <div class="list cards-grid">
+                            <problem-card
+                                v-for="problem in problems"
+                                :key="problem.title"
+                                :problem="problem"
+                                :showProposalCount="true"
+                            ></problem-card>
+                        </div>
+
+                        <div class="section-head" style="margin-top: 2rem;">
+                            <h2>{{ msg.empresaDashboard.subscrições }}</h2>
+                        </div>
+                        <div class="list cards-grid">
+                            <div
+                                v-for="institution in subscriptions"
+                                :key="institution"
+                                class="card"
+                            >
+                                <h3>{{ institution }}</h3>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            if (!window.ensureRole('empresa')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            if (window.messages) {
+                mountStandardApp({
+                    title: window.messages.empresaDashboard.title,
+                    components: { SideNav, ProblemCard },
+                    data: () => ({
+                        menuItems: [
+                            { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
+                            { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
+                            { label: window.messages.nav.propostas, href: 'propostas.html' },
+                        ],
+                        problems: [],
+                        subscriptions: [],
+                        stats: { problemas: 0, solucoes: 0, selecionadas: 0, implementadas: 0 },
+                    }),
+                    mounted: async function() {
+                        try {
+                            const data = await window.ApiClient.get('/me/desafios');
+
+                            // Carregar propostas para contar por desafio
+                            const todasPropostas = await window.ApiClient.get('/propostas').catch(() => []);
+
+                            this.problems = (data || []).map(d => {
+                                const propostasDoDesafio = (todasPropostas || []).filter(p =>
+                                    String(p.desafioid || p.desafioID || p.desafioId) === String(d.id)
+                                );
+                                const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                                const prazoRaw = d.datalimite || d.prazo || '';
+                                let deadline = 'N/A';
+                                if (prazoRaw) {
+                                    try {
+                                        const dt = new Date(prazoRaw);
+                                        if (!isNaN(dt.getTime())) {
+                                            deadline = String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
+                                        } else { deadline = prazoRaw; }
+                                    } catch(e) { deadline = prazoRaw; }
+                                }
+                                return {
+                                    id: d.id,
+                                    title: d.titulo || 'Desafio',
+                                    description: d.descricao || '',
+                                    status: status,
+                                    proposals: propostasDoDesafio.length,
+                                    deadline: deadline,
+                                };
+                            });
+
+                            this.stats.problemas = this.problems.length;
+                            this.stats.solucoes = this.problems.reduce((acc, p) => acc + (p.proposals || 0), 0);
+                            this.stats.selecionadas = this.problems.filter(p => String(p.status || '').toLowerCase().includes('aceit') || String(p.status || '').toLowerCase().includes('selec')).length;
+                            this.stats.implementadas = this.problems.filter(p => String(p.status || '').toLowerCase().includes('concl') || String(p.status || '').toLowerCase().includes('implement')).length;
+
+                            // Instituições que enviaram propostas para os desafios da empresa
+                            const instIdsComPropostas = [...new Set((todasPropostas || []).map(p => p.instituicaoid || p.instituicaoID || p.instituicaoId).filter(Boolean))];
+                            const instituicoes = await window.ApiClient.get('/instituicoes').catch(() => []);
+                            this.subscriptions = (instituicoes || [])
+                                .filter(i => instIdsComPropostas.includes(String(i.id)))
+                                .slice(0, 8)
+                                .map(i => i.nomeinstituicao || i.nomeInstituicao || i.nome || 'Instituição');
+                        } catch (error) {}
+                    }
+                });
+            } else {
+                console.error('Messages not loaded');
+            }
+        </script>
+    </body>
+</html>

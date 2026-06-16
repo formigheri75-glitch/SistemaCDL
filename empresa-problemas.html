@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Problemas - Admin (Empresas)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.tela.brand" :items="menuItems" active-href="empresa-problemas.html"></side-nav>
+            <div class="content">
+                <div class="section-head"><h2>Problemas / Desafios (Empresas)</h2></div>
+
+                <div class="filter-section">
+                    <span class="filter-label">Empresa:</span>
+                    <select v-model="filtroEmpresa" class="px-3 py-2 rounded bg-slate-800 text-white">
+                        <option value="">Todas</option>
+                        <option v-for="emp in empresas" :key="emp.id" :value="emp.id">{{ emp.nomefantasia || emp.razaosocial || 'Empresa' }}</option>
+                    </select>
+                    <filter-section label="Status:" :options="optsStatus" :active-value="filtroStatus" @update:activeValue="filtroStatus = $event"></filter-section>
+                </div>
+
+                <div class="list cards-grid" v-if="desafiosFiltrados.length">
+                    <div v-for="d in desafiosFiltrados" :key="d.id" class="proposal-card card">
+                        <div class="challenge-icon">🐞</div>
+                        <div class="proposal-main">
+                            <h3>{{ d.titulo }}</h3>
+                            <p>{{ d.descricao }}</p>
+                            <div class="challenge-meta">
+                                <span><strong>Empresa:</strong> {{ d.empresaNome || '-' }}</span>
+                                <span><strong>Status:</strong> {{ d.statusLabel }}</span>
+                                <span><strong>Prazo:</strong> {{ d.prazo || 'Sem prazo' }}</span>
+                            </div>
+                        </div>
+                        <div class="proposal-actions">
+                            <a class="mini-btn" :href="'detalhesProblema.html?id=' + d.id">Ver</a>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="empty-state"><p>Nenhum desafio encontrado.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.ensureRole('admin')) return;
+
+            mountVuePage({
+                components: { SideNav, FilterSection, EmptyState, StatusBadge },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: window.getAdminMenuItems(),
+                        desafios: [],
+                        empresas: [],
+                        filtroEmpresa: '',
+                        filtroStatus: 'todos',
+                        optsStatus: [
+                            { value: 'todos', label: 'Todos' },
+                            { value: 'aberto', label: 'Abertos' },
+                            { value: 'aceito', label: 'Aceitos' },
+                        ],
+                    };
+                },
+                computed: {
+                    desafiosFiltrados() {
+                        return this.desafios.filter(d => {
+                            if (this.filtroEmpresa && String(d.empresaId) !== String(this.filtroEmpresa)) return false;
+                            if (this.filtroStatus !== 'todos') {
+                                const s = String(d.status || '').toLowerCase();
+                                if (this.filtroStatus === 'aberto' && s !== 'aberto' && s !== 'abertos') return false;
+                                if (this.filtroStatus === 'aceito' && !s.includes('aceit')) return false;
+                            }
+                            return true;
+                        });
+                    }
+                },
+                async mounted() {
+                    try {
+                        const [des, emps] = await Promise.all([
+                            window.fetchDesafiosList(),
+                            window.ApiClient.get('/empresas')
+                        ]);
+                        this.empresas = emps || [];
+                        this.desafios = (des || []).map(d => {
+                            const empresa = (this.empresas || []).find(e => String(e.id) === String(d.empresaid || d.empresaID || d.empresaId));
+                            const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                            const prazoFmt = window.formatarData(d.prazo || d.datalimite, 'Sem prazo');
+                            return {
+                                id: d.id,
+                                titulo: d.titulo || d.nome || 'Desafio',
+                                descricao: d.descricao || '',
+                                empresaId: d.empresaid || d.empresaID || d.empresaId,
+                                empresaNome: empresa ? (empresa.nomefantasia || empresa.razaosocial || empresa.nome) : 'N/A',
+                                status: status,
+                                statusLabel: window.getStatusLabel(status) || status,
+                                prazo: prazoFmt,
+                            };
+                        });
+                    } catch (e) { console.error('Erro ao carregar problemas', e); }
+                },
+                title: 'Problemas - Admin'
+            });
+        });
+    </script>
+</body>
+</html>

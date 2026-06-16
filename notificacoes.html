@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title></title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="notificacoes.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="notifications-header">
+                        <div>
+                            <h1>{{ msg.notificacoes.title }}</h1>
+                            <p>{{ msg.notificacoes.subtitle }}</p>
+                        </div>
+                        <span class="notification-summary">{{ filteredNotifications.length }}</span>
+                    </div>
+                    <div class="tabbar">
+                        <span class="tab" :class="{ active: activeTab === 'todas' }" @click="activeTab = 'todas'">{{ msg.tela.tabs.todas }}</span>
+                        <span class="tab" :class="{ active: activeTab === 'lidas' }" @click="activeTab = 'lidas'">{{ msg.tela.tabs.lidas }}</span>
+                        <span class="tab" :class="{ active: activeTab === 'naoLidas' }" @click="activeTab = 'naoLidas'">{{ msg.tela.tabs.naoLidas }}</span>
+                    </div>
+
+                    <div v-if="filteredNotifications.length" class="notifications-stack cards-grid">
+                        <a
+                            v-for="notification in filteredNotifications"
+                            :key="notification.id || notification.title"
+                            class="notify-card card"
+                            :class="notification.type || ''"
+                            :href="getNotificationLink(notification)"
+                            @click.prevent="openNotification(notification)"
+                        >
+                            <div class="notify-mark"></div>
+                            <div class="notify-content card-body">
+                                <div class="notify-meta">
+                                    <span class="notify-badge" :class="notification.isRead ? 'read' : 'unread'">{{ notification.statusLabel }}</span>
+                                </div>
+                                <h3>{{ notification.title }}</h3>
+                                <p>{{ notification.description }}</p>
+                            </div>
+                        </a>
+                    </div>
+
+                    <div v-else class="notifications-empty card">
+                        <p>{{ msg.notificacoes.empty }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (!window.checkAuth()) return;
+
+                if (!window.messages) return console.error();
+
+                mountVuePage({
+                    title: window.messages.notificacoes.title,
+                    components: { SideNav },
+                    data() {
+                        return {
+                            msg: window.messages,
+                            activeTab: 'todas',
+                            allNotifications: [],
+                            menuItems: [
+                                {
+                                    label: window.messages.tela.menu.inicio,
+                                    href: window.AppRoutes ? window.AppRoutes.getHomeUrl() : 'tela-inicial-instituicao.html',
+                                },
+                                {
+                                    label: window.messages.tela.menu.notificacoes,
+                                    href: 'notificacoes.html',
+                                },
+                                {
+                                    label: window.messages.tela.menu.propostas,
+                                    href: window.AppRoutes ? window.AppRoutes.getProposalsUrl() : 'tela-propostas-instituicao.html',
+                                },
+                            ],
+                        };
+                    },
+                    computed: {
+                        filteredNotifications() {
+                            if (this.activeTab === 'lidas') {
+                                return this.allNotifications.filter(notification => notification.isRead).map(notification => ({
+                                    ...notification,
+                                    statusLabel: window.messages.notificacoes.readLabel,
+                                }));
+                            }
+
+                            if (this.activeTab === 'naoLidas') {
+                                return this.allNotifications.filter(notification => !notification.isRead).map(notification => ({
+                                    ...notification,
+                                    statusLabel: window.messages.notificacoes.unreadLabel,
+                                }));
+                            }
+
+                            return this.allNotifications.map(notification => ({
+                                ...notification,
+                                statusLabel: notification.isRead
+                                    ? window.messages.notificacoes.readLabel
+                                    : window.messages.notificacoes.unreadLabel,
+                            }));
+                        },
+                    },
+                    methods: {
+                        getNotificationLink(notification) {
+                            if (!notification || !notification.desafioId) return '#';
+
+                            const role = window.AppRoutes ? window.AppRoutes.getCurrentRole() : 'instituicao';
+                            const baseUrl = role === 'coordenador'
+                                ? 'tela-detalhes-desafio-coordenador.html'
+                                : 'tela-detalhes-desafio-instituicao.html';
+
+                            return `${baseUrl}?id=${encodeURIComponent(notification.desafioId)}`;
+                        },
+                        openNotification(notification) {
+                            const link = this.getNotificationLink(notification);
+                            if (link && link !== '#') {
+                                window.location.href = link;
+                            }
+                        },
+                    },
+                    mounted: async function() {
+                        try {
+                            const currentUser = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
+                            const currentUserId = currentUser && (currentUser.id || currentUser.usuarioId);
+
+                            const data = await window.ApiClient.get('/notificacoes');
+                            const raw = (data || [])
+                                .filter(n => {
+                                    const notifUserId = n.usuarioID ?? n.usuarioId ?? n.usuario ?? null;
+                                    return currentUserId && notifUserId && String(notifUserId) === String(currentUserId);
+                                })
+                                .map(n => ({
+                                    id: n.id,
+                                    usuarioId: n.usuarioID ?? n.usuarioId ?? n.usuario ?? null,
+                                    desafioId: n.desafioID ?? n.desafioId ?? null,
+                                    title: n.titulo || n.nome || window.messages.notificacoes.defaultTitle,
+                                    description: n.descricao || n.lista || '',
+                                    isRead: Boolean(n.lida ?? n.Lida ?? n.read ?? n.isRead),
+                                }));
+
+                            const usuarioIds = Array.from(new Set(raw.map(r => r.usuarioId).filter(Boolean)));
+                            const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
+
+                            const fetchByIds = async (basePath, ids) => {
+                                const map = {};
+                                await Promise.all(ids.map(async id => {
+                                    try {
+                                        const ent = await window.ApiClient.get(`${basePath}/${id}`);
+                                        if (ent) map[id] = ent;
+                                    } catch (e) {}
+                                }));
+                                return map;
+                            };
+
+                            const usuariosMap = await fetchByIds('/usuarios', usuarioIds);
+
+                            const desafiosMap = {};
+                            await Promise.all(desafioIds.map(async id => {
+                                try {
+                                    const d = await window.loadDesafio(id);
+                                    if (d) desafiosMap[id] = d;
+                                } catch (e) {}
+                            }));
+
+                            this.allNotifications = raw.map(n => ({
+                                ...n,
+                                user: usuariosMap[n.usuarioId] || null,
+                                challenge: desafiosMap[n.desafioId] || null,
+                                
+                                title: n.title || (desafiosMap[n.desafioId] && (desafiosMap[n.desafioId].titulo || desafiosMap[n.desafioId].titulo)) || window.messages.notificacoes.defaultTitle,
+                                description: n.description || '',
+                            }));
+                        } catch (e) {
+                            console.error(window.messages.notificacoes.loadError + ':', e);
+                            this.allNotifications = [
+                                ...(window.messages.notificacoesDesafios.notifications || []).map((notification, index) => ({
+                                    id: `desafio-${index}`,
+                                    ...notification,
+                                    isRead: false,
+                                })),
+                                ...(window.messages.notificacoesPropostas.notifications || []).map((notification, index) => ({
+                                    id: `proposta-${index}`,
+                                    ...notification,
+                                    isRead: false,
+                                })),
+                            ];
+                        }
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

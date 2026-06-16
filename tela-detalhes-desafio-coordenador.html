@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Detalhes do Desafio - Coordenador</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-inicial-coordenador.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="detail-hero">
+                        <div class="detail-top"><div class="detail-title"><h3>{{ challenge.titulo || msg.detalhesDesafio.challengeTitle }}</h3></div><span class="status">{{ challenge.statusdesafio || msg.pages.telaDetalhesDesafioCoordenador.emAvaliacao }}</span></div>
+                        <div class="detail-intro"><div class="illustration">{{ challengeIcon }}</div><div><p>{{ challenge.descricao || msg.detalhesDesafio.description }}</p><div class="button-group"><a class="btn btn-primary" :href="challenge.id ? ('tela-envio-solucao-coordenador.html?id=' + challenge.id) : 'tela-envio-solucao-coordenador.html'">{{ msg.pages.telaDetalhesDesafioCoordenador.enviarSolucao }}</a><a class="btn btn-secondary" :href="challenge.id ? ('tela-propostas-coordenador.html?desafio=' + encodeURIComponent(challenge.id)) : 'tela-propostas-coordenador.html'">{{ msg.pages.telaDetalhesDesafioCoordenador.verPropostas }}</a></div></div></div>
+                    </div>
+                    <div class="detail-grid">
+                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in requirementsList" :key="item">{{ item }}</li></ul></div>
+                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.additionalInfo.title }}</h4><ul><li v-for="item in extraInfoList" :key="item" v-html="item"></li></ul></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            if (!window.ensureRole('coordenador')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            const { createApp } = Vue;
+            createApp({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+                            { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
+                        ],
+                        challenge: {},
+                    };
+                },
+                computed: {
+                    requirementsList() {
+                        if (Array.isArray(this.challenge.requisitos) && this.challenge.requisitos.length) return this.challenge.requisitos;
+                        return this.msg.detalhesDesafio.requirements.items || [];
+                    },
+                    challengeIcon() {
+                        const area = (this.challenge.areaconhecimento || this.challenge.categoria || '').toLowerCase();
+                        if (area.includes('backend') || area.includes('api')) return '⚙️';
+                        if (area.includes('frontend') || area.includes('ui')) return '🎨';
+                        if (area.includes('mobile')) return '📱';
+                        if (area.includes('devops') || area.includes('infra')) return '🛠️';
+                        if (area.includes('data') || area.includes('science')) return '📊';
+                        if (area.includes('design')) return '🎯';
+                        return '🏆';
+                    },
+                    extraInfoList() {
+                        const info = [];
+                        if (this.challenge.areaconhecimento || this.challenge.categoria) info.push('Categoria: ' + (this.challenge.categoria || this.challenge.areaconhecimento));
+                        if (this.challenge.nivelprioridade || this.challenge.nivelproblema) info.push('Prioridade: ' + (this.challenge.nivelprioridade || this.challenge.nivelproblema));
+                        const prazo = this.challenge.datalimite || this.challenge.prazo;
+                        if (prazo) {
+                            info.push('Prazo: ' + window.formatarData(prazo, prazo));
+                        } else {
+                            info.push('<strong>Prazo:</strong> Sem prazo definido');
+                        }
+                        return info.length ? info : (this.msg.detalhesDesafio.additionalInfo.items || []);
+                    }
+                },
+                methods: {
+                    getIdFromQuery: window.getIdFromQuery,
+                        async loadChallenge() {
+                        const id = window.getIdFromQuery();
+                        try {
+                            if (id) {
+                                this.challenge = await window.loadDesafio(id);
+                            } else {
+                                const list = await window.fetchDesafiosList();
+                                this.challenge = (list && list[0]) ? list[0] : {};
+                            }
+                        } catch (e) {
+                            console.error('Erro ao carregar desafio:', e);
+                            this.challenge = {};
+                        }
+                    }
+                },
+                mounted() {
+                    this.loadChallenge();
+                }
+            }).mount('#app');
+            document.title = 'Detalhes do Desafio - Coordenador';
+        </script>
+    </body>
+</html>

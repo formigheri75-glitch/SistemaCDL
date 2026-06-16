@@ -1,0 +1,6 @@
+flask
+flask-jwt-extended
+python-dotenv
+supabase
+gunicorn
+flask-cors

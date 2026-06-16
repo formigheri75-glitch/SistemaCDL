@@ -1,0 +1,217 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link
+            href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
+            rel="stylesheet"
+        />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Dashboard</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.nav.brand"
+                    :items="menuItems"
+                    active-href="dashboard.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="page-header">
+                        <h1>{{ msg.dashboard.title }}</h1>
+                        <p>{{ msg.dashboard.subtitulo }}</p>
+                    </div>
+
+                    <filter-section
+                        label="Filtrar:"
+                        :options="filterOptions"
+                        :active-value="activeFilter"
+                        @update:activeValue="activeFilter = $event"
+                    ></filter-section>
+
+                    <div class="stats-grid">
+                        <stat-card icon="📋" :value="stats.total" label="Total de Desafios"></stat-card>
+                        <stat-card icon="✅" :value="stats.abertos" label="Abertos"></stat-card>
+                        <stat-card icon="🔄" :value="stats.andamento" label="Em Andamento"></stat-card>
+                        <stat-card icon="🏁" :value="stats.concluidos" label="Concluidos"></stat-card>
+                    </div>
+
+                    <div class="section">
+                        <h2>{{ msg.dashboard.desafios }}</h2>
+                        <filter-section
+                            label="Status:"
+                            :options="desafioFilterOptions"
+                            :active-value="desafioFilter"
+                            @update:activeValue="desafioFilter = $event"
+                        ></filter-section>
+                        <div class="challenges" v-if="filteredChallenges.length">
+                            <div
+                                v-for="challenge in filteredChallenges"
+                                :key="challenge.id || challenge.title"
+                                class="challenge"
+                            >
+                                <div class="challenge-title">{{ challenge.title }}</div>
+                                <div>Status: {{ challenge.statusLabel }}</div>
+                                <div>Prazo: {{ challenge.prazoFmt || challenge.prazo || 'Sem prazo' }}</div>
+                                <div class="progress-bar" style="margin-top: 0.5rem">
+                                    <div class="progress-fill" :style="{ width: challenge.progress }"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <empty-state v-else message="Nenhum desafio encontrado."></empty-state>
+                    </div>
+
+                    <div class="section">
+                        <h2>Propostas</h2>
+                        <filter-section
+                            label="Status:"
+                            :options="propostasFilterOptions"
+                            :active-value="propostasFilter"
+                            @update:activeValue="propostasFilter = $event"
+                        ></filter-section>
+                        <div class="activities" v-if="filteredPropostas.length">
+                            <div
+                                v-for="prop in filteredPropostas"
+                                :key="prop.id || prop.title"
+                                class="activity"
+                            >
+                                <div class="activity-icon">📄</div>
+                                <div class="activity-content">
+                                    <div class="activity-title">{{ prop.title }}</div>
+                                    <div class="activity-time">{{ prop.desafio || '' }} — <status-badge :status="prop.status"></status-badge></div>
+                                </div>
+                            </div>
+                        </div>
+                        <empty-state v-else message="Nenhuma proposta encontrada."></empty-state>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            if (!window.ensureRole('admin')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            if (window.messages) {
+                mountStandardApp({
+                    title: window.messages.dashboard.title,
+                    components: { SideNav, FilterSection, StatCard, EmptyState, StatusBadge },
+                    data: () => ({
+                        menuItems: [
+                            { label: window.messages.nav.dashboard, href: 'dashboard.html' },
+                            { label: window.messages.nav.desafios, href: 'tela-inicial-desafios.html' },
+                            { label: window.messages.nav.propostas, href: 'propostas.html' },
+                        ],
+                        desafios: [],
+                        propostas: [],
+                        stats: {
+                            total: 0,
+                            abertos: 0,
+                            andamento: 0,
+                            concluidos: 0,
+                        },
+                        activeFilter: 'todos',
+                        filterOptions: [
+                            { value: 'todos', label: 'Todos' },
+                            { value: 'desafios', label: 'Desafios' },
+                            { value: 'propostas', label: 'Propostas' },
+                        ],
+                        desafioFilter: 'todos',
+                        desafioFilterOptions: [
+                            { value: 'todos', label: 'Todos' },
+                            { value: 'aberto', label: 'Abertos' },
+                            { value: 'andamento', label: 'Em Andamento' },
+                            { value: 'concluido', label: 'Concluídos' },
+                        ],
+                        propostasFilter: 'todos',
+                        propostasFilterOptions: [
+                            { value: 'todos', label: 'Todas' },
+                            { value: 'pendente', label: 'Pendentes' },
+                            { value: 'aprovada', label: 'Aprovadas' },
+                            { value: 'rejeitada', label: 'Rejeitadas' },
+                        ],
+                    }),
+                    computed: {
+                        filteredChallenges() {
+                            if (this.desafioFilter === 'todos') return this.desafios;
+                            return this.desafios.filter(d => {
+                                const s = String(d.status || '').toLowerCase();
+                                if (this.desafioFilter === 'aberto') return s === 'aberto' || s === 'abertos';
+                                if (this.desafioFilter === 'andamento') return s.includes('andamento');
+                                if (this.desafioFilter === 'concluido') return s.includes('concl');
+                                return true;
+                            });
+                        },
+                        filteredPropostas() {
+                            if (this.propostasFilter === 'todos') return this.propostas;
+                            return this.propostas.filter(p => {
+                                const s = String(p.status || '').toLowerCase();
+                                const label = window.getStatusLabel(s).toLowerCase();
+                                return label === this.propostasFilter;
+                            });
+                        }
+                    },
+                    mounted: async function() {
+                        try {
+                            const [desafios, propostas] = await Promise.all([
+                                window.fetchDesafiosList().catch(() => []),
+                                window.ApiClient.get('/propostas').catch(() => []),
+                            ]);
+
+                            this.desafios = (desafios || []).map(d => {
+                                const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                                return {
+                                    id: d.id,
+                                    title: d.titulo || 'Desafio',
+                                    status: status,
+                                    statusLabel: window.getStatusLabel(status) || status,
+                                    prazo: d.prazo || d.datalimite || '',
+                                    prazoFmt: (() => {
+                                        const raw = d.prazo || d.datalimite || '';
+                                        if (!raw) return 'Sem prazo';
+                                        try {
+                                            const dt = new Date(raw);
+                                            if (!isNaN(dt.getTime())) {
+                                                return String(dt.getDate()).padStart(2,'0') + '/' + String(dt.getMonth()+1).padStart(2,'0') + '/' + dt.getFullYear();
+                                            }
+                                            return raw;
+                                        } catch(e) { return raw; }
+                                    })(),
+                                    progress: status.includes('concl') ? '100%' : (status.includes('andamento') ? '60%' : '30%'),
+                                };
+                            });
+
+                            this.propostas = (propostas || []).map(p => ({
+                                id: p.id,
+                                title: p.titulo || 'Proposta',
+                                desafio: p.desafioTitulo || '',
+                                status: String(p.statusproposta || p.status || '').toLowerCase(),
+                                statusLabel: window.getStatusLabel(p.statusproposta || p.status) || 'Pendente',
+                            }));
+
+                            const abertos = this.desafios.filter(d => d.status === 'aberto' || d.status === 'abertos').length;
+                            const andamento = this.desafios.filter(d => d.status.includes('andamento')).length;
+                            const concluidos = this.desafios.filter(d => d.status.includes('concl')).length;
+
+                            this.stats.total = this.desafios.length;
+                            this.stats.abertos = abertos;
+                            this.stats.andamento = andamento;
+                            this.stats.concluidos = concluidos;
+                        } catch (e) {
+                            console.error('Erro ao carregar dashboard:', e);
+                        }
+                    },
+                });
+            } else {
+                console.error('Messages not loaded');
+            }
+        </script>
+    </body>
+</html>

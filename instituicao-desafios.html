@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Desafios - Admin (Instituições)</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.tela.brand" :items="menuItems" active-href="instituicao-desafios.html"></side-nav>
+            <div class="content">
+                <div class="section-head"><h2>Desafios (Instituicoes)</h2></div>
+
+                <filter-section label="Status:" :options="optsStatus" :active-value="filtroStatus" @update:activeValue="filtroStatus = $event"></filter-section>
+
+                <div class="list cards-grid" v-if="desafiosFiltrados.length">
+                    <div v-for="d in desafiosFiltrados" :key="d.id" class="proposal-card card">
+                        <div class="challenge-icon">🎯</div>
+                        <div class="proposal-main">
+                            <h3>{{ d.titulo }}</h3>
+                            <p>{{ d.descricao }}</p>
+                            <div class="challenge-meta">
+                                <span><strong>Categoria:</strong> {{ d.categoria || '-' }}</span>
+                                <span><strong>Status:</strong> {{ d.statusLabel }}</span>
+                                <span><strong>Prazo:</strong> {{ d.prazo || 'Sem prazo' }}</span>
+                            </div>
+                        </div>
+                        <div class="proposal-actions">
+                            <a class="mini-btn" :href="'tela-detalhes-desafio-instituicao.html?id=' + d.id">Ver</a>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="empty-state"><p>Nenhum desafio encontrado.</p></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.ensureRole('admin')) return;
+
+            mountVuePage({
+                components: { SideNav },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: window.getAdminMenuItems(),
+                        desafios: [],
+                        filtroStatus: 'todos',
+                    };
+                },
+                computed: {
+                    desafiosFiltrados() {
+                        if (this.filtroStatus === 'todos') return this.desafios;
+                        return this.desafios.filter(d => {
+                            const s = String(d.status || '').toLowerCase();
+                            if (this.filtroStatus === 'aberto') return s === 'aberto' || s === 'abertos';
+                            if (this.filtroStatus === 'aceito') return s.includes('aceit');
+                            if (this.filtroStatus === 'concluido') return s.includes('concl');
+                            return true;
+                        });
+                    }
+                },
+                async mounted() {
+                    try {
+                        const des = await window.fetchDesafiosList();
+                        this.desafios = (des || []).map(d => {
+                            const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                            const prazoFmt = window.formatarData(d.prazo || d.datalimite, 'Sem prazo');
+                            return {
+                                id: d.id,
+                                titulo: d.titulo || d.nome || 'Desafio',
+                                descricao: d.descricao || '',
+                                categoria: d.areaconhecimento || d.categoria || '',
+                                status: status,
+                                statusLabel: window.getStatusLabel(status) || status,
+                                prazo: prazoFmt,
+                            };
+                        });
+                    } catch (e) { console.error('Erro ao carregar desafios', e); }
+                },
+                title: 'Desafios - Admin'
+            });
+        });
+    </script>
+</body>
+</html>

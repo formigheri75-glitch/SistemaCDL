@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Propostas - Coordenador</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-propostas-coordenador.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="section-head"><h2>{{ msg.pages.telaPropostasCoordenador.minhasPropostas }}</h2><a class="btn btn-primary" :href="novaSolucaoLink">{{ msg.pages.telaPropostasCoordenador.novaSolucao }}</a></div>
+                    <div v-if="desafioQueryId" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ filtroDesafioTitle || desafioQueryId }}</div>
+                    <div class="filter-section">
+                        <span class="filter-label">Status:</span>
+                        <button
+                            v-for="opt in statusFilterOptions"
+                            :key="opt.value"
+                            class="filter-button"
+                            :class="{ active: statusFilter === opt.value }"
+                            @click="statusFilter = opt.value"
+                        >{{ opt.label }}</button>
+                    </div>
+                    <div class="list cards-grid" v-if="filteredProposals.length">
+                        <proposal-card
+                            v-for="proposal in filteredProposals"
+                            :key="proposal.id || proposal.title"
+                            :proposal="proposal"
+                            :getStatusLabel="getStatusLabel"
+                        ></proposal-card>
+                    </div>
+                    <div v-else class="empty-state">
+                        <p>{{ msg.pages.telaPropostasCoordenador.vazio }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            if (!window.ensureRole('coordenador')) {
+                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+            }
+
+            mountVuePage({
+                components: { SideNav, ProposalCard },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: [
+                            { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+                            { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
+                            { label: 'Notificações', href: 'notificacoes.html' },
+                        ],
+                        proposals: [],
+                        desafioQueryId: null,
+                        filtroDesafioTitle: null,
+                        statusFilter: 'todas',
+                        statusFilterOptions: [
+                            { value: 'todas', label: 'Todas' },
+                            { value: 'pendente', label: 'Pendente' },
+                            { value: 'aprovada', label: 'Aprovada' },
+                            { value: 'rejeitada', label: 'Rejeitada' },
+                        ],
+                    };
+                },
+                mounted: async function() {
+                    try {
+                        const role = window.getUserRole();
+                        let userInstituicaoId = null;
+                        if (role !== 'admin') {
+                            userInstituicaoId = await window.getLoggedInstituicaoId();
+                            if (!userInstituicaoId) {
+                                console.warn('No institution found for user');
+                                this.proposals = [];
+                                return;
+                            }
+                        }
+
+                        try {
+                            const params = new URLSearchParams(window.location.search);
+                            const d = params.get('desafio');
+                            if (d) this.desafioQueryId = d;
+                        } catch (e) {
+                            this.desafioQueryId = null;
+                        }
+
+                        const propostas = await window.ApiClient.get('/propostas');
+
+                        const raw = (propostas || [])
+                            .filter(p => {
+                                if (role === 'admin') return true;
+                                const propInstId = p.instituicaoid || p.instituicaoID || p.instituicaoId;
+                                return String(propInstId) === String(userInstituicaoId);
+                            })
+                            .map(p => ({
+                                id: p.id,
+                                titleRaw: p.titulo || 'Proposta',
+                                desafioId: p.desafioid || p.desafioID || p.desafioId || null,
+                                challengeRaw: p.desafioTitulo || p.desafio || p.descricao || '',
+                                status: String(p.statusproposta || p.status || 'analisando').toLowerCase(),
+                                detailsLink: 'tela-detalhes-proposta-coordenador.html',
+                                instituicaoid: p.instituicaoid || p.instituicaoID || null,
+                            }));
+
+                        const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
+                        const desafiosMap = {};
+                        await Promise.all(desafioIds.map(async id => {
+                            try {
+                                const d = await window.loadDesafio(id);
+                                if (d) desafiosMap[id] = d;
+                            } catch (e) {}
+                        }));
+
+                        const mapped = raw.map(p => ({
+                            id: p.id,
+                            title: p.titleRaw,
+                            challenge: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : p.challengeRaw,
+                            status: p.status,
+                            detailsLink: p.detailsLink,
+                            instituicaoid: p.instituicaoid,
+                            desafioId: p.desafioId || null,
+                        }));
+
+                        if (this.desafioQueryId && desafiosMap[this.desafioQueryId]) {
+                            this.filtroDesafioTitle = desafiosMap[this.desafioQueryId].titulo || null;
+                        }
+
+                        this.proposals = mapped;
+
+                        if (this.desafioQueryId) {
+                            this.proposals = this.proposals.filter(p => String(p.desafioId) === String(this.desafioQueryId));
+                        }
+                    } catch (e) {
+                        console.error('Erro ao carregar propostas:', e);
+                        this.proposals = [];
+                    }
+                },
+                computed: {
+                    novaSolucaoLink() {
+                        const base = 'tela-envio-solucao-coordenador.html';
+                        if (this.desafioQueryId) {
+                            return base + '?propostaId=' + encodeURIComponent(this.desafioQueryId);
+                        }
+                        return base;
+                    },
+                    filteredProposals() {
+                        if (this.statusFilter === 'todas') return this.proposals;
+                        return this.proposals.filter(p => {
+                            const label = window.getStatusLabel(p.status).toLowerCase();
+                            return label === this.statusFilter;
+                        });
+                    }
+                },
+                methods: {
+                    getStatusLabel: window.getStatusLabel,
+                },
+                title: 'Propostas - Coordenador',
+            });
+        </script>
+    </body>
+</html>

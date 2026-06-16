@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="pt-BR">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+        <link href="theme.css" rel="stylesheet" />
+        <title>Início - Coordenador</title>
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script src="config.js"></script>
+        <script src="commons.js"></script>
+        <script src="messages.js"></script>
+    </head>
+    <body class="tela-layout">
+        <div id="app" class="screen">
+            <div class="shell">
+                <side-nav
+                    :brand="msg.tela.brand"
+                    :items="menuItems"
+                    active-href="tela-inicial-coordenador.html"
+                ></side-nav>
+                <div class="content">
+                    <div class="hero-stats">
+                        <div class="stat"><strong>{{ stats.total }}</strong><span>{{ msg.pages.telaInicialCoordenador.desafiosDisponiveis }}</span></div>
+                        <div class="stat"><strong>{{ stats.propostas }}</strong><span>{{ msg.pages.telaInicialCoordenador.propostasEmAnalise }}</span></div>
+                        <div class="stat"><strong>{{ stats.aprovadas }}</strong><span>{{ msg.pages.telaInicialCoordenador.aprovadas }}</span></div>
+                    </div>
+                    <div class="section-head">
+                        <h2>{{ msg.pages.telaInicialCoordenador.desafiosParaAnalise }}</h2>
+                        <a class="mini-btn" href="notificacoes.html">{{ msg.pages.telaInicialCoordenador.verNotificacoes }}</a>
+                    </div>
+                    <div class="list cards-grid">
+                        <challenge-card
+                            v-for="challenge in challenges"
+                            :key="challenge.title"
+                            :challenge="challenge"
+                            icon="📌"
+                            detailsLink="tela-detalhes-desafio-coordenador.html"
+                        ></challenge-card>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                // Verificar autenticação e autorização
+                if (!window.ensureRole('coordenador')) return;
+
+                mountVuePage({
+                    components: { SideNav, ChallengeCard },
+                    data() {
+                        return {
+                            msg: window.messages,
+                            menuItems: [
+                                { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+                                { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
+                                { label: 'Notificações', href: 'notificacoes.html' },
+                            ],
+                            challenges: [],
+                            userInstituicaoId: null,
+                        };
+                    },
+                    computed: {
+                        stats() {
+                            return {
+                                total: this.challenges.length,
+                                propostas: this.challenges.filter(c => c.status === 'em analise' || c.status === 'analisando').length,
+                                aprovadas: this.challenges.filter(c => c.status === 'aprovada' || c.status === 'aprovado').length,
+                            };
+                        },
+                    },
+                    methods: {
+                        async getUserInstituicaoId() {
+                            try {
+                                const user = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
+                                if (!user) return null;
+
+                                const possibleUserInstIds = [
+                                    user.instituicaoid, user.instituicaoId, user.instituicaoID,
+                                    user.instituicao, user.institutionId, user.institution_id
+                                ].filter(Boolean);
+                                if (possibleUserInstIds.length) {
+                                    return possibleUserInstIds[0];
+                                }
+
+                                const instituicoes = await window.ApiClient.get('/instituicoes');
+                                if (Array.isArray(instituicoes)) {
+                                    const found = instituicoes.find(i => 
+                                        String(i.usuarioid || i.usuarioId || i.usuario || i.usuarioID || '') === String(user.id) || 
+                                        String(i.email || '').toLowerCase() === String(user.email || '').toLowerCase()
+                                    );
+                                    return found ? (found.id || found.ID || null) : null;
+                                }
+                            } catch (e) {
+                                console.error('Erro ao buscar instituição do usuário:', e);
+                            }
+                            return null;
+                        }
+                    },
+                    mounted: async function() {
+                        try {
+                            this.userInstituicaoId = await this.getUserInstituicaoId();
+
+                            const [desafios, propostas] = await Promise.all([
+                                window.fetchDesafiosList(),
+                                window.ApiClient.get('/propostas')
+                            ]);
+
+                            this.challenges = (desafios || []).map(d => ({
+                                id: d.id,
+                                title: d.titulo || d.nome || 'Desafio',
+                                description: d.descricao || '',
+                                meta: d.areaconhecimento || d.statusdesafio || d.status || '',
+                                status: String(d.statusdesafio || d.status || 'em analise').toLowerCase(),
+                            }));
+                        } catch (e) {
+                            console.error('Erro ao carregar desafios:', e);
+                            this.challenges = window.messages.telaInicialDesafios.challenges || [];
+                        }
+                    },
+                    title: 'Início - Coordenador',
+                });
+            });
+        </script>
+    </body>
+</html>

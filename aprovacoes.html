@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Aprovações - Admin</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.tela.brand" :items="menuItems" active-href="aprovacoes.html"></side-nav>
+            <div class="content">
+                <div class="section-head"><h2>Aprovações</h2></div>
+
+                <div class="filter-section">
+                    <button class="filter-button" :class="{ active: aba === 'empresas' }" @click="aba = 'empresas'">Empresas ({{ stats.empresasPendentes }})</button>
+                    <button class="filter-button" :class="{ active: aba === 'instituicoes' }" @click="aba = 'instituicoes'">Instituições ({{ stats.instituicoesPendentes }})</button>
+                    <button class="filter-button" :class="{ active: aba === 'propostas' }" @click="aba = 'propostas'">Propostas Pendentes ({{ stats.propostasPendentes }})</button>
+                </div>
+
+                <div v-if="aba === 'empresas'">
+                    <empty-state v-if="empresasPendentes.length === 0" message="Nenhuma empresa pendente de aprovacao."></empty-state>
+                    <div v-else class="list cards-grid">
+                        <div v-for="emp in empresasPendentes" :key="'emp-'+emp.id" class="card">
+                            <div class="card-body">
+                                <h3>{{ emp.nomefantasia || emp.razaosocial || 'Empresa' }}</h3>
+                                <p>{{ emp.email }} | CNPJ: {{ emp.cnpj || '-' }}</p>
+                                <p>Cidade: {{ emp.cidade || '-' }} / {{ emp.estado || '-' }}</p>
+                                <status-badge status="pendente"></status-badge>
+                            </div>
+                            <div class="button-group" style="margin-top: 1rem;">
+                                <button class="btn btn-primary" @click="aprovarEmpresa(emp)">Aprovar</button>
+                                <button class="btn btn-secondary danger" @click="rejeitarEmpresa(emp)">Rejeitar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="aba === 'instituicoes'">
+                    <empty-state v-if="instituicoesPendentes.length === 0" message="Nenhuma instituicao pendente de aprovacao."></empty-state>
+                    <div v-else class="list cards-grid">
+                        <div v-for="inst in instituicoesPendentes" :key="'inst-'+inst.id" class="card">
+                            <div class="card-body">
+                                <h3>{{ inst.nomeinstituicao || 'Instituição' }}</h3>
+                                <p>{{ inst.email }} | CNPJ: {{ inst.cnpj || '-' }}</p>
+                                <p>Cidade: {{ inst.cidade || '-' }} / {{ inst.estado || '-' }}</p>
+                                <status-badge status="pendente"></status-badge>
+                            </div>
+                            <div class="button-group" style="margin-top: 1rem;">
+                                <button class="btn btn-primary" @click="aprovarInstituicao(inst)">Aprovar</button>
+                                <button class="btn btn-secondary danger" @click="rejeitarInstituicao(inst)">Rejeitar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div v-if="aba === 'propostas'">
+                    <div v-if="propostas.length === 0" class="empty-state"><p>Nenhuma proposta pendente.</p></div>
+                    <div v-else class="list cards-grid">
+                        <proposal-card v-for="p in propostas" :key="p.id" :proposal="p" :getStatusLabel="getStatusLabel"></proposal-card>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!window.ensureRole('admin')) return;
+
+            mountVuePage({
+                components: { SideNav, ChallengeCard, ProposalCard, EmptyState, StatusBadge },
+                data() {
+                    return {
+                        msg: window.messages,
+                        menuItems: window.getAdminMenuItems(),
+                        aba: 'empresas',
+                        empresas: [],
+                        instituicoes: [],
+                        propostas: [],
+                    };
+                },
+                computed: {
+                    stats() {
+                        return {
+                            empresasPendentes: this.empresas.filter(e => (e.status || '').toLowerCase() === 'pendente').length,
+                            instituicoesPendentes: this.instituicoes.filter(i => (i.status || '').toLowerCase() === 'pendente').length,
+                            propostasPendentes: this.propostas.length,
+                        };
+                    },
+                    empresasPendentes() {
+                        return this.empresas.filter(e => (e.status || '').toLowerCase() === 'pendente');
+                    },
+                    instituicoesPendentes() {
+                        return this.instituicoes.filter(i => (i.status || '').toLowerCase() === 'pendente');
+                    }
+                },
+                async mounted() {
+                    try {
+                        const [emps, insts, props] = await Promise.all([
+                            window.ApiClient.get('/empresas'),
+                            window.ApiClient.get('/instituicoes'),
+                            window.ApiClient.get('/propostas')
+                        ]);
+                        this.empresas = emps || [];
+                        this.instituicoes = insts || [];
+                        this.propostas = (props || []).filter(p => {
+                            const s = (p.statusproposta || p.status || '').toLowerCase();
+                            return s.includes('pend') || s === '' || s === 'analisando';
+                        });
+                    } catch (e) {
+                        console.error('Erro ao carregar aprovações', e);
+                    }
+                },
+                methods: {
+                    getStatusLabel: window.getStatusLabel,
+                    async aprovarEmpresa(emp) {
+                        try {
+                            await window.ApiClient.put(`/empresas/${emp.id}`, { status: 'aprovado' });
+                            emp.status = 'aprovado';
+                            alert('Empresa aprovada com sucesso!');
+                        } catch (e) {
+                            alert('Erro ao aprovar empresa: ' + (e.message || e));
+                        }
+                    },
+                    async rejeitarEmpresa(emp) {
+                        if (!confirm(`Rejeitar empresa ${emp.nomefantasia || emp.razaosocial || ''}?`)) return;
+                        try {
+                            await window.ApiClient.put(`/empresas/${emp.id}`, { status: 'rejeitado' });
+                            emp.status = 'rejeitado';
+                            alert('Empresa rejeitada.');
+                        } catch (e) {
+                            alert('Erro ao rejeitar empresa: ' + (e.message || e));
+                        }
+                    },
+                    async aprovarInstituicao(inst) {
+                        try {
+                            await window.ApiClient.put(`/instituicoes/${inst.id}`, { status: 'aprovado' });
+                            inst.status = 'aprovado';
+                            alert('Instituição aprovada com sucesso!');
+                        } catch (e) {
+                            alert('Erro ao aprovar instituição: ' + (e.message || e));
+                        }
+                    },
+                    async rejeitarInstituicao(inst) {
+                        if (!confirm(`Rejeitar instituição ${inst.nomeinstituicao || ''}?`)) return;
+                        try {
+                            await window.ApiClient.put(`/instituicoes/${inst.id}`, { status: 'rejeitado' });
+                            inst.status = 'rejeitado';
+                            alert('Instituição rejeitada.');
+                        } catch (e) {
+                            alert('Erro ao rejeitar instituição: ' + (e.message || e));
+                        }
+                    }
+                },
+                title: 'Aprovações - Admin'
+            });
+        });
+    </script>
+</body>
+</html>
