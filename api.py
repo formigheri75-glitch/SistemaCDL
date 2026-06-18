@@ -836,7 +836,6 @@ def criar_instituicao():
             "estado": dados.get('estado'),
             "endereco": dados.get('endereco'),
             "senha": gerar_hash(dados.get('senha')),
-            "status": "pendente"
         }
 
         response = supabase.table("instituicao") \
