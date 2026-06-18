@@ -460,10 +460,14 @@ def atualizar_usuario(id):
         dados_atualizados = {
             "nome": dados.get('nome'),
             "email": dados.get('email'),
-            "senha": dados.get('senha'),
             "tipousuario": dados.get('tipousuario'),
             "ativo": dados.get('ativo')
         }
+
+        # Se veio senha, aplicar hash
+        senha = dados.get('senha')
+        if senha:
+            dados_atualizados["senha"] = gerar_hash(senha)
 
         response = supabase.table("usuario") \
             .update(dados_atualizados) \
@@ -625,10 +629,12 @@ def alterar_senha():
         if not usuario:
             return jsonify({"erro": "Usuário não encontrado"}), 404
 
-        if usuario.get("senha") != current_password:
+        # ✅ Verificar senha atual usando bcrypt (hash)
+        if not verificar_senha(current_password, usuario["senha"]):
             return jsonify({"erro": "Senha atual incorreta"}), 401
 
-        supabase.table(tabela).update({"senha": new_password}).eq("id", usuario_id).execute()
+        # ✅ Salvar nova senha com hash
+        supabase.table(tabela).update({"senha": gerar_hash(new_password)}).eq("id", usuario_id).execute()
 
         return jsonify({"mensagem": "Senha alterada com sucesso"}), 200
 
@@ -725,6 +731,10 @@ def atualizar_empresa(id):
     try:
 
         dados = request.get_json()
+
+        # Se veio senha, aplicar hash
+        if dados.get('senha'):
+            dados['senha'] = gerar_hash(dados['senha'])
 
         response = supabase.table("empresa") \
             .update(dados) \
