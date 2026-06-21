@@ -138,7 +138,7 @@
                             institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
                             description: p.descricao || '',
                             statusRaw: p.statusproposta || p.status || 'pending',
-                            detailsLink: 'tela-detalhes-proposta-coordenador.html'
+                            detailsLink: 'tela-detalhes-proposta-instituicao.html'
                         }));
 
                         const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
