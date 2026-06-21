@@ -21,6 +21,7 @@
     "tela-inicial-instituicao.html": ["instituicao"],
     "tela-detalhes-desafio-instituicao.html": ["instituicao"],
     "tela-propostas-instituicao.html": ["instituicao"],
+    "tela-detalhes-proposta-instituicao.html": ["instituicao"],
 
     "tela-inicial-coordenador.html": ["coordenador"],
     "tela-detalhes-desafio-coordenador.html": ["coordenador"],

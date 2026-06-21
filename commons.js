@@ -553,6 +553,28 @@ const ChallengeCard = {
     `
 };
 
+const ChallengeCardInst = {
+    methods: {
+        getDetailsHref() {
+            const base = this.detailsLink || 'tela-detalhes-desafio-instituicao.html';
+            if (!this.challenge || !this.challenge.id) return base;
+            return `${base}?id=${encodeURIComponent(this.challenge.id)}`;
+        }
+    },
+    props: ['challenge', 'icon', 'detailsLink'],
+    template: `
+    <div class="challenge-card card">
+        <div class="challenge-icon">{{ icon || '📌' }}</div>
+        <div class="challenge-body card-body">
+            <h3>{{ challenge.title }}</h3>
+            <p>{{ challenge.description }}</p>
+            <div class="challenge-meta">{{ challenge.date || challenge.meta }}</div>
+        </div>
+        <a class="mini-btn" :href="getDetailsHref()">Ver detalhes</a>
+    </div>
+    `
+};
+
 const ProblemCard = {
     methods: {
         getDetailsHref() {
@@ -1389,6 +1411,7 @@ if (typeof window !== 'undefined') {
     window.FormInput = FormInput;
     window.ProposalCard = ProposalCard;
     window.ChallengeCard = ChallengeCard;
+    window.ChallengeCardInst = ChallengeCardInst;
     window.ProblemCard = ProblemCard;
     window.ValidationFunctions = ValidationFunctions;
     window.mountStandardApp = mountStandardApp;

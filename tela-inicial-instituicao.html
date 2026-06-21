@@ -128,7 +128,7 @@
                 if (!window.ensureRole('instituicao')) return;
 
                 mountVuePage({
-                    components: { SideNav, ChallengeCard },
+                    components: { SideNav, ChallengeCard: ChallengeCardInst },
                     data() {
                         return {
                             msg: window.messages,
