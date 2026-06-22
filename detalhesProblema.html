@@ -37,7 +37,7 @@
                                     <h2>
                                         {{ msg.detalhesProblema.descricao }}
                                     </h2>
-                                    <p>{{ problema.description || problema.descricao || 'DescriÁ„o n„o informada.' }}</p>
+                                    <p>{{ problema.description || problema.descricao || 'Descri√ß√£o n√£o informada.' }}</p>
                                 </div>
 
                                 <div class="detail-card">
@@ -57,7 +57,7 @@
                                     </h2>
 
                                     <div v-if="desafioAceito" class="alert" style="background:var(--cor-sucesso-20); border:1px solid var(--cor-sucesso); border-radius:var(--raio-md); padding:1rem; margin-bottom:1rem;">
-                                        ? Este desafio j· possui uma soluÁ„o aceita. Novas propostas est„o bloqueadas.
+                                        Este desafio j√° possui uma solu√ß√£o aceita. Novas propostas est√£o bloqueadas.
                                     </div>
 
                                     <div v-if="propostas.length" class="proposals-list">
@@ -65,7 +65,7 @@
                                             <div style="flex:1;">
                                                 <strong>{{ prop.titulo || 'Proposta' }}</strong>
                                                 <span class="status-pill" :class="prop.statusClass" style="margin-left:0.75rem; font-size:0.75rem;">{{ prop.statusLabel }}</span>
-                                                <div style="font-size:0.85rem; color:var(--cor-texto-apagado); margin-top:0.25rem;">{{ prop.instituicaoNome || 'InstituiÁ„o' }}</div>
+                                                <div style="font-size:0.85rem; color:var(--cor-texto-apagado); margin-top:0.25rem;">{{ prop.instituicaoNome || 'Institui√ß√£o' }}</div>
                                             </div>
                                             <div style="display:flex; gap:0.5rem; flex-shrink:0;">
                                                 <a class="mini-btn" :href="'detalhesPropossta.html?id=' + prop.id">Ver</a>
@@ -74,7 +74,7 @@
                                                     class="mini-btn primary"
                                                     @click.prevent="aceitarProposta(prop)"
                                                     :disabled="prop.aceitando"
-                                                >{{ prop.aceitando ? '...' : '? Aceitar' }}</button>
+                                                >{{ prop.aceitando ? '...' : 'Aceitar' }}</button>
                                             </div>
                                         </div>
                                     </div>
@@ -84,7 +84,7 @@
 
 
                             <aside class="info-panel">
-                                <h3>InformaÁıes</h3>
+                                <h3>Informa√ß√µes</h3>
 
                                 <div class="info-item">
                                     <div class="info-label">
@@ -106,7 +106,7 @@
                                     <div class="info-label">
                                         {{ msg.detalhesProblema.info.prazo }}
                                     </div>
-                                    <div class="info-value">{{ prazoFormatado || 'N„o definido' }}</div>
+                                    <div class="info-value">{{ prazoFormatado || 'N√£o definido' }}</div>
                                 </div>
 
                                 <div class="info-item">
@@ -149,7 +149,7 @@
 
         <script>
             if (!window.ensureRole()) {
-                throw new Error('Acesso negado. VocÍ n„o tem permiss„o para acessar esta p·gina.');
+                throw new Error('Acesso negado. Voc√™ n√£o tem permiss√£o para acessar esta p√°gina.');
             }
 
             if (window.messages) {
@@ -217,7 +217,7 @@
                             try {
                                 await window.ApiClient.put(`/propostas/${prop.id}`, { statusproposta: 'aceito' });
                                 await window.ApiClient.put(`/desafios/${this.problema.id}`, { statusdesafio: 'aceito' });
-                                // Notificar instituiÁ„o
+                                // Notificar institui√ß√£o
                                 try {
                                     await window.ApiClient.post('/notificacoes', {
                                         desafioid: this.problema.id,
