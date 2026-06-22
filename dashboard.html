@@ -95,7 +95,7 @@
         </div>
 
         <script>
-            if (!window.ensureRole('admin')) {
+            if (!window.ensureRole()) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
@@ -144,8 +144,8 @@
                             return this.desafios.filter(d => {
                                 const s = String(d.status || '').toLowerCase();
                                 if (this.desafioFilter === 'aberto') return s === 'aberto' || s === 'abertos';
-                                if (this.desafioFilter === 'andamento') return s.includes('andamento');
-                                if (this.desafioFilter === 'concluido') return s.includes('concl');
+                                if (this.desafioFilter === 'andamento') return s === 'andamento';
+                                if (this.desafioFilter === 'concluido') return s === 'concluido';
                                 return true;
                             });
                         },
@@ -166,7 +166,7 @@
                             ]);
 
                             this.desafios = (desafios || []).map(d => {
-                                const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                                const status = String(d.statusdesafio || '').toLowerCase();
                                 return {
                                     id: d.id,
                                     title: d.titulo || 'Desafio',
@@ -184,7 +184,7 @@
                                             return raw;
                                         } catch(e) { return raw; }
                                     })(),
-                                    progress: status.includes('concl') ? '100%' : (status.includes('andamento') ? '60%' : '30%'),
+                                    progress: status === 'concluido' ? '100%' : (status === 'andamento' ? '60%' : '30%'),
                                 };
                             });
 
@@ -192,13 +192,13 @@
                                 id: p.id,
                                 title: p.titulo || 'Proposta',
                                 desafio: p.desafioTitulo || '',
-                                status: String(p.statusproposta || p.status || '').toLowerCase(),
+                                status: String(p.statusproposta || '').toLowerCase(),
                                 statusLabel: window.getStatusLabel(p.statusproposta || p.status) || 'Pendente',
                             }));
 
                             const abertos = this.desafios.filter(d => d.status === 'aberto' || d.status === 'abertos').length;
-                            const andamento = this.desafios.filter(d => d.status.includes('andamento')).length;
-                            const concluidos = this.desafios.filter(d => d.status.includes('concl')).length;
+                            const andamento = this.desafios.filter(d => d.status === 'andamento').length;
+                            const concluidos = this.desafios.filter(d => d.status === 'concluido').length;
 
                             this.stats.total = this.desafios.length;
                             this.stats.abertos = abertos;

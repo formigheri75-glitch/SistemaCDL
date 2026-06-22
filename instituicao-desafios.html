@@ -26,7 +26,7 @@
                         <div class="proposal-main">
                             <h3>{{ d.titulo }}</h3>
                             <p>{{ d.descricao }}</p>
-                            <div class="challenge-meta">
+                            <div class="challenge-meta" style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.5rem;">
                                 <span><strong>Categoria:</strong> {{ d.categoria || '-' }}</span>
                                 <span><strong>Status:</strong> {{ d.statusLabel }}</span>
                                 <span><strong>Prazo:</strong> {{ d.prazo || 'Sem prazo' }}</span>
@@ -44,7 +44,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (!window.ensureRole('admin')) return;
+            if (!window.ensureRole()) return;
 
             mountVuePage({
                 components: { SideNav },
@@ -62,8 +62,8 @@
                         return this.desafios.filter(d => {
                             const s = String(d.status || '').toLowerCase();
                             if (this.filtroStatus === 'aberto') return s === 'aberto' || s === 'abertos';
-                            if (this.filtroStatus === 'aceito') return s.includes('aceit');
-                            if (this.filtroStatus === 'concluido') return s.includes('concl');
+                            if (this.filtroStatus === 'aceito') return s === 'aceito';
+                            if (this.filtroStatus === 'concluido') return s === 'concluido';
                             return true;
                         });
                     }
@@ -72,7 +72,7 @@
                     try {
                         const des = await window.fetchDesafiosList();
                         this.desafios = (des || []).map(d => {
-                            const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                            const status = String(d.statusdesafio || '').toLowerCase();
                             const prazoFmt = window.formatarData(d.prazo || d.datalimite, 'Sem prazo');
                             return {
                                 id: d.id,

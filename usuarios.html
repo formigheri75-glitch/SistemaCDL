@@ -43,6 +43,7 @@
                                     <th>Tipo</th>
                                     <th>Nome</th>
                                     <th>Email</th>
+                                    <th>Status</th>
                                     <th class="text-right">Ações</th>
                                 </tr>
                             </thead>
@@ -52,6 +53,7 @@
                                     <td>{{ item.tipo || item.source }}</td>
                                     <td>{{ item.nome || '-' }}</td>
                                     <td>{{ item.email || '-' }}</td>
+                                    <td><status-badge :status="item.status || ''"></status-badge></td>
                                     <td class="text-right">
                                         <button class="mini-btn" @click.prevent="openEdit(item)">Editar</button>
                                         <button class="mini-btn danger" @click.prevent="confirmDelete(item)">Excluir</button>
@@ -72,45 +74,85 @@
                 </div>
 
                 <!-- Modal -->
-                <div v-if="modal.open" class="modal">
-                    <div class="modal-content">
-                        <h3>{{ modal.mode === 'create' ? 'Novo' : 'Editar' }} {{ modal.typeLabel }}</h3>
+                <div v-if="modal.open" class="modal-overlay" style="position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.6); display:grid; place-items:center;" @click.self="closeModal">
+                    <div class="modal-card" style="background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:2rem; max-width:540px; width:95%; max-height:90vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+                        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+                            <h3 style="font-size:1.2rem; font-weight:700; color:var(--color-text-primary);">{{ modal.mode === 'create' ? 'Novo' : 'Editar' }} {{ modal.typeLabel }}</h3>
+                            <button class="mini-btn" @click.prevent="closeModal" style="font-size:1.2rem;">✕</button>
+                        </div>
+
                         <form @submit.prevent="save">
-                            <div v-if="modal.type==='usuarios'">
-                                <label>Nome</label>
-                                <input v-model="modal.data.nome" class="w-full" />
-                                <label>Email</label>
-                                <input v-model="modal.data.email" class="w-full" />
-                                <label>Tipo</label>
-                                <select v-model="modal.data.tipousuario" class="w-full">
-                                    <option value="usuario">Usuário</option>
-                                    <option value="coordenador">Coordenador</option>
-                                    <option value="admin">Admin</option>
-                                </select>
-                                <label>Senha (opcional)</label>
-                                <input v-model="modal.data.senha" type="password" class="w-full" />
+                            <div v-if="modal.type==='usuarios'" style="display:flex; flex-direction:column; gap:1rem;">
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Nome completo</label>
+                                    <input v-model="modal.data.nome" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Nome do usuário" />
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Email</label>
+                                    <input v-model="modal.data.email" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="email@exemplo.com" />
+                                </div>
+                                <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem;">
+                                    <div>
+                                        <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Tipo</label>
+                                        <select v-model="modal.data.tipousuario" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);">
+                                            <option value="usuario">Usuário</option>
+                                            <option value="coordenador">Coordenador</option>
+                                            <option value="admin">Admin</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Senha</label>
+                                        <input v-model="modal.data.senha" type="password" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Mín. 6 caracteres" />
+                                    </div>
+                                </div>
                             </div>
-                            <div v-if="modal.type==='empresas'">
-                                <label>Nome Fantasia</label>
-                                <input v-model="modal.data.nomefantasia" class="w-full" />
-                                <label>Razão Social</label>
-                                <input v-model="modal.data.razaosocial" class="w-full" />
-                                <label>CNPJ</label>
-                                <input v-model="modal.data.cnpj" class="w-full" />
-                                <label>Email</label>
-                                <input v-model="modal.data.email" class="w-full" />
+                            <div v-if="modal.type==='empresas'" style="display:flex; flex-direction:column; gap:1rem;">
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Nome Fantasia</label>
+                                    <input v-model="modal.data.nomefantasia" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Nome fantasia" />
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Email</label>
+                                    <input v-model="modal.data.email" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="email@exemplo.com" />
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Senha</label>
+                                    <input v-model="modal.data.senha" type="password" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Mín. 6 caracteres" />
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Status</label>
+                                    <select v-model="modal.data.status" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);">
+                                        <option value="aprovado">Aprovado</option>
+                                        <option value="pendente">Pendente</option>
+                                        <option value="rejeitado">Rejeitado</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div v-if="modal.type==='instituicoes'">
-                                <label>Nome Instituição</label>
-                                <input v-model="modal.data.nomeinstituicao" class="w-full" />
-                                <label>CNPJ</label>
-                                <input v-model="modal.data.cnpj" class="w-full" />
-                                <label>Email</label>
-                                <input v-model="modal.data.email" class="w-full" />
+                            <div v-if="modal.type==='instituicoes'" style="display:flex; flex-direction:column; gap:1rem;">
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Instituição</label>
+                                    <input v-model="modal.data.nomeinstituicao" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Nome da instituição" />
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Email</label>
+                                    <input v-model="modal.data.email" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="email@exemplo.com" />
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Senha</label>
+                                    <input v-model="modal.data.senha" type="password" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Mín. 6 caracteres" />
+                                </div>
+                                <div>
+                                    <label style="display:block; margin-bottom:0.3rem; color:var(--color-text-secondary); font-size:0.9rem;">Status</label>
+                                    <select v-model="modal.data.status" class="w-full" style="padding:0.6rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);">
+                                        <option value="aprovado">Aprovado</option>
+                                        <option value="pendente">Pendente</option>
+                                        <option value="rejeitado">Rejeitado</option>
+                                    </select>
+                                </div>
                             </div>
-                            <div class="mt-4 flex gap-2 justify-end">
-                                <button class="mini-btn" type="button" @click.prevent="closeModal">Cancelar</button>
-                                <button class="mini-btn primary" type="submit">Salvar</button>
+                            <div style="margin-top:1.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
+                                <button type="button" class="btn btn-secondary" @click.prevent="closeModal">Cancelar</button>
+                                <button type="submit" class="btn btn-primary">Salvar</button>
                             </div>
                         </form>
                     </div>
@@ -121,7 +163,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (!window.ensureRole('admin')) return;
+            if (!window.ensureRole()) return;
 
             mountVuePage({
                 components: { SideNav },
@@ -179,6 +221,7 @@
                                 nome: e.nomefantasia || e.nomeFantasia || e.razaosocial || e.nome || null,
                                 email: e.email || null,
                                 tipo: 'empresa',
+                                status: e.status || '',
                                 source: 'empresas',
                                 raw: e
                             });
@@ -188,6 +231,7 @@
                                 nome: i.nomeInstituicao || i.nomeinstituicao || i.nome || null,
                                 email: i.email || null,
                                 tipo: 'instituicao',
+                                status: i.status || '',
                                 source: 'instituicoes',
                                 raw: i
                             });

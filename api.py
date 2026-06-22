@@ -203,6 +203,7 @@ def login():
                         "id": usuario["id"],
                         "email": usuario["email"],
                         "nome": usuario.get("nome"),
+                        "instituicao": usuario.get("instituicao"),
                         "sourceTable": "usuarios",
                         "tipo": tipo_normalizado
                     }
@@ -234,7 +235,7 @@ def me():
 
         usuario_id = get_jwt_identity()
         response = supabase.table("usuario") \
-            .select("id, nome, email, tipousuario") \
+            .select("id, nome, email, tipousuario, instituicao") \
             .eq("id", usuario_id) \
             .execute()
 
@@ -581,7 +582,7 @@ def redefinir_senha():
         return jsonify({"erro": str(e)}), 500
 
 
- 
+
 @app.route('/usuarios/alterar-senha', methods=['POST'])
 @jwt_required()
 def alterar_senha():
@@ -707,6 +708,7 @@ def criar_empresa():
             "endereco": dados.get('endereco'),
             "areaatuacao": dados.get('areaatuacao'),
             "senha": gerar_hash(dados.get('senha')),
+            "status": "pendente"
         }
 
         response = supabase.table("empresa") \
@@ -820,6 +822,33 @@ def obter_instituicao(id):
         }), 500
 
 
+@app.route('/instituicoes/<int:id>', methods=['PUT'])
+def atualizar_instituicao(id):
+
+    try:
+
+        dados = request.get_json()
+
+        if dados.get('senha'):
+            dados['senha'] = gerar_hash(dados['senha'])
+
+        response = supabase.table("instituicao") \
+            .update(dados) \
+            .eq("id", id) \
+            .execute()
+
+        return jsonify({
+            "mensagem": "Instituição atualizada com sucesso",
+            "dados": response.data
+        }), 200
+
+    except Exception as e:
+
+        return jsonify({
+            "erro": str(e)
+        }), 500
+
+
 @app.route('/instituicoes', methods=['POST'])
 def criar_instituicao():
 
@@ -836,6 +865,7 @@ def criar_instituicao():
             "estado": dados.get('estado'),
             "endereco": dados.get('endereco'),
             "senha": gerar_hash(dados.get('senha')),
+            "status": "pendente"
         }
 
         response = supabase.table("instituicao") \

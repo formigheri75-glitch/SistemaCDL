@@ -22,32 +22,38 @@
                 <div class="content">
                     <div class="detail-hero">
                         <div class="detail-top">
-                            <div class="detail-title"><h3>Detalhes da proposta</h3><h5 v-if="proposal && (proposal.titulo || proposal.title)">{{ proposal.titulo || proposal.title }}</h5></div>
+                            <div class="detail-title"><h3>Detalhes da Proposta</h3><h5 v-if="proposal && (proposal.titulo || proposal.title)">{{ proposal.titulo || proposal.title }}</h5></div>
                             <div class="detail-meta">
-                                <span class="status">{{ proposal ? statusLabel(proposal.status) : 'Carregando...' }}</span>
+                                <span class="status-pill" :class="statusClass">{{ proposal ? statusLabel(proposal.statusproposta || proposal.status) : 'Carregando...' }}</span>
                                 <div v-if="desafioTitle" class="meta-item">Desafio: <a :href="desafioLink">{{ desafioTitle }}</a></div>
                             </div>
                         </div>
                         <div class="detail-intro">
-                            <div class="illustration"></div>
+                            <div class="illustration">{{ iconCategoria(desafioCategoria) }}</div>
                             <div>
+                                <p><strong>Descrição:</strong></p>
                                 <p>{{ proposal ? proposal.descricao : msg.pages.telaDetalhesPropostaCoordenador.descricaoPadrao }}</p>
-                                <div class="button-group">
-                                    <button class="btn btn-primary" type="button" @click="edit" :disabled="loading">{{ msg.pages.telaDetalhesPropostaCoordenador.editar }}</button>
+                                <div v-if="proposal && proposal.nomearquivo" class="detail-box card" style="margin-top: 1rem;">
+                                    <h4>Arquivo Anexado</h4>
+                                    <p><a :href="proposal.arquivo" target="_blank" class="btn btn-secondary" download>📦 Baixar {{ proposal.nomearquivo }}</a></p>
+                                </div>
+                                <div class="button-group" style="margin-top: 1.5rem;">
                                     <button class="btn btn-secondary" type="button" @click="back">{{ msg.pages.telaDetalhesPropostaCoordenador.voltar }}</button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="detail-grid">
-                        <div class="detail-box card"><h4>Plano de implementação</h4><p>{{ proposal && proposal.plano ? proposal.plano : 'Etapas, escopo e entregáveis da solução.' }}</p></div>
-                        <div class="detail-box card"><h4>Resultados esperados</h4><p>{{ proposal && proposal.resultados ? proposal.resultados : 'Impacto, métricas e validação prevista.' }}</p></div>
+                        <div class="detail-box card"><h4>Data de Envio</h4><p>{{ dataEnvio }}</p></div>
+                        <div class="detail-box card"><h4>Status</h4><p>{{ proposal ? statusLabel(proposal.statusproposta || proposal.status) : 'N/A' }}</p></div>
+                        <div class="detail-box card"><h4>Empresa</h4><p>{{ empresaNome || 'N/A' }}</p></div>
+                        <div class="detail-box card"><h4>Arquivo</h4><p v-if="proposal && proposal.nomearquivo"><a :href="proposal.arquivo" target="_blank" download>{{ proposal.nomearquivo }}</a></p><p v-else>Nenhum arquivo</p></div>
                     </div>
                 </div>
             </div>
         </div>
         <script>
-            if (!window.ensureRole('instituicao')) {
+            if (!window.ensureRole()) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
@@ -60,17 +66,27 @@
                         menuItems: [
                             { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
                             { label: 'Minhas propostas', href: 'tela-propostas-instituicao.html' },
-                            { label: 'Notificações', href: 'notificacoes.html' },
                         ],
                         proposal: null,
                         loading: false,
                         desafioTitle: null,
                         desafioId: null,
                         desafioLink: null,
+                        desafioCategoria: null,
+                        empresaNome: null,
                     };
+                },
+                computed: {
+                    statusClass() {
+                        return window.classStatusProposta(this.proposal?.statusproposta || this.proposal?.status);
+                    },
+                    dataEnvio() {
+                        return window.formatarData(this.proposal?.dataenvio || this.proposal?.datacriacao, 'N/A');
+                    }
                 },
                 methods: {
                     statusLabel: window.getStatusLabel,
+                    iconCategoria: window.iconCategoria,
                     getQueryId() {
                         const params = new URLSearchParams(window.location.search);
                         return params.get('id');
@@ -80,7 +96,8 @@
                         if (!id) return;
                         this.loading = true;
                         try {
-                            this.proposal = await ApiClient.get(`/propostas/${id}`);
+                            this.proposal = await window.ApiClient.get(`/propostas/${id}`);
+                            
                             const desafioId = this.proposal && (this.proposal.desafioid || this.proposal.desafioId || this.proposal.desafioID || this.proposal.desafio) || null;
                             if (desafioId) {
                                 this.desafioId = desafioId;
@@ -88,20 +105,32 @@
                                         const d = await window.loadDesafio(desafioId);
                                         if (d) {
                                             this.desafioTitle = d.titulo || d.desafioTitulo || null;
-                                            this.desafioLink = `detalhesProblema.html?id=${encodeURIComponent(desafioId)}`;
+                                            this.desafioLink = `tela-detalhes-desafio-instituicao.html?id=${encodeURIComponent(desafioId)}`;
+                                            this.desafioCategoria = d.areaconhecimento || d.categoria || null;
                                         }
                                     } catch (e) {
                                         // ignora
                                     }
+                            }
+                            
+                            if (this.desafioId) {
+                                try {
+                                    const d = await window.loadDesafio(this.desafioId);
+                                    if (d) {
+                                        const empId = d.empresaid || d.empresaID || d.empresaId;
+                                        if (empId) {
+                                            const empresas = await window.ApiClient.get('/empresas');
+                                            const emp = (empresas || []).find(e => String(e.id || e.ID) === String(empId));
+                                            if (emp) this.empresaNome = emp.nomefantasia;
+                                        }
+                                    }
+                                } catch(e) {}
                             }
                         } catch (err) {
                             console.error('Erro ao carregar proposta', err);
                         } finally {
                             this.loading = false;
                         }
-                    },
-                    edit() {
-                        
                     },
                     back() {
                         const base = 'tela-propostas-instituicao.html';

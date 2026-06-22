@@ -104,13 +104,13 @@
                                 <p class="auth-form-subtitle">{{ msg.cadastroEmpresa.formSubtitle }}</p>
                             </div>
 
-                            <form class="auth-form" @submit.prevent="submit">
-                                <div v-if="success" class="form-success">✓ {{ success }}</div>
+                            <form class=\"auth-form\" @submit.prevent=\"submit\">
+                                <div v-if=\"success\" class=\"form-success\">{{ success }}</div>
 
                                 <div class="form-group">
                                     <label>{{ msg.cadastroEmpresa.nome }}</label>
                                         <input type="text" v-model="form.nomefantasia" :placeholder="msg.cadastroEmpresa.nome" :class="{ error: errors.nomefantasia }">
-                                    <div v-if="errors.nome" class="form-error">{{ errors.nome }}</div>
+                                    <div v-if="errors.nomefantasia" class="form-error">{{ errors.nomefantasia }}</div>
                                 </div>
 
                                     <div class="form-group">
@@ -173,8 +173,7 @@
                                     <div v-if="errors.confirma" class="form-error">{{ errors.confirma }}</div>
                                 </div>
 
-                                <button class="submit-btn">{{ msg.cadastroEmpresa.cadastrar }}</button>
-                            </form>
+                                <button class="submit-btn">{{ msg.cadastroEmpresa.cadastrar }}</button>                                <div v-if=\"errors.general\" class=\"form-error\" style=\"margin-top:1rem; text-align:center;\">{{ errors.general }}</div>                            </form>
                         </div>
                     </section>
                 </main>
@@ -247,10 +246,13 @@
                             senha: this.form.senha
                         });
 
-                        this.success = this.msg.cadastroEmpresa.sucesso + ' Redirecionando para login...';
-                        setTimeout(() => { window.location.href = 'login.html'; }, 2000);
+                        this.success = this.msg.cadastroEmpresa.sucesso;
+                        setTimeout(() => {
+                            alert(this.msg.cadastroEmpresa.sucesso);
+                            window.location.href = 'login.html';
+                        }, 500);
                     } catch (error) {
-                        this.setFieldError('submit', error.message || this.msg.cadastroEmpresa.validacao.erroGenerico);
+                        this.errors.general = error.message || this.msg.cadastroEmpresa.validacao.erroGenerico;
                     }
                 }
             }

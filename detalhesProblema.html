@@ -99,7 +99,7 @@
                                         {{ msg.detalhesProblema.info.prioridade
                                         }}
                                     </div>
-                                    <div class="info-value" style="color: var(--color-error)">{{ problema.nivelprioridade || problema.priority || problema.nivelproblema || 'Alta' }}</div>
+                                    <div class="info-value" style="color: var(--color-error)">{{ problema.nivelprioridade || 'Alta' }}</div>
                                 </div>
 
                                 <div class="info-item">
@@ -148,7 +148,7 @@
         </div>
 
         <script>
-            if (!window.ensureRole(['empresa', 'admin'])) {
+            if (!window.ensureRole()) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
@@ -171,7 +171,7 @@
                         getIdFromQuery: window.getIdFromQuery,
                         getUserRole() {
                             const user = window.StorageManager && window.StorageManager.getUser && window.StorageManager.getUser();
-                            const role = user && (user.type || user.role || user.tipoUsuario) || localStorage.getItem('userType') || 'instituicao';
+                            const role = user && user.tipousuario || localStorage.getItem('userType') || 'instituicao';
                             return window.AppRoutes && window.AppRoutes.normalizeRole ? window.AppRoutes.normalizeRole(role) : String(role).toLowerCase();
                         },
                         async loadProblema() {
@@ -179,23 +179,23 @@
                             this.problema = await window.loadDesafio(id);
                             this.userRole = this.getUserRole();
 
-                            // Carregar requisitos deste desafio
+                            
                             try {
                                 const todosRequisitos = await window.ApiClient.get('/requisitos');
-                                this.requisitos = (todosRequisitos || []).filter(r => String(r.desafioid || r.desafioID || r.desafioId) === String(id));
+                                this.requisitos = (todosRequisitos || []).filter(r => String(r.desafioid) === String(id));
                             } catch (e) {
                                 this.requisitos = [];
                             }
 
-                            // Carregar propostas deste desafio
+                            
                             try {
                                 const todasPropostas = await window.ApiClient.get('/propostas');
-                                const propostasDoDesafio = (todasPropostas || []).filter(p => String(p.desafioid || p.desafioID || '') === String(id));
+                                const propostasDoDesafio = (todasPropostas || []).filter(p => String(p.desafioid) === String(id));
                                 this.propostas = propostasDoDesafio.map(p => {
-                                    const statusStr = String(p.statusproposta || p.status || '').toLowerCase();
-                                    let sc = 'analysis';
-                                    if (statusStr.includes('aceit') || statusStr.includes('aprov')) sc = 'approved';
-                                    else if (statusStr.includes('reje') || statusStr.includes('reprov')) sc = 'rejected';
+                                    const statusStr = String(p.statusproposta || '').toLowerCase();
+                                    let sc = 'analise';
+                                    if (statusStr === 'aceito' || statusStr === 'aprovado') sc = 'aprovado';
+                                    else if (statusStr === 'rejeitado' || statusStr === 'rejeitada') sc = 'rejeitado';
                                     return {
                                         id: p.id,
                                         titulo: p.titulo || 'Proposta',
@@ -203,7 +203,7 @@
                                         statusRaw: statusStr,
                                         statusLabel: window.getStatusLabel(statusStr) || 'Pendente',
                                         statusClass: sc,
-                                        podeAceitar: !statusStr.includes('aceit'),
+                                        podeAceitar: statusStr !== 'aceito',
                                         aceitando: false,
                                     };
                                 });
@@ -215,7 +215,7 @@
                             if (prop.aceitando) return;
                             prop.aceitando = true;
                             try {
-                                await window.ApiClient.put(`/propostas/${prop.id}`, { statusproposta: 'aceita' });
+                                await window.ApiClient.put(`/propostas/${prop.id}`, { statusproposta: 'aceito' });
                                 await window.ApiClient.put(`/desafios/${this.problema.id}`, { statusdesafio: 'aceito' });
                                 // Notificar instituição
                                 try {
@@ -225,7 +225,7 @@
                                         tabelafonte: 'empresa'
                                     });
                                 } catch(e) { /* ignora */ }
-                                prop.statusRaw = 'aceita';
+                                prop.statusRaw = 'aceito';
                                 prop.statusLabel = 'Aprovada';
                                 prop.podeAceitar = false;
                                 this.problema.statusdesafio = 'aceito';
@@ -242,7 +242,7 @@
                         },
                         desafioAceito() {
                             const s = String(this.problema && (this.problema.statusdesafio || this.problema.status) || '').toLowerCase();
-                            return s.includes('aceit') || s.includes('concl');
+                            return s === 'aceito' || s === 'concluido';
                         },
                         totalPropostas() {
                             return this.propostas.length;

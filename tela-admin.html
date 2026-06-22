@@ -42,7 +42,7 @@
                         <a class="card" href="aprovacoes.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--color-warning);">
                             <h3>📋 Aprovações Pendentes</h3>
                             <p>Aprovar ou rejeitar cadastros de empresas e instituições.</p>
-                            <span v-if="stats.pendentes > 0" class="status-pill analysis">{{ stats.pendentes }} pendente(s)</span>
+                            <span v-if="stats.pendentes > 0" class="status-pill analise">{{ stats.pendentes }} pendente(s)</span>
                         </a>
                         <a class="card" href="usuarios.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--color-primary);">
                             <h3>👥 Gerenciar Usuários</h3>
@@ -55,7 +55,7 @@
             </div>
         </div>
         <script>
-            if (!window.ensureRole('admin')) {
+            if (!window.ensureRole()) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
@@ -88,10 +88,7 @@
 
                         this.stats.empresas = (empresas || []).length;
                         this.stats.instituicoes = (instituicoes || []).length;
-                        this.stats.coordenadores = (usuarios || []).filter(u => {
-                            const t = String(u.tipousuario || u.tipoUsuario || u.type || '').toLowerCase();
-                            return t === 'coordenador';
-                        }).length;
+                        this.stats.coordenadores = (usuarios || []).filter(u => String(u.tipousuario || u.tipo || u.type || '').toLowerCase() === 'coordenador').length;
 
                         // Calcular pendências
                         const empresasPend = (empresas || []).filter(e => (e.status || '').toLowerCase() === 'pendente').length;

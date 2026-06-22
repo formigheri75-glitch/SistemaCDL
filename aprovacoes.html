@@ -21,7 +21,6 @@
                 <div class="filter-section">
                     <button class="filter-button" :class="{ active: aba === 'empresas' }" @click="aba = 'empresas'">Empresas ({{ stats.empresasPendentes }})</button>
                     <button class="filter-button" :class="{ active: aba === 'instituicoes' }" @click="aba = 'instituicoes'">Instituições ({{ stats.instituicoesPendentes }})</button>
-                    <button class="filter-button" :class="{ active: aba === 'propostas' }" @click="aba = 'propostas'">Propostas Pendentes ({{ stats.propostasPendentes }})</button>
                 </div>
 
                 <div v-if="aba === 'empresas'">
@@ -60,22 +59,16 @@
                     </div>
                 </div>
 
-                <div v-if="aba === 'propostas'">
-                    <div v-if="propostas.length === 0" class="empty-state"><p>Nenhuma proposta pendente.</p></div>
-                    <div v-else class="list cards-grid">
-                        <proposal-card v-for="p in propostas" :key="p.id" :proposal="p" :getStatusLabel="getStatusLabel"></proposal-card>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (!window.ensureRole('admin')) return;
+            if (!window.ensureRole()) return;
 
             mountVuePage({
-                components: { SideNav, ChallengeCard, ProposalCard, EmptyState, StatusBadge },
+                components: { SideNav, ChallengeCard, EmptyState, StatusBadge },
                 data() {
                     return {
                         msg: window.messages,
@@ -83,7 +76,6 @@
                         aba: 'empresas',
                         empresas: [],
                         instituicoes: [],
-                        propostas: [],
                     };
                 },
                 computed: {
@@ -91,7 +83,6 @@
                         return {
                             empresasPendentes: this.empresas.filter(e => (e.status || '').toLowerCase() === 'pendente').length,
                             instituicoesPendentes: this.instituicoes.filter(i => (i.status || '').toLowerCase() === 'pendente').length,
-                            propostasPendentes: this.propostas.length,
                         };
                     },
                     empresasPendentes() {
@@ -103,17 +94,12 @@
                 },
                 async mounted() {
                     try {
-                        const [emps, insts, props] = await Promise.all([
+                        const [emps, insts] = await Promise.all([
                             window.ApiClient.get('/empresas'),
                             window.ApiClient.get('/instituicoes'),
-                            window.ApiClient.get('/propostas')
                         ]);
                         this.empresas = emps || [];
                         this.instituicoes = insts || [];
-                        this.propostas = (props || []).filter(p => {
-                            const s = (p.statusproposta || p.status || '').toLowerCase();
-                            return s.includes('pend') || s === '' || s === 'analisando';
-                        });
                     } catch (e) {
                         console.error('Erro ao carregar aprovações', e);
                     }

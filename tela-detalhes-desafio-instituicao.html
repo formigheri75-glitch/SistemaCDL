@@ -21,8 +21,8 @@
                 ></side-nav>
                 <div class="content">
                     <div class="detail-hero">
-                        <div class="detail-top"><div class="detail-title"><h3>{{ challenge.titulo || msg.detalhesDesafio.challengeTitle }}</h3></div><span class="status">{{ challenge.statusdesafio || challenge.status || 'Aberto' }}</span></div>
-                        <div class="detail-intro"><div class="illustration">{{ challengeIcon }}</div><div><p>{{ challenge.descricao || msg.detalhesDesafio.description }}</p></div></div>
+                        <div class="detail-top"><div class="detail-title"><h3>{{ challenge.titulo || 'Desafio não encontrado' }}</h3></div><span class="status">{{ challenge.statusdesafio || challenge.status || 'Aberto' }}</span></div>
+                        <div class="detail-intro"><div class="illustration">{{ challengeIcon }}</div><div><p>{{ challenge.descricao || 'Descrição indisponível' }}</p></div></div>
                     </div>
                     <div class="detail-grid">
                         <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in requirementsList" :key="item">{{ item }}</li></ul></div>
@@ -32,7 +32,7 @@
             </div>
         </div>
         <script>
-            if (!window.ensureRole('instituicao')) {
+            if (!window.ensureRole()) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
@@ -45,7 +45,6 @@
                         menuItems: [
                             { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
                             { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
-                            { label: 'Notificações', href: 'notificacoes.html' },
                         ],
                         challenge: {},
                     };
@@ -53,29 +52,24 @@
                 computed: {
                     requirementsList() {
                         if (Array.isArray(this.challenge.requisitos) && this.challenge.requisitos.length) return this.challenge.requisitos;
-                        return this.msg.detalhesDesafio.requirements.items || [];
+                        return [];
                     },
                     challengeIcon() {
-                        const area = (this.challenge.areaconhecimento || this.challenge.categoria || '').toLowerCase();
-                        if (area.includes('backend') || area.includes('api')) return '⚙️';
-                        if (area.includes('frontend') || area.includes('ui')) return '🎨';
-                        if (area.includes('mobile')) return '📱';
-                        if (area.includes('devops') || area.includes('infra')) return '🛠️';
-                        if (area.includes('data') || area.includes('science')) return '📊';
-                        if (area.includes('design')) return '🎯';
-                        return '🏆';
+                        return window.iconCategoria(this.challenge.categoria || this.challenge.areaconhecimento);
                     },
                     extraInfoList() {
                         const info = [];
-                        if (this.challenge.areaconhecimento || this.challenge.categoria) info.push('Categoria: ' + (this.challenge.categoria || this.challenge.areaconhecimento));
-                        if (this.challenge.nivelprioridade || this.challenge.nivelproblema) info.push('Prioridade: ' + (this.challenge.nivelprioridade || this.challenge.nivelproblema));
+                        const cat = this.challenge.categoria || this.challenge.areaconhecimento;
+                        if (cat) info.push('<strong>Categoria:</strong> ' + cat);
+                        const prio = this.challenge.nivelprioridade || this.challenge.nivelproblema;
+                        if (prio) info.push('<strong>Prioridade:</strong> ' + prio);
                         const prazo = this.challenge.datalimite || this.challenge.prazo;
                         if (prazo) {
-                            info.push('Prazo: ' + window.formatarData(prazo, prazo));
+                            info.push('<strong>Prazo:</strong> ' + window.formatarData(prazo, prazo));
                         } else {
                             info.push('<strong>Prazo:</strong> Sem prazo definido');
                         }
-                        return info.length ? info : (this.msg.detalhesDesafio.additionalInfo.items || []);
+                        return info.length ? info : [];
                     }
                 },
                 methods: {

@@ -20,7 +20,7 @@
                     active-href="tela-propostas-coordenador.html"
                 ></side-nav>
                 <div class="content">
-                    <div class="section-head"><h2>{{ msg.pages.telaPropostasCoordenador.minhasPropostas }}</h2><a class="btn btn-primary" :href="novaSolucaoLink">{{ msg.pages.telaPropostasCoordenador.novaSolucao }}</a></div>
+                    <div class="section-head"><h2>{{ msg.pages.telaPropostasCoordenador.minhasPropostas }}</h2></div>
                     <div v-if="desafioQueryId" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ filtroDesafioTitle || desafioQueryId }}</div>
                     <div class="filter-section">
                         <span class="filter-label">Status:</span>
@@ -47,7 +47,7 @@
             </div>
         </div>
         <script>
-            if (!window.ensureRole('coordenador')) {
+            if (!window.ensureRole()) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
@@ -59,7 +59,6 @@
                         menuItems: [
                             { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
                             { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
-                            { label: 'Notificações', href: 'notificacoes.html' },
                         ],
                         proposals: [],
                         desafioQueryId: null,
@@ -76,9 +75,34 @@
                 mounted: async function() {
                     try {
                         const role = window.getUserRole();
+                        const user = window.StorageManager.getUser() || {};
                         let userInstituicaoId = null;
                         if (role !== 'admin') {
-                            userInstituicaoId = await window.getLoggedInstituicaoId();
+                            if (user.instituicao) {
+                                userInstituicaoId = user.instituicao;
+                            }
+                            if (!userInstituicaoId && user.id) {
+                                try {
+                                    const usuarioRecord = await window.ApiClient.get('/usuarios/' + user.id);
+                                    if (usuarioRecord && usuarioRecord.instituicao) {
+                                        userInstituicaoId = usuarioRecord.instituicao;
+                                    }
+                                } catch(e) {}
+                            }
+                            if (!userInstituicaoId && user.email) {
+                                try {
+                                    const allUsers = await window.ApiClient.get('/usuarios');
+                                    const found = (allUsers || []).find(u =>
+                                        String(u.email || '').toLowerCase() === String(user.email).toLowerCase()
+                                    );
+                                    if (found && found.instituicao) {
+                                        userInstituicaoId = found.instituicao;
+                                    }
+                                } catch(e) {}
+                            }
+                            if (!userInstituicaoId) {
+                                userInstituicaoId = await window.getLoggedInstituicaoId();
+                            }
                             if (!userInstituicaoId) {
                                 console.warn('No institution found for user');
                                 this.proposals = [];

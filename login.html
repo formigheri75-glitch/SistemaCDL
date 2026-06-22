@@ -454,7 +454,7 @@
     </div>
 
     <script>
-        // Configuração da API (use a configuração global definida em config.js / commons.js)
+        
         const apiBase = (typeof window !== 'undefined' && window.API_BASE_URL) ? window.API_BASE_URL : 'https://sistemacdl.onrender.com';
 
         const loginState = {
@@ -545,7 +545,7 @@
         }
 
         function initLoginPage() {
-            // If already logged in (token cached), redirect to user's home
+            
             try {
                 if (window.StorageManager && window.StorageManager.getToken && window.StorageManager.getToken()) {
                     const storedUser = window.StorageManager.getUser() || {};
@@ -558,7 +558,7 @@
                     return;
                 }
             } catch (e) {
-                // ignore and continue to render login
+                
             }
             if (!window.messages) {
                 console.error('Messages not loaded');
@@ -568,7 +568,7 @@
             cacheLoginElements();
             renderLoginTexts();
 
-            // Bind submit handler reliably
+            
             try {
                 const formEl = loginState.elements.form || document.getElementById('loginForm');
                 if (formEl && !formEl.__loginBound) {
@@ -676,62 +676,69 @@
                 ? window.AppRoutes.normalizeRole(userType)
                 : String(userType || '').toLowerCase();
 
-            // CRIAR USUARIO NOVO DO ZERO - SEM HERDAR DADOS ANTIGOS
+            
+            const usuarioApi = data && data.usuario;
+
             const novoUsuario = {
                 email: email
             };
             
-            // FORCAR PELO loginTipo
+            
             if (loginTipo === 'instituicao') {
+                novoUsuario.id = (usuarioApi && usuarioApi.id) || (profile && profile.id);
                 novoUsuario.sourceTable = 'instituicoes';
                 novoUsuario.tipo = 'instituicao';
                 novoUsuario.type = 'instituicao';
-                if (profile && profile.nomeinstituicao) novoUsuario.nomeinstituicao = profile.nomeinstituicao;
+                novoUsuario.nomeinstituicao = (usuarioApi && usuarioApi.nomeinstituicao) || (profile && profile.nomeinstituicao);
             } else if (loginTipo === 'empresa') {
+                novoUsuario.id = (usuarioApi && usuarioApi.id) || (profile && profile.id);
                 novoUsuario.sourceTable = 'empresas';
                 novoUsuario.tipo = 'empresa';
                 novoUsuario.type = 'empresa';
-                if (profile && profile.nomefantasia) novoUsuario.nomefantasia = profile.nomefantasia;
-            } else if (loginTipo === 'admin') {
-                novoUsuario.sourceTable = 'usuarios';
-                novoUsuario.tipo = 'admin';
-                novoUsuario.type = 'admin';
-                if (profile && profile.nome) novoUsuario.nome = profile.nome;
+                novoUsuario.nomefantasia = (usuarioApi && usuarioApi.nomefantasia) || (profile && profile.nomefantasia);
             } else {
+                novoUsuario.id = (usuarioApi && usuarioApi.id) || (profile && profile.id);
                 novoUsuario.sourceTable = 'usuarios';
-                novoUsuario.tipo = 'coordenador';
-                novoUsuario.type = 'coordenador';
-                if (profile && profile.nome) novoUsuario.nome = profile.nome;
+                novoUsuario.tipo = loginTipo === 'admin' ? 'admin' : 'coordenador';
+                novoUsuario.type = loginTipo === 'admin' ? 'admin' : 'coordenador';
+                novoUsuario.nome = (usuarioApi && usuarioApi.nome) || (profile && profile.nome);
+                const instId = (usuarioApi && usuarioApi.instituicao) || (profile && profile.instituicao);
+                if (instId) novoUsuario.instituicao = instId;
             }
             
-            // Se não veio loginTipo mas tem profile com campos específicos
+            
             if (!loginTipo) {
                 if (profile && profile.nomeinstituicao) {
+                    novoUsuario.id = (usuarioApi && usuarioApi.id) || profile.id;
                     novoUsuario.sourceTable = 'instituicoes';
                     novoUsuario.tipo = 'instituicao';
                     novoUsuario.type = 'instituicao';
                     novoUsuario.nomeinstituicao = profile.nomeinstituicao;
                 } else if (profile && profile.nomefantasia) {
+                    novoUsuario.id = (usuarioApi && usuarioApi.id) || profile.id;
                     novoUsuario.sourceTable = 'empresas';
                     novoUsuario.tipo = 'empresa';
                     novoUsuario.type = 'empresa';
                     novoUsuario.nomefantasia = profile.nomefantasia;
                 } else if (profile && profile.nome) {
+                    novoUsuario.id = (usuarioApi && usuarioApi.id) || profile.id;
                     novoUsuario.sourceTable = 'usuarios';
                     novoUsuario.tipo = normalizedRole === 'admin' ? 'admin' : 'coordenador';
                     novoUsuario.type = normalizedRole === 'admin' ? 'admin' : 'coordenador';
                     novoUsuario.nome = profile.nome;
+                    const instId = (profile && profile.instituicao) || (usuarioApi && usuarioApi.instituicao);
+                    if (instId) novoUsuario.instituicao = instId;
                 }
             }
             
             console.log('Criando novo usuario:', novoUsuario);
             
-            // LIMPAR DADOS ANTIGOS
+            
             localStorage.removeItem('auth_user');
             localStorage.removeItem('userType');
             localStorage.removeItem('userSource');
             
-            // SALVAR NOVO USUARIO
+            
             window.StorageManager.setUser(novoUsuario, novoUsuario.sourceTable);
 
             showLoginSuccess(loginTexts.success + ' ' + loginTexts.redirectMessage);

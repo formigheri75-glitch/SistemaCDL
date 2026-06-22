@@ -24,7 +24,10 @@
                         <option value="">Todas</option>
                         <option v-for="emp in empresas" :key="emp.id" :value="emp.id">{{ emp.nomefantasia || emp.razaosocial || 'Empresa' }}</option>
                     </select>
-                    <filter-section label="Status:" :options="optsStatus" :active-value="filtroStatus" @update:activeValue="filtroStatus = $event"></filter-section>
+                    <span class="filter-label">Status:</span>
+                    <button class="filter-button" :class="{ active: filtroStatus === 'todos' }" @click="filtroStatus = 'todos'">Todos</button>
+                    <button class="filter-button" :class="{ active: filtroStatus === 'aberto' }" @click="filtroStatus = 'aberto'">Abertos</button>
+                    <button class="filter-button" :class="{ active: filtroStatus === 'aceito' }" @click="filtroStatus = 'aceito'">Aceitos</button>
                 </div>
 
                 <div class="list cards-grid" v-if="desafiosFiltrados.length">
@@ -33,13 +36,13 @@
                         <div class="proposal-main">
                             <h3>{{ d.titulo }}</h3>
                             <p>{{ d.descricao }}</p>
-                            <div class="challenge-meta">
+                            <div class="challenge-meta" style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.5rem;">
                                 <span><strong>Empresa:</strong> {{ d.empresaNome || '-' }}</span>
                                 <span><strong>Status:</strong> {{ d.statusLabel }}</span>
                                 <span><strong>Prazo:</strong> {{ d.prazo || 'Sem prazo' }}</span>
                             </div>
                         </div>
-                        <div class="proposal-actions">
+                        <div class="proposal-actions" style="display:flex; align-items:flex-end;">
                             <a class="mini-btn" :href="'detalhesProblema.html?id=' + d.id">Ver</a>
                         </div>
                     </div>
@@ -51,7 +54,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (!window.ensureRole('admin')) return;
+            if (!window.ensureRole()) return;
 
             mountVuePage({
                 components: { SideNav, FilterSection, EmptyState, StatusBadge },
@@ -76,8 +79,9 @@
                             if (this.filtroEmpresa && String(d.empresaId) !== String(this.filtroEmpresa)) return false;
                             if (this.filtroStatus !== 'todos') {
                                 const s = String(d.status || '').toLowerCase();
+                                console.log('Filtering:', s, 'target:', this.filtroStatus);
                                 if (this.filtroStatus === 'aberto' && s !== 'aberto' && s !== 'abertos') return false;
-                                if (this.filtroStatus === 'aceito' && !s.includes('aceit')) return false;
+                                if (this.filtroStatus === 'aceito' && s !== 'aceito' && s !== 'aprovado' && s !== 'aprovada' && s !== 'concluido') return false;
                             }
                             return true;
                         });
@@ -92,7 +96,7 @@
                         this.empresas = emps || [];
                         this.desafios = (des || []).map(d => {
                             const empresa = (this.empresas || []).find(e => String(e.id) === String(d.empresaid || d.empresaID || d.empresaId));
-                            const status = String(d.statusdesafio || d.status || '').toLowerCase();
+                            const status = String(d.statusdesafio || '').toLowerCase();
                             const prazoFmt = window.formatarData(d.prazo || d.datalimite, 'Sem prazo');
                             return {
                                 id: d.id,

@@ -173,13 +173,14 @@
 
                                 <!-- Buttons -->
                                 <div class="button-group">
-                                    <button type="submit" class="btn btn-primary">
-                                        {{ msg.criaProblema.publicar }}
+                                    <button type="submit" class="btn btn-primary" :disabled="submitting">
+                                        {{ submitting ? 'Enviando...' : msg.criaProblema.publicar }}
                                     </button>
                                     <button
                                         type="button"
                                         class="btn btn-secondary"
                                         @click="cancelForm"
+                                        :disabled="submitting"
                                     >
                                         {{ msg.criaProblema.cancelar }}
                                     </button>
@@ -195,7 +196,7 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
-                if (!window.ensureRole('empresa')) return;
+                if (!window.ensureRole()) return;
 
                 if (window.messages) {
                     createApp({
@@ -203,11 +204,6 @@
                         data() {
                             return {
                                 msg: window.messages,
-                                menuItems: [
-                                    { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
-                                    { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
-                                    { label: window.messages.nav.propostas, href: 'propostas.html' },
-                                ],
                                 form: {
                                     title: "",
                                     description: "",
@@ -216,6 +212,7 @@
                                     priority: "",
                                     requirements: [""],
                                 },
+                                submitting: false,
                                 showAlert: false,
                                 alertMessage: "",
                                 alertType: "success",
@@ -229,6 +226,8 @@
                                 this.form.requirements.splice(index, 1);
                             },
                             async submitForm() {
+                                if (this.submitting) return;
+                                this.submitting = true;
                                 if (
                                     !this.form.title ||
                                     !this.form.description ||
@@ -240,6 +239,7 @@
                                         this.msg.criaProblema.erro;
                                     this.alertType = "error";
                                     this.showAlert = true;
+                                    this.submitting = false;
                                     return;
                                 }
                                 try {
@@ -273,12 +273,12 @@
                                         empresaid: empresaId,
                                         titulo: this.form.title,
                                         descricao: this.form.description,
-                                        categoria: this.form.category,
+                                        areaconhecimento: this.form.category,
                                         nivelprioridade: this.form.priority,
-                                        status: 'aberto',
-                                        datacriacao: new Date().toISOString(),
-                                        prazo: this.form.prazo
+                                        statusdesafio: 'aberto',
+                                        datalimite: this.form.prazo
                                     };
+                                    console.log('Criando desafio payload:', payload);
 
                                     const res = await window.ApiClient.post('/desafios', payload);
 
@@ -306,6 +306,8 @@
                                     this.alertMessage = (error && error.message) ? error.message : this.msg.criaProblema.erro;
                                     this.alertType = 'error';
                                     this.showAlert = true;
+                                } finally {
+                                    this.submitting = false;
                                 }
                             },
                             cancelForm() {

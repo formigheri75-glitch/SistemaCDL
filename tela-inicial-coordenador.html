@@ -43,8 +43,8 @@
         </div>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
-                // Verificar autenticação e autorização
-                if (!window.ensureRole('coordenador')) return;
+                
+                if (!window.ensureRole()) return;
 
                 mountVuePage({
                     components: { SideNav, ChallengeCard },
@@ -54,7 +54,7 @@
                             menuItems: [
                                 { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
                                 { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
-                                { label: 'Notificações', href: 'notificacoes.html' },
+
                             ],
                             challenges: [],
                             userInstituicaoId: null,
@@ -115,7 +115,7 @@
                             }));
                         } catch (e) {
                             console.error('Erro ao carregar desafios:', e);
-                            this.challenges = window.messages.telaInicialDesafios.challenges || [];
+                            this.challenges = [];
                         }
                     },
                     title: 'Início - Coordenador',

@@ -1,11 +1,13 @@
 // shared funcs
 
 
-(async function() {
+(function() {
     try {
-        const response = await fetch('access_control.json');
-        if (response.ok) {
-            window.ACCESS_CONTROL = await response.json();
+        const xhr = new XMLHttpRequest();
+        xhr.open('GET', 'access_control.json', false);
+        xhr.send();
+        if (xhr.status === 200) {
+            window.ACCESS_CONTROL = JSON.parse(xhr.responseText);
         }
     } catch (e) {
         console.warn('Could not load access_control.json:', e);
@@ -173,23 +175,11 @@ const NavBar = {
         
         getUserDisplayName() {
             if (!this.isLoggedIn) return 'Entrar';
-            
             const user = this.userData;
             const role = this.userRole;
-            
-            if (role === 'empresa') {
-                return user.nomefantasia || user.nomeFantasia || user.razaosocial || user.email || 'Empresa';
-            }
-            
-            if (role === 'instituicao') {
-                return user.nomeinstituicao || user.nomeInstituicao || user.instituicao || user.email || 'Instituicao';
-            }
-            
-            if (role === 'coordenador' || role === 'admin') {
-                return user.nome || user.name || user.email || 'Usuario';
-            }
-            
-            return user.email || 'Usuario';
+            if (role === 'empresa') return user.nomefantasia || user.razaosocial || user.email || 'Empresa';
+            if (role === 'instituicao') return user.nomeinstituicao || user.email || 'Instituicao';
+            return user.nome || user.email || 'Usuario';
         },
         
         getUserRoleLabel() {
@@ -284,7 +274,7 @@ const SideNav = {
         getUserRole() {
             try {
                 const u = this.getUser() || {};
-                const explicit = (u.type || u.tipo || u.tipousuario || u.userType || localStorage.getItem('userType'));
+                const explicit = (u.tipo || localStorage.getItem('userType'));
                 if (explicit) return AppRoutes.normalizeRole(explicit);
                 return AppRoutes.getCurrentRole();
             } catch (e) {
@@ -296,23 +286,11 @@ const SideNav = {
         },
         getUserDisplayName() {
             if (!this.isLoggedIn()) return 'Entrar';
-            
             const user = this.getUser();
             const role = this.getUserRole();
-            
-            if (role === 'empresa') {
-                return user.nomefantasia || user.nomeFantasia || user.razaosocial || user.email || 'Empresa';
-            }
-            
-            if (role === 'instituicao') {
-                return user.nomeinstituicao || user.nomeInstituicao || user.instituicao || user.email || 'Instituicao';
-            }
-            
-            if (role === 'coordenador' || role === 'admin') {
-                return user.nome || user.name || user.email || 'Usuario';
-            }
-            
-            return user.email || 'Usuario';
+            if (role === 'empresa') return user.nomefantasia;
+            if (role === 'instituicao') return user.nomeinstituicao;
+            return user.nome;
         },
         getUserRoleLabel() {
             const labels = {
@@ -335,7 +313,7 @@ const SideNav = {
                 coordenador: '🧭',
                 admin: '⚙️',
             };
-            return icons[this.getUserRole()] || '🎓';
+            return icons[this.getUserRole()];
         },
         getHomeUrl() {
             return AppRoutes.getHomeUrl(this.getUserRole());
@@ -440,7 +418,7 @@ function mountVuePage(options) {
     return app;
 }
 
-function mountStandardApp({ mountSelector = '#app', title, components = {}, data, methods = {}, mounted } = {}) {
+function mountStandardApp({ mountSelector = '#app', title, components = {}, data, methods = {}, computed = {}, mounted } = {}) {
     const { createApp } = Vue;
 
     const options = {
@@ -451,6 +429,7 @@ function mountStandardApp({ mountSelector = '#app', title, components = {}, data
             return base;
         },
         methods,
+        computed,
         mounted
     };
 
@@ -499,9 +478,9 @@ const ProposalCard = {
     computed: {
         statusClass() {
             const s = this.proposal && this.proposal.status ? String(this.proposal.status).toLowerCase() : '';
-            if (s === 'aprovada' || s === 'accepted' || s === 'aprovado') return 'approved';
-            if (s === 'rejeitada' || s === 'rejected' || s === 'rejeitado') return 'rejected';
-            return 'analysis';
+            if (s === 'aprovado') return 'aprovado';
+            if (s === 'rejeitado') return 'rejeitado';
+            return 'analise';
         }
     },
     methods: {
@@ -511,6 +490,14 @@ const ProposalCard = {
                 : 'tela-detalhes-proposta-coordenador.html';
             if (!this.proposal || !this.proposal.id) return base;
             return `${base}?id=${encodeURIComponent(this.proposal.id)}`;
+        },
+        formatProposalDate(raw) {
+            if (!raw) return '';
+            try {
+                const d = new Date(raw);
+                if (isNaN(d.getTime())) return raw;
+                return d.toLocaleDateString('pt-BR');
+            } catch(e) { return raw; }
         }
     },
     props: ['proposal', 'getStatusLabel'],
@@ -518,8 +505,9 @@ const ProposalCard = {
     <div class="proposal-card card">
         <div class="proposal-icon">📋</div>
         <div class="proposal-main">
-            <h3>{{ proposal.title || proposal.institution }}</h3>
-            <p>{{ proposal.description || proposal.challenge }}</p>
+            <h3>{{ proposal.institution || proposal.title }}</h3>
+            <p class="proposal-description">{{ proposal.description || proposal.challenge }}</p>
+            <p v-if="proposal.dataenvio" class="proposal-date"><small>Enviada em: {{ formatProposalDate(proposal.dataenvio) }}</small></p>
         </div>
         <div class="proposal-actions">
             <span class="status-pill" :class="statusClass">
@@ -709,17 +697,17 @@ const AppRoutes = {
     }
 };
 
-window.getIdFromQuery = function() {
+window.getIdFromQuery = function(param) {
     const params = new URLSearchParams(window.location.search);
-    return params.get('id');
+    return params.get(param || 'id');
 };
 
 window.getStatusLabel = function(status) {
     const value = String(status || '').toLowerCase();
     if (!value) return '';
-    if (value.includes('aceit') || value.includes('aprov')) return 'Aprovada';
-    if (value.includes('reje') || value.includes('reprov')) return 'Rejeitada';
-    if (value.includes('pend') || value.includes('anal')) return 'Pendente';
+    if (value === 'aceito') return 'Aprovada';
+    if (value === 'rejeitado') return 'Rejeitada';
+    if (value === 'pendente') return 'Pendente';
     return status;
 };
 
@@ -883,6 +871,9 @@ const StorageManager = {
             
             const copy = {};
             
+            if (user && user.id) {
+                copy.id = user.id;
+            }
             if (user && user.email) {
                 copy.email = user.email;
             }
@@ -902,6 +893,7 @@ const StorageManager = {
                 source = 'usuarios';
                 role = user?.tipo === 'admin' ? 'admin' : 'coordenador';
                 if (user && user.nome) copy.nome = user.nome;
+                if (user && user.instituicao) copy.instituicao = user.instituicao;
             } else if (user && user.tipo === 'instituicao') {
                 source = 'instituicoes';
                 role = 'instituicao';
@@ -959,12 +951,7 @@ const StorageManager = {
     getUserName() {
         const user = this.getUser();
         if (!user) return 'Entrar';
-        
-        if (user.nomefantasia) return user.nomefantasia;
-        if (user.nomeinstituicao) return user.nomeinstituicao;
-        if (user.nome) return user.nome;
-        
-        return user.email || 'Usuario';
+        return user.nomefantasia || user.nomeinstituicao || user.nome || user.email || 'Usuario';
     },
     
     logout() {
@@ -979,39 +966,12 @@ const StorageManager = {
 window.getUserSpecificName = function(user = null) {
     const userData = user || StorageManager.getUser();
     if (!userData) return 'Usuário';
-    
     const role = AppRoutes.getCurrentRole();
-    
-    switch(role) {
-        case 'empresa':
-            return userData.nomefantasia || 
-                   userData.nomeFantasia || 
-                   userData.fantasia || 
-                   userData.razaosocial || 
-                   userData.razaoSocial || 
-                   userData.nome || 
-                   userData.name || 
-                   'Empresa';
-            
-        case 'instituicao':
-            return userData.nomeinstituicao || 
-                   userData.nomeInstituicao || 
-                   userData.nome_instituicao || 
-                   userData.instituicaoNome || 
-                   userData.instituicao || 
-                   userData.nome || 
-                   userData.name || 
-                   'Instituição';
-            
-        case 'coordenador':
-            return userData.nome || userData.name || 'Coordenador';
-            
-        case 'admin':
-            return userData.nome || userData.name || userData.email || 'Administrador';
-            
-        default:
-            return userData.nome || userData.name || 'Usuário';
-    }
+    if (role === 'empresa') return userData.nomefantasia || userData.razaosocial || userData.nome || 'Empresa';
+    if (role === 'instituicao') return userData.nomeinstituicao || userData.email || 'Instituição';
+    if (role === 'coordenador') return userData.nome || 'Coordenador';
+    if (role === 'admin') return userData.nome || userData.email || 'Administrador';
+    return userData.nome || 'Usuário';
 };
 
 const ApiClient = {
@@ -1081,88 +1041,59 @@ const ApiClient = {
     }
 };
 
-function ensureRole(allowedRoles) {
-    if (!Array.isArray(allowedRoles)) {
-        allowedRoles = [allowedRoles];
-    }
-    
+window.ensureRole = function(allowedRoles) {
     const token = StorageManager.getToken();
     if (!token) {
         window.location.href = 'login.html';
         return false;
     }
-    
-    const user = StorageManager.getUser();
-    let currentRole = null;
-    
-    if (user && user.tipo) {
-        currentRole = user.tipo;
-    } else if (user && user.type) {
-        currentRole = user.type;
-    } else {
-        currentRole = localStorage.getItem('userType');
+
+    const currentPage = window.location.pathname.split('/').pop() || 'index.html';
+    const role = AppRoutes.getCurrentRole();
+    const ac = window.ACCESS_CONTROL;
+
+    if (ac && ac.pages) {
+        const allowed = ac.pages[currentPage];
+        if (allowed && !allowed.includes('public') && !allowed.includes(role)) {
+            if (!(ac.admin_has_access_to_all && role === 'admin')) {
+                window.location.href = AppRoutes.getHomeUrl(role);
+                return false;
+            }
+        }
     }
-    
-    currentRole = AppRoutes.normalizeRole(currentRole);
-    
-    console.log('ensureRole - Role atual:', currentRole);
-    console.log('ensureRole - Roles permitidas:', allowedRoles);
-    
-    // ADMIN TEM ACESSO A TUDO
-    if (currentRole === 'admin') {
-        console.log('ensureRole - Admin tem acesso permitido');
-        return true;
-    }
-    
-    if (allowedRoles.includes(currentRole)) {
-        console.log('ensureRole - Acesso permitido');
-        return true;
-    }
-    
-    const homeUrl = AppRoutes.getHomeUrl(currentRole);
-    console.log('ensureRole - Acesso negado, redirecionando para:', homeUrl);
-    window.location.href = homeUrl;
-    return false;
-}
+
+    return true;
+};
 
 function checkPageAccess() {
-    return window.validatePageAccess ? window.validatePageAccess() : true;
+    return window.validatePageAccess();
 }
 
 window.resolveUserDisplay = function(user) {
     try {
         const u = user || StorageManager.getUser() || {};
-        
         let source = u.sourceTable || localStorage.getItem('userSource');
         let name = '';
         let role = '';
         let roleLabel = '';
-        
         if (source === 'empresas') {
-            name = u.nomefantasia || u.nomeFantasia || u.razaosocial || u.email || 'Empresa';
+            name = u.nomefantasia || u.razaosocial || u.email || 'Empresa';
             role = 'empresa';
-            roleLabel = 'Empresa';
+            roleLabel = 'empresa';
         } else if (source === 'instituicoes') {
-            name = u.nomeinstituicao || u.nomeInstituicao || u.instituicao || u.email || 'Instituicao';
+            name = u.nomeinstituicao || u.email || 'Instituicao';
             role = 'instituicao';
-            roleLabel = 'Instituicao';
+            roleLabel = 'instituicao';
         } else if (source === 'usuarios') {
-            name = u.nome || u.name || u.email || 'Usuario';
-            if (u.tipo === 'admin' || u.type === 'admin') {
-                role = 'admin';
-                roleLabel = 'Administrador';
-            } else {
-                role = 'coordenador';
-                roleLabel = 'Coordenador';
-            }
+            name = u.nome || u.email || 'Usuario';
+            role = (u.tipo === 'admin') ? 'admin' : 'coordenador';
+            roleLabel = (u.tipo === 'admin') ? 'Administrador' : 'Coordenador';
         } else {
             name = u.email || 'Usuario';
             role = 'instituicao';
-            roleLabel = 'Instituicao';
+            roleLabel = 'instituicao';
         }
-        
         return { name, role, roleLabel, source };
-        
     } catch (e) {
         console.error('Erro no resolveUserDisplay:', e);
         return { name: 'Usuario', role: 'instituicao', roleLabel: 'Instituicao', source: 'usuarios' };
@@ -1281,11 +1212,31 @@ window.formatarData = function(raw, fallback) {
     } catch(e) { return raw; }
 };
 
+window.iconCategoria = function(categoria) {
+    const cat = (categoria || '').toLowerCase();
+    if (cat.includes('backend')) return '⚙️';
+    if (cat.includes('frontend')) return '🎨';
+    if (cat.includes('mobile')) return '📱';
+    if (cat.includes('devops')) return '🛠️';
+    if (cat.includes('data')) return '📊';
+    if (cat.includes('design')) return '🎯';
+    return '🏆';
+};
+
 window.classStatusProposta = function(status) {
     const s = String(status || '').toLowerCase();
-    if (s.includes('aceit') || s.includes('aprov')) return 'approved';
-    if (s.includes('reje') || s.includes('reprov')) return 'rejected';
-    return 'analysis';
+    if (s === 'aceito') return 'aprovado';
+    if (s === 'rejeitado') return 'rejeitado';
+    return 'analise';
+};
+
+window.getStatusLabel = function(status) {
+    const value = String(status || '').toLowerCase();
+    if (!value) return '';
+    if (value === 'aceito') return 'Aprovada';
+    if (value === 'rejeitado') return 'Rejeitada';
+    if (value === 'pendente') return 'Pendente';
+    return status;
 };
 
 window.getLoggedEmpresaId = async function() {
@@ -1325,26 +1276,23 @@ window.getUserRole = function() {
 window.hasAccess = function(pageName, role) {
             try {
                 const accessControl = window.ACCESS_CONTROL;
-                if (!accessControl || !accessControl.pages) return false;
+                if (!accessControl || !accessControl.pages) return true;
                 
                 const pageRoles = accessControl.pages[pageName];
-                if (!pageRoles) return false; 
+                if (!pageRoles) return true;
                 
-                // admin tem acesso a tudo
                 if (accessControl.admin_has_access_to_all && role === 'admin') {
                     return true;
                 }
                 
-                // public pages qualquer um acessa
                 if (pageRoles.includes('public')) {
                     return true;
                 }
                 
-                // verifica se o role tem acesso
                 return pageRoles.includes(role);
             } catch (e) {
                 console.warn('Error checking access:', e);
-                return false;
+                return true;
             }
         };
 
@@ -1353,21 +1301,18 @@ window.hasAccess = function(pageName, role) {
             const currentPage = window.location.pathname.split('/').pop() || 'index.html';
             const role = AppRoutes.getCurrentRole();
             
-            // páginas públicas não precisam de token
             const accessControl = window.ACCESS_CONTROL;
             const pageRoles = accessControl && accessControl.pages ? accessControl.pages[currentPage] : null;
             
             if (pageRoles && pageRoles.includes('public')) {
-                return true; // acesso permitido, é página pública
+                return true; 
             }
             
-            // qualquer outra página precisa de autenticação
             if (!token) {
                 window.location.href = 'login.html';
                 return false;
             }
             
-            // verifica se tem acesso à página
             if (!window.hasAccess(currentPage, role)) {
                 window.location.href = AppRoutes.getHomeUrl(role);
                 return false;
@@ -1429,7 +1374,6 @@ if (typeof window !== 'undefined') {
 window.getAdminMenuItems = function(){
     return [
         { label: 'Dashboard geral', href: 'tela-admin.html' },
-        { label: 'Notificações', href: 'notificacoes.html' },
         { label: 'Aprovações', href: 'aprovacoes.html' },
         { label: 'Empresas', children: [
             { label: 'Problemas', href: 'empresa-problemas.html' },
@@ -1483,8 +1427,6 @@ window.getMenuForRole = function(role){
             { label: 'Novo Desafio', href: 'criaProblema.html' },
             { label: 'Meus Desafios', href: 'empresaDashboard.html' },
             { label: 'Propostas', href: 'propostas.html' },
-            { label: 'Instituições', href: 'selecaoInstituicoes.html' },
-            { label: 'Notificações', href: 'notificacoes.html' },
             { label: 'Configurações', children: [ { label: 'Alterar senha', href: 'alterar-senha.html' } ] }
         ]);
     }
@@ -1494,7 +1436,6 @@ window.getMenuForRole = function(role){
             { label: 'Início', href: 'tela-inicial-instituicao.html' },
             { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
             { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
-            { label: 'Notificações', href: 'notificacoes.html' },
             { label: 'Configurações', children: [ { label: 'Alterar senha', href: 'alterar-senha.html' } ] }
         ]);
     }
@@ -1504,7 +1445,6 @@ window.getMenuForRole = function(role){
             { label: 'Início', href: 'tela-inicial-coordenador.html' },
             { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
             { label: 'Propostas', href: 'tela-propostas-coordenador.html' },
-            { label: 'Notificações', href: 'notificacoes.html' },
             { label: 'Configurações', children: [ { label: 'Alterar senha', href: 'alterar-senha.html' } ] }
         ]);
     }

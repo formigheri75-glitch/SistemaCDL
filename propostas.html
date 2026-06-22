@@ -28,16 +28,29 @@
 
                         <div v-if="desafioTitle" class="filter-indicator">{{ msg.propostas.filtro.label }}: {{ desafioTitle }}</div>
 
-                        <filter-section
-                            :label="msg.propostas.filtro.label"
-                            :options="[
-                                { value: 'all', label: msg.propostas.filtro.todas, count: proposals.length },
-                                { value: 'pending', label: msg.propostas.filtro.pendentes, count: pendingCount },
-                                { value: 'accepted', label: msg.propostas.filtro.aceitas, count: acceptedCount },
-                            ]"
-                            :active-value="selectedFilter"
-                            @update:activeValue="selectedFilter = $event"
-                        ></filter-section>
+                        <div class="filter-section">
+                            <span class="filter-label">{{ msg.propostas.filtro.label }}</span>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'all' }"
+                                @click="selectedFilter = 'all'"
+                            >{{ msg.propostas.filtro.todas }} ({{ proposals.length }})</button>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'pendente' }"
+                                @click="selectedFilter = 'pendente'"
+                            >{{ msg.propostas.filtro.pendentes }} ({{ pendingCount }})</button>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'aprovado' }"
+                                @click="selectedFilter = 'aprovado'"
+                            >{{ msg.propostas.filtro.aceitas }} ({{ acceptedCount }})</button>
+                            <button
+                                class="filter-button"
+                                :class="{ active: selectedFilter === 'rejeitado' }"
+                                @click="selectedFilter = 'rejeitado'"
+                            >{{ msg.propostas.status.rejected }} ({{ rejectedCount }})</button>
+                        </div>
 
                         <div
                             v-if="filteredProposals.length > 0"
@@ -63,7 +76,7 @@
             const { createApp } = Vue;
 
             document.addEventListener("DOMContentLoaded", function () {
-                if (!window.ensureRole('empresa')) return;
+                if (!window.ensureRole()) return;
 
                 if (window.messages) {
                     createApp({
@@ -71,11 +84,6 @@
                         data() {
                             return {
                                 msg: window.messages,
-                                    menuItems: [
-                                        { label: window.messages.nav.dashboard, href: 'empresaDashboard.html' },
-                                        { label: window.messages.nav.novoProblema, href: 'criaProblema.html' },
-                                        { label: window.messages.nav.propostas, href: 'propostas.html' },
-                                    ],
                                 selectedFilter: "all",
                                 proposals: [],
                                 desafioQueryId: null,
@@ -103,9 +111,10 @@
                                         desafioId: p.desafioid || p.desafioID || p.desafioId || null,
                                         institution: p.instituicaoNome || p.instituicao || p.nomeInstituicao || 'Instituição',
                                         description: p.descricao || '',
-                                        statusRaw: p.statusproposta || p.status || 'pending',
+                                        statusRaw: p.statusproposta || 'pendente',
                                         rating: p.rating || 0,
-                                        detailsLink: 'detalhesPropossta.html'
+                                        detailsLink: 'detalhesPropossta.html',
+                                        dataenvio: p.dataenvio || p.datacriacao || null
                                     }));
 
                                     const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));
@@ -124,16 +133,25 @@
                                         } catch (e) { /* ignora */ }
                                     }
 
-                                    let allMapped = raw.map(p => ({
-                                        id: p.id,
-                                        institution: p.institution,
-                                        description: p.description,
-                                        status: String(p.statusRaw).toLowerCase().includes('aceit') ? 'accepted' : 'pending',
-                                        rating: p.rating,
-                                        detailsLink: p.detailsLink,
-                                        challengeTitle: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : null,
-                                        desafioId: p.desafioId || null
-                                    }));
+                                    let allMapped = raw.map(p => {
+                                        const s = String(p.statusRaw).toLowerCase();
+                                        let mappedStatus;
+                                        if (s === 'aceito') mappedStatus = 'aprovado';
+                                        else if (s === 'rejeitado') mappedStatus = 'rejeitado';
+                                        else mappedStatus = 'pendente';
+
+                                        return {
+                                            id: p.id,
+                                            institution: p.institution,
+                                            description: p.description,
+                                            status: mappedStatus,
+                                            rating: p.rating,
+                                            detailsLink: p.detailsLink,
+                                            challengeTitle: (p.desafioId && desafiosMap[p.desafioId]) ? (desafiosMap[p.desafioId].titulo || desafiosMap[p.desafioId].desafioTitulo) : null,
+                                            desafioId: p.desafioId || null,
+                                            dataenvio: p.dataenvio || null
+                                        };
+                                    });
 
                                     // Filtrar propostas cujo desafio tem empresaid = empresa logada
                                     if (minhaEmpresaId) {
@@ -171,22 +189,27 @@
                             },
                             pendingCount() {
                                 return this.proposals.filter(
-                                    (p) => p.status === "pending",
+                                    (p) => p.status === "pendente",
                                 ).length;
                             },
                             acceptedCount() {
                                 return this.proposals.filter(
-                                    (p) => p.status === "accepted",
+                                    (p) => p.status === "aprovado",
+                                ).length;
+                            },
+                            rejectedCount() {
+                                return this.proposals.filter(
+                                    (p) => p.status === "rejeitado",
                                 ).length;
                             },
                         },
                         methods: {
                             getStatusLabel(status) {
                                 const labels = {
-                                    pending: this.msg.propostas.status.pending,
-                                    accepted:
+                                    pendente: this.msg.propostas.status.pending,
+                                    aprovado:
                                         this.msg.propostas.status.accepted,
-                                    rejected:
+                                    rejeitado:
                                         this.msg.propostas.status.rejected,
                                 };
                                 return labels[status] || status;

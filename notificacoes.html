@@ -185,18 +185,7 @@
                             }));
                         } catch (e) {
                             console.error(window.messages.notificacoes.loadError + ':', e);
-                            this.allNotifications = [
-                                ...(window.messages.notificacoesDesafios.notifications || []).map((notification, index) => ({
-                                    id: `desafio-${index}`,
-                                    ...notification,
-                                    isRead: false,
-                                })),
-                                ...(window.messages.notificacoesPropostas.notifications || []).map((notification, index) => ({
-                                    id: `proposta-${index}`,
-                                    ...notification,
-                                    isRead: false,
-                                })),
-                            ];
+                            this.allNotifications = [];
                         }
                     }
                 });

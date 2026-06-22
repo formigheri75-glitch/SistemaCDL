@@ -33,13 +33,13 @@
                         <div class="proposal-main">
                             <h3>{{ p.titulo }}</h3>
                             <p>{{ p.descricao }}</p>
-                            <div class="challenge-meta">
+                            <div class="challenge-meta" style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.5rem;">
                                 <span><strong>Instituição:</strong> {{ p.instituicaoNome || '-' }}</span>
                                 <span><strong>Desafio:</strong> {{ p.desafioTitulo || '-' }}</span>
                             </div>
                         </div>
                         <div class="proposal-actions">
-                            <span class="status-pill" :class="p.status === 'aprovada' || p.status === 'accepted' ? 'approved' : (p.status === 'rejeitada' ? 'rejected' : 'analysis')">
+                            <span class="status-pill" :class="p.status === 'aprovada' || p.status === 'aprovado' ? 'aprovado' : (p.status === 'rejeitada' || p.status === 'rejeitado' ? 'rejeitado' : 'analise')">
                                 {{ p.statusLabel }}
                             </span>
                             <a class="mini-btn" :href="'detalhesPropossta.html?id=' + p.id">Ver</a>
@@ -53,7 +53,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (!window.ensureRole('admin')) return;
+            if (!window.ensureRole()) return;
 
             mountVuePage({
                 components: { SideNav },
@@ -94,7 +94,7 @@
                                 id: p.id,
                                 titulo: p.titulo || 'Proposta',
                                 descricao: p.descricao || '',
-                                statusRaw: p.statusproposta || p.status || '',
+                                statusRaw: p.statusproposta || '',
                                 statusLabel: window.getStatusLabel(p.statusproposta || p.status) || 'Pendente',
                                 instituicaoNome: inst ? (inst.nomeinstituicao || inst.nome) : 'N/A',
                                 desafioTitulo: desafio ? desafio.titulo : 'N/A',

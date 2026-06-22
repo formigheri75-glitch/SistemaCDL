@@ -26,7 +26,7 @@
                         <div class="proposal-main">
                             <h3>{{ p.titulo }}</h3>
                             <p>{{ p.descricao }}</p>
-                            <div class="challenge-meta">
+                            <div class="challenge-meta" style="display:flex; gap:1.5rem; flex-wrap:wrap; margin-top:0.5rem;">
                                 <span><strong>Empresa:</strong> {{ p.empresaNome || '-' }}</span>
                                 <span><strong>Instituição:</strong> {{ p.instituicaoNome || '-' }}</span>
                                 <span><strong>Desafio:</strong> {{ p.desafioTitulo || '-' }}</span>
@@ -45,7 +45,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            if (!window.ensureRole('admin')) return;
+            if (!window.ensureRole()) return;
 
             mountVuePage({
                 components: { SideNav },
@@ -72,8 +72,8 @@
                         this.proposals.forEach(p => {
                             const s = String(p.statusRaw || '').toLowerCase();
                             const lbl = window.getStatusLabel(s).toLowerCase();
-                            if (lbl === 'aprovada') r.aprovada++;
-                            else if (lbl === 'rejeitada') r.rejeitada++;
+                            if (lbl === 'aprovada' || lbl === 'aprovado') r.aprovada++;
+                            else if (lbl === 'rejeitada' || lbl === 'rejeitado') r.rejeitada++;
                             else r.pendente++;
                         });
                         return r;
@@ -108,7 +108,7 @@
                                 id: p.id,
                                 titulo: p.titulo || 'Proposta',
                                 descricao: p.descricao || '',
-                                statusRaw: p.statusproposta || p.status || '',
+                                statusRaw: p.statusproposta || '',
                                 statusLabel: window.getStatusLabel(p.statusproposta || p.status) || 'Pendente',
                                 empresaNome: empresa ? (empresa.nomefantasia || empresa.razaosocial) : 'N/A',
                                 instituicaoNome: inst ? (inst.nomeinstituicao || inst.nome) : 'N/A',

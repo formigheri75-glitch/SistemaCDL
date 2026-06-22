@@ -47,7 +47,7 @@
             </div>
         </div>
         <script>
-            if (!window.ensureRole('coordenador')) {
+            if (!window.ensureRole()) {
                 throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
             }
 
@@ -60,7 +60,6 @@
                         menuItems: [
                             { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
                             { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
-                            { label: 'Notificações', href: 'notificacoes.html' },
                         ],
                         proposal: null,
                         loading: false,
