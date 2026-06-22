@@ -1,345 +1,341 @@
-
 <html lang="pt-BR">
-    <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link
-            href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap"
-            rel="stylesheet"
-        />
-        <link href="theme.css" rel="stylesheet" />
-        <title>Detalhes da Proposta</title>
-        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-        <script src="config.js"></script>
-        <script src="commons.js"></script>
-        <script src="messages.js"></script>
-    </head>
-    <body class="tela-layout">
-        <div id="app" class="screen">
-            <div class="shell">
-                <side-nav
-                    :brand="msg.nav.brand"
-                    :items="menuItems"
-                    active-href="propostas.html"
-                ></side-nav>
-                <div class="content">
-                    <div class="container">
-                        <div class="header" style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
-                            <div>
-                                <h1>{{ proposta.titulo || 'Carregando...' }}</h1>
-                                <div class="institution-name" style="margin-top: 0.5rem;">
-                                    <strong>Instituição:</strong> {{ instituicaoNome || 'Carregando...' }}
-                                </div>
-                                <div v-if="desafioTitle" class="challenge-ref" style="margin-top: 0.25rem;">
-                                    <strong>Desafio:</strong> <a :href="desafioLink">{{ desafioTitle }}</a>
-                                </div>
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link href="https://fonts.googleapis.com/css?family=Inter:400,500,600,700&display=swap" rel="stylesheet" />
+    <link href="theme.css" rel="stylesheet" />
+    <title>Detalhes da Proposta</title>
+    <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="config.js"></script>
+    <script src="commons.js"></script>
+    <script src="messages.js"></script>
+</head>
+
+<body class="tela-layout">
+    <div id="app" class="screen">
+        <div class="shell">
+            <side-nav :brand="msg.nav.brand" :items="menuItems" active-href="propostas.html"></side-nav>
+            <div class="content" style="overflow: auto;">
+                <div class="container">
+                    <div class="header"
+                        style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+                        <div>
+                            <h1>{{ proposta.titulo || 'Carregando...' }}</h1>
+                            <div class="institution-name" style="margin-top: 0.5rem;">
+                                <strong>Instituição:</strong> {{ instituicaoNome || 'Carregando...' }}
                             </div>
-                            <span class="status-badge" :class="statusClass">
-                                {{ statusLabel(proposta.statusproposta) || 'Pendente' }}
-                            </span>
+                            <div v-if="desafioTitle" class="challenge-ref" style="margin-top: 0.25rem;">
+                                <strong>Desafio:</strong> <a :href="desafioLink">{{ desafioTitle }}</a>
+                            </div>
                         </div>
+                        <span class="status-badge" :class="statusClass">
+                            {{ statusLabel(proposta.statusproposta) || 'Pendente' }}
+                        </span>
+                    </div>
 
-                        <div v-if="successMsg" class="form-success" style="margin-bottom: 1rem;">{{ successMsg }}</div>
-                        <div v-if="errorMsg" class="form-error" style="margin-bottom: 1rem;">{{ errorMsg }}</div>
-                        <div v-if="desafioBloqueadoMsg" class="form-error" style="margin-bottom: 1rem;">{{ desafioBloqueadoMsg }}</div>
-                        <div class="content-wrapper">
-                            <div class="main-content">
-                                
-                                <div class="detail-card">
-                                    <h2>Descrição</h2>
-                                    <p>{{ proposta.descricao || 'Nenhuma descrição informada.' }}</p>
-                                </div>
+                    <div v-if="successMsg" class="form-success" style="margin-bottom: 1rem;">{{ successMsg }}</div>
+                    <div v-if="errorMsg" class="form-error" style="margin-bottom: 1rem;">{{ errorMsg }}</div>
+                    <div v-if="desafioBloqueadoMsg" class="form-error" style="margin-bottom: 1rem;">{{
+                        desafioBloqueadoMsg }}</div>
+                    <div class="content-wrapper">
+                        <div class="main-content">
 
-                                
-                                <div class="detail-card" v-if="arquivoInfo">
-                                    <h2>Arquivo Anexado</h2>
-                                    <p>
-                                        <a :href="arquivoInfo.url" target="_blank" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
-                                            Baixar {{ arquivoInfo.nome }}
-                                        </a>
-                                        <span style="margin-left: 0.75rem; color: var(--cor-texto-apagado); font-size: 0.85rem;">{{ arquivoInfo.nome }}</span>
-                                    </p>
-                                </div>
+                            <div class="detail-card">
+                                <h2>Descrição</h2>
+                                <p>{{ proposta.descricao || 'Nenhuma descrição informada.' }}</p>
                             </div>
 
-                            
-                            <aside class="info-panel">
-                                <h3>Informações da Proposta</h3>
 
-                                <div class="info-item">
-                                    <div class="info-label">Instituicao</div>
-                                    <div class="info-value">{{ instituicaoNome}}</div>
-                                </div>
-
-                                <div class="info-item">
-                                    <div class="info-label">Desafio</div>
-                                    <div class="info-value">{{ desafioTitle}}</div>
-                                </div>
-
-                                <div class="info-item">
-                                    <div class="info-label">Status</div>
-                                    <div class="info-value" :style="{ color: statusColor }">{{ statusLabel(proposta.statusproposta) || 'Pendente' }}</div>
-                                </div>
-
-                                <div class="info-item">
-                                    <div class="info-label">Data de Envio</div>
-                                    <div class="info-value">{{ dataEnvioFormatada }}</div>
-                                </div>
-
-                                <div class="info-item" v-if="arquivoInfo">
-                                    <div class="info-label">Arquivo</div>
-                                    <div class="info-value">
-                                        <a :href="arquivoInfo.url" target="_blank" style="color: var(--cor-primaria);">
-                                            {{ arquivoInfo.nome }}
-                                        </a>
-                                    </div>
-                                </div>
-
-                                
-                                <div class="button-group" style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
-                                    <button class="btn btn-secondary" @click="goBack" style="flex: 1;">Voltar</button>
-                                    <button
-                                        v-if="!isProposalAccepted && !desafioBloqueadoMsg"
-                                        class="btn btn-primary"
-                                        @click="acceptProposal"
-                                        :disabled="accepting"
-                                        style="flex: 1;"
-                                    >
-                                        {{ accepting ? 'Aceitando...' : 'Aceitar Solucao' }}
-                                    </button>
-                                </div>
-                            </aside>
+                            <div class="detail-card" v-if="arquivoInfo">
+                                <h2>Arquivo Anexado</h2>
+                                <p>
+                                    <a :href="arquivoInfo.url" target="_blank" class="btn btn-secondary"
+                                        style="display: inline-flex; align-items: center; gap: 0.5rem;">
+                                        Baixar {{ arquivoInfo.nome }}
+                                    </a>
+                                    <span
+                                        style="margin-left: 0.75rem; color: var(--cor-texto-apagado); font-size: 0.85rem;">{{
+                                        arquivoInfo.nome }}</span>
+                                </p>
+                            </div>
                         </div>
+
+
+                        <aside class="info-panel">
+                            <h3>Informações da Proposta</h3>
+
+                            <div class="info-item">
+                                <div class="info-label">Instituicao</div>
+                                <div class="info-value">{{ instituicaoNome}}</div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Desafio</div>
+                                <div class="info-value">{{ desafioTitle}}</div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Status</div>
+                                <div class="info-value" :style="{ color: statusColor }">{{
+                                    statusLabel(proposta.statusproposta) || 'Pendente' }}</div>
+                            </div>
+
+                            <div class="info-item">
+                                <div class="info-label">Data de Envio</div>
+                                <div class="info-value">{{ dataEnvioFormatada }}</div>
+                            </div>
+
+                            <div class="info-item" v-if="arquivoInfo">
+                                <div class="info-label">Arquivo</div>
+                                <div class="info-value">
+                                    <a :href="arquivoInfo.url" target="_blank" style="color: var(--cor-primaria);">
+                                        {{ arquivoInfo.nome }}
+                                    </a>
+                                </div>
+                            </div>
+
+
+                            <div class="button-group" style="margin-top: 1.5rem; display: flex; gap: 0.75rem;">
+                                <button class="btn btn-secondary" @click="goBack" style="flex: 1;">Voltar</button>
+                                <button v-if="!isProposalAccepted && !desafioBloqueadoMsg" class="btn btn-primary"
+                                    @click="acceptProposal" :disabled="accepting" style="flex: 1;">
+                                    {{ accepting ? 'Aceitando...' : 'Aceitar Solucao' }}
+                                </button>
+                            </div>
+                        </aside>
                     </div>
                 </div>
             </div>
         </div>
+    </div>
 
-        <script>
-            if (!window.ensureRole()) {
-                throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
-            }
+    <script>
+        if (!window.ensureRole()) {
+            throw new Error('Acesso negado. Você não tem permissão para acessar esta página.');
+        }
 
-            if (window.messages) {
-                mountStandardApp({
-                    components: { SideNav },
-                    data: () => ({
-                        msg: window.messages,
-                        menuItems: (function() {
+        if (window.messages) {
+            mountStandardApp({
+                components: { SideNav },
+                data: () => ({
+                    msg: window.messages,
+                    menuItems: (function () {
+                        try {
+                            const role = window.AppRoutes ? window.AppRoutes.getCurrentRole() : 'empresa';
+                            if (role === 'admin') return window.getAdminMenuItems();
+                            if (role === 'empresa') return [
+                                { label: 'Dashboard', href: 'empresaDashboard.html' },
+                                { label: 'Novo Desafio', href: 'criaProblema.html' },
+                                { label: 'Propostas', href: 'propostas.html' },
+                            ];
+                            if (role === 'coordenador') return [
+                                { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
+                                { label: 'Propostas', href: 'tela-propostas-coordenador.html' },
+                            ];
+                            if (role === 'instituicao') return [
+                                { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
+                                { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
+                            ];
+                            return [];
+                        } catch (e) { return []; }
+                    })(),
+                    proposta: {},
+                    desafioTitle: null,
+                    desafioId: null,
+                    desafioLink: null,
+                    userRole: null,
+                    instituicaoNome: '',
+                    instituicaoObj: null,
+                    successMsg: '',
+                    errorMsg: '',
+                    desafioBloqueadoMsg: '',
+                    accepting: false,
+                }),
+                methods: {
+                    statusLabel: window.getStatusLabel,
+                    getIdFromQuery: window.getIdFromQuery,
+                    async loadProposta() {
+                        const id = window.getIdFromQuery();
+                        if (!id) {
+                            this.errorMsg = 'ID da proposta não informado.';
+                            return;
+                        }
+                        this.proposta = await window.loadProposta(id);
+                        this.userRole = window.getUserRole();
+
+
+                        const instId = this.proposta && this.proposta.instituicaoid;
+                        if (instId) {
                             try {
-                                const role = window.AppRoutes ? window.AppRoutes.getCurrentRole() : 'empresa';
-                                if (role === 'admin') return window.getAdminMenuItems();
-                                if (role === 'empresa') return [
-                                    { label: 'Dashboard', href: 'empresaDashboard.html' },
-                                    { label: 'Novo Desafio', href: 'criaProblema.html' },
-                                    { label: 'Propostas', href: 'propostas.html' },
-                                ];
-                                if (role === 'coordenador') return [
-                                    { label: 'Desafios', href: 'tela-inicial-coordenador.html' },
-                                    { label: 'Propostas', href: 'tela-propostas-coordenador.html' },
-                                ];
-                                if (role === 'instituicao') return [
-                                    { label: 'Desafios', href: 'tela-inicial-instituicao.html' },
-                                    { label: 'Propostas', href: 'tela-propostas-instituicao.html' },
-                                ];
-                                return [];
-                            } catch(e) { return []; }
-                        })(),
-                        proposta: {},
-                        desafioTitle: null,
-                        desafioId: null,
-                        desafioLink: null,
-                        userRole: null,
-                        instituicaoNome: '',
-                        instituicaoObj: null,
-                        successMsg: '',
-                        errorMsg: '',
-                        desafioBloqueadoMsg: '',
-                        accepting: false,
-                    }),
-                    methods: {
-                        statusLabel: window.getStatusLabel,
-                        getIdFromQuery: window.getIdFromQuery,
-                        async loadProposta() {
-                            const id = window.getIdFromQuery();
-                            if (!id) {
-                                this.errorMsg = 'ID da proposta não informado.';
-                                return;
-                            }
-                            this.proposta = await window.loadProposta(id);
-                            this.userRole = window.getUserRole();
-
-                            
-                            const instId = this.proposta && this.proposta.instituicaoid;
-                            if (instId) {
-                                try {
-                                    const insts = await window.ApiClient.get('/instituicoes');
-                                    const found = (insts || []).find(i => String(i.id) === String(instId));
-                                    if (found) {
-                                        this.instituicaoObj = found;
-                                        this.instituicaoNome = found.nomeinstituicao || 'Instituição';
-                                    }
-                                } catch (e) {
-                                    this.instituicaoNome = 'Instituição';
-                                }
-                            } else {
-                                this.instituicaoNome = 'Instituição não informada';
-                            }
-
-                            
-                            try {
-                                const desafioId = this.proposta && this.proposta.desafioid;
-                                if (desafioId) {
-                                    this.desafioId = desafioId;
-                                    const d = await window.loadDesafio(desafioId);
-                                    if (d) {
-                                        this.desafioTitle = d.titulo;
-                                        this.desafioLink = `detalhesProblema.html?id=${encodeURIComponent(desafioId)}`;
-
-                                        
-                                        const statusDesc = String(d.statusdesafio || '').toLowerCase();
-                                        if (statusDesc.includes('aceito') || statusDesc.includes('concluido')) {
-                                            this.desafioBloqueadoMsg = 'Este desafio já possui uma solução aceita. Novas propostas estão bloqueadas.';
-                                        }
-                                    }
+                                const insts = await window.ApiClient.get('/instituicoes');
+                                const found = (insts || []).find(i => String(i.id) === String(instId));
+                                if (found) {
+                                    this.instituicaoObj = found;
+                                    this.instituicaoNome = found.nomeinstituicao || 'Instituição';
                                 }
                             } catch (e) {
-                                
+                                this.instituicaoNome = 'Instituição';
                             }
-                        },
-                        async acceptProposal() {
-                            if (this.accepting) return;
-                            this.accepting = true;
-                            this.errorMsg = '';
-                            this.successMsg = '';
+                        } else {
+                            this.instituicaoNome = 'Instituição não informada';
+                        }
 
-                            try {
-                                const propId = this.getIdFromQuery();
 
-                                
-                                await window.ApiClient.put('/propostas/' + propId, {
-                                    statusproposta: 'aceito'
-                                });
+                        try {
+                            const desafioId = this.proposta && this.proposta.desafioid;
+                            if (desafioId) {
+                                this.desafioId = desafioId;
+                                const d = await window.loadDesafio(desafioId);
+                                if (d) {
+                                    this.desafioTitle = d.titulo;
+                                    this.desafioLink = `detalhesProblema.html?id=${encodeURIComponent(desafioId)}`;
 
-                                if (this.desafioId) {
-                                    await window.ApiClient.put('/desafios/' + this.desafioId, {
-                                        statusdesafio: 'aceito'
-                                    });
-                                }
 
-                                
-                                const todas = await window.ApiClient.get('/propostas').catch(() => []);
-                                const demaisPropostas = (todas || []).filter(p => {
-                                    const pid = String(p.desafioid);
-                                    return pid === String(this.desafioId) && String(p.id) !== String(propId);
-                                });
-
-                                const notificados = [];
-                                for (const p of demaisPropostas) {
-                                    try {
-                                        await window.ApiClient.put('/propostas/' + p.id, {
-                                            statusproposta: 'rejeitado'
-                                        });
-                                        const instId = p.instituicaoid;
-                                        if (instId) notificados.push(instId);
-                                    } catch (e) {
-                                        console.warn('Erro ao rejeitar proposta ' + p.id + ':', e);
+                                    const statusDesc = String(d.statusdesafio || '').toLowerCase();
+                                    if (statusDesc.includes('aceito') || statusDesc.includes('concluido')) {
+                                        this.desafioBloqueadoMsg = 'Este desafio já possui uma solução aceita. Novas propostas estão bloqueadas.';
                                     }
                                 }
-
-                                
-                                if (notificados.length) {
-                                    try {
-                                        await window.ApiClient.post('/notificacoes', {
-                                            desafioid: this.desafioId,
-                                            descricao: 'Uma solução foi aceita para o desafio "' + (this.desafioTitle || '') + '". Sua proposta foi rejeitada.',
-                                            lista: notificados
-                                        });
-                                    } catch (e) {
-                                        console.warn('Erro ao notificar instituições rejeitadas:', e);
-                                    }
-                                }
-
-                                
-                                if (this.instituicaoObj && this.instituicaoObj.id) {
-                                    try {
-                                        await window.ApiClient.post('/notificacoes', {
-                                            desafioid: this.desafioId,
-                                            descricao: 'Sua proposta "' + (this.proposta.titulo || '') + '" foi aceita!',
-                                            lista: [this.instituicaoObj.id]
-                                        });
-                                    } catch (e) {
-                                        console.warn('Erro ao enviar notificação de aceite:', e);
-                                    }
-                                }
-
-                                this.successMsg = 'Solução aceita com sucesso! As demais propostas foram rejeitadas.';
-                                this.proposta.statusproposta = 'aceito';
-
-                                
-                                setTimeout(() => {
-                                    if (this.desafioId) {
-                                        window.location.href = 'propostas.html?desafio=' + encodeURIComponent(this.desafioId);
-                                    } else {
-                                        window.location.href = 'propostas.html';
-                                    }
-                                }, 2000);
-
-                            } catch (err) {
-                                this.errorMsg = err && err.message ? err.message : 'Erro ao aceitar a solução. Tente novamente.';
-                            } finally {
-                                this.accepting = false;
                             }
-                        },
-                        goBack() {
-                            if (this.desafioId) window.location.href = 'propostas.html?desafio=' + encodeURIComponent(this.desafioId);
-                            else window.location.href = 'propostas.html';
-                        },
-                    },
-                    computed: {
-                        isEmpresa() {
-                            return this.userRole === 'empresa';
-                        },
-                        isAdmin() {
-                            return this.userRole === 'admin';
-                        },
-                        isCoordenador() {
-                            return this.userRole === 'coordenador';
-                        },
-                        isProposalAccepted() {
-                            const st = String(this.proposta.statusproposta || '').toLowerCase();
-                            return st === 'aceito';
-                        },
-                        isDesafioResolvido() {
-                            return !!(this.desafioBloqueadoMsg);
-                        },
-                        statusClass() {
-                            return window.classStatusProposta(this.proposta.statusproposta);
-                        },
-                        statusColor() {
-                            const s = String(this.proposta.statusproposta || '').toLowerCase();
-                            if (s === 'aceito') return 'var(--cor-sucesso)';
-                            if (s === 'rejeitado') return 'var(--cor-erro)';
-                            return 'var(--cor-aviso)';
-                        },
-                        dataEnvioFormatada() {
-                            return window.formatarData(this.proposta?.dataenvio);
-                        },
-                        arquivoInfo() {
-                            const nome = this.proposta && this.proposta.nomearquivo;
-                            const url = this.proposta && this.proposta.arquivo;
-                            if (!nome && !url) return null;
-                            return {
-                                nome: nome || 'arquivo.zip',
-                                url: url || '#'
-                            };
+                        } catch (e) {
+
                         }
                     },
-                    mounted: async function() {
-                        await this.loadProposta();
+                    async acceptProposal() {
+                        if (this.accepting) return;
+                        this.accepting = true;
+                        this.errorMsg = '';
+                        this.successMsg = '';
+
+                        try {
+                            const propId = this.getIdFromQuery();
+
+
+                            await window.ApiClient.put('/propostas/' + propId, {
+                                statusproposta: 'aceito'
+                            });
+
+                            if (this.desafioId) {
+                                await window.ApiClient.put('/desafios/' + this.desafioId, {
+                                    statusdesafio: 'aceito'
+                                });
+                            }
+
+
+                            const todas = await window.ApiClient.get('/propostas').catch(() => []);
+                            const demaisPropostas = (todas || []).filter(p => {
+                                const pid = String(p.desafioid);
+                                return pid === String(this.desafioId) && String(p.id) !== String(propId);
+                            });
+
+                            const notificados = [];
+                            for (const p of demaisPropostas) {
+                                try {
+                                    await window.ApiClient.put('/propostas/' + p.id, {
+                                        statusproposta: 'rejeitado'
+                                    });
+                                    const instId = p.instituicaoid;
+                                    if (instId) notificados.push(instId);
+                                } catch (e) {
+                                    console.warn('Erro ao rejeitar proposta ' + p.id + ':', e);
+                                }
+                            }
+
+
+                            if (notificados.length) {
+                                try {
+                                    await window.ApiClient.post('/notificacoes', {
+                                        desafioid: this.desafioId,
+                                        descricao: 'Uma solução foi aceita para o desafio "' + (this.desafioTitle || '') + '". Sua proposta foi rejeitada.',
+                                        lista: notificados
+                                    });
+                                } catch (e) {
+                                    console.warn('Erro ao notificar instituições rejeitadas:', e);
+                                }
+                            }
+
+
+                            if (this.instituicaoObj && this.instituicaoObj.id) {
+                                try {
+                                    await window.ApiClient.post('/notificacoes', {
+                                        desafioid: this.desafioId,
+                                        descricao: 'Sua proposta "' + (this.proposta.titulo || '') + '" foi aceita!',
+                                        lista: [this.instituicaoObj.id]
+                                    });
+                                } catch (e) {
+                                    console.warn('Erro ao enviar notificação de aceite:', e);
+                                }
+                            }
+
+                            this.successMsg = 'Solução aceita com sucesso! As demais propostas foram rejeitadas.';
+                            this.proposta.statusproposta = 'aceito';
+
+
+                            setTimeout(() => {
+                                if (this.desafioId) {
+                                    window.location.href = 'propostas.html?desafio=' + encodeURIComponent(this.desafioId);
+                                } else {
+                                    window.location.href = 'propostas.html';
+                                }
+                            }, 2000);
+
+                        } catch (err) {
+                            this.errorMsg = err && err.message ? err.message : 'Erro ao aceitar a solução. Tente novamente.';
+                        } finally {
+                            this.accepting = false;
+                        }
+                    },
+                    goBack() {
+                        if (this.desafioId) window.location.href = 'propostas.html?desafio=' + encodeURIComponent(this.desafioId);
+                        else window.location.href = 'propostas.html';
+                    },
+                },
+                computed: {
+                    isEmpresa() {
+                        return this.userRole === 'empresa';
+                    },
+                    isAdmin() {
+                        return this.userRole === 'admin';
+                    },
+                    isCoordenador() {
+                        return this.userRole === 'coordenador';
+                    },
+                    isProposalAccepted() {
+                        const st = String(this.proposta.statusproposta || '').toLowerCase();
+                        return st === 'aceito';
+                    },
+                    isDesafioResolvido() {
+                        return !!(this.desafioBloqueadoMsg);
+                    },
+                    statusClass() {
+                        return window.classStatusProposta(this.proposta.statusproposta);
+                    },
+                    statusColor() {
+                        const s = String(this.proposta.statusproposta || '').toLowerCase();
+                        if (s === 'aceito') return 'var(--cor-sucesso)';
+                        if (s === 'rejeitado') return 'var(--cor-erro)';
+                        return 'var(--cor-aviso)';
+                    },
+                    dataEnvioFormatada() {
+                        return window.formatarData(this.proposta?.dataenvio);
+                    },
+                    arquivoInfo() {
+                        const nome = this.proposta && this.proposta.nomearquivo;
+                        const url = this.proposta && this.proposta.arquivo;
+                        if (!nome && !url) return null;
+                        return {
+                            nome: nome || 'arquivo.zip',
+                            url: url || '#'
+                        };
                     }
-                });
-            }
-        </script>
-    </body>
+                },
+                mounted: async function () {
+                    await this.loadProposta();
+                }
+            });
+        }
+    </script>
+</body>
+
 </html>
