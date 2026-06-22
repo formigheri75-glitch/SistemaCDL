@@ -29,7 +29,7 @@
                         <div class="stat"><strong>{{ stats.desafios }}</strong><span>Desafios</span></div>
                     </div>
 
-                    <div v-if="stats.pendentes > 0" class="alert" style="background: var(--color-warning-light); border: 1px solid var(--color-warning); border-radius: var(--radius-md); padding: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
+                    <div v-if="stats.pendentes > 0" class="alert" style="background: var(--cor-aviso-light); border: 1px solid var(--cor-aviso); border-radius: var(--raio-md); padding: 1rem; margin-bottom: 1.5rem; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
                         <span style="font-size: 1.5rem;">⚠️</span>
                         <span><strong>{{ stats.pendentes }} cadastro(s) pendente(s) de aprovação!</strong></span>
                         <a href="aprovacoes.html" class="btn btn-primary" style="margin-left: auto;">Ir para Aprovações</a>
@@ -39,12 +39,12 @@
                         <h2>Ações rápidas</h2>
                     </div>
                     <div class="list cards-grid" style="margin-bottom: 2rem;">
-                        <a class="card" href="aprovacoes.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--color-warning);">
+                        <a class="card" href="aprovacoes.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--cor-aviso);">
                             <h3>📋 Aprovações Pendentes</h3>
                             <p>Aprovar ou rejeitar cadastros de empresas e instituições.</p>
                             <span v-if="stats.pendentes > 0" class="status-pill analise">{{ stats.pendentes }} pendente(s)</span>
                         </a>
-                        <a class="card" href="usuarios.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--color-primary);">
+                        <a class="card" href="usuarios.html" style="text-decoration:none; color:inherit; display:flex; flex-direction:column; gap:0.75rem; border-left: 4px solid var(--cor-primaria);">
                             <h3>👥 Gerenciar Usuários</h3>
                             <p>Listar, criar, editar e remover usuários, empresas e instituições.</p>
                         </a>

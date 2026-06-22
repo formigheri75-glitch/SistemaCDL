@@ -1,4 +1,4 @@
-Ôªø<!doctype html>
+<!doctype html>
 <html lang="pt-BR">
     <head>
         <meta charset="UTF-8" />
@@ -37,7 +37,7 @@
                                     <h2>
                                         {{ msg.detalhesProblema.descricao }}
                                     </h2>
-                                    <p>{{ problema.description || problema.descricao || 'Descri√ß√£o n√£o informada.' }}</p>
+                                    <p>{{ problema.description || problema.descricao || 'DescriÁ„o n„o informada.' }}</p>
                                 </div>
 
                                 <div class="detail-card">
@@ -56,16 +56,16 @@
                                         {{ msg.detalhesProblema.propostas }}
                                     </h2>
 
-                                    <div v-if="desafioAceito" class="alert" style="background:var(--color-success-20); border:1px solid var(--color-success); border-radius:var(--radius-md); padding:1rem; margin-bottom:1rem;">
-                                        ‚úÖ Este desafio j√° possui uma solu√ß√£o aceita. Novas propostas est√£o bloqueadas.
+                                    <div v-if="desafioAceito" class="alert" style="background:var(--cor-sucesso-20); border:1px solid var(--cor-sucesso); border-radius:var(--raio-md); padding:1rem; margin-bottom:1rem;">
+                                        ? Este desafio j· possui uma soluÁ„o aceita. Novas propostas est„o bloqueadas.
                                     </div>
 
                                     <div v-if="propostas.length" class="proposals-list">
-                                        <div v-for="prop in propostas" :key="prop.id" class="proposal-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid var(--color-border); gap:1rem;">
+                                        <div v-for="prop in propostas" :key="prop.id" class="proposal-item" style="display:flex; justify-content:space-between; align-items:center; padding:0.75rem; border-bottom:1px solid var(--cor-borda); gap:1rem;">
                                             <div style="flex:1;">
                                                 <strong>{{ prop.titulo || 'Proposta' }}</strong>
                                                 <span class="status-pill" :class="prop.statusClass" style="margin-left:0.75rem; font-size:0.75rem;">{{ prop.statusLabel }}</span>
-                                                <div style="font-size:0.85rem; color:var(--color-text-muted); margin-top:0.25rem;">{{ prop.instituicaoNome || 'Institui√ß√£o' }}</div>
+                                                <div style="font-size:0.85rem; color:var(--cor-texto-apagado); margin-top:0.25rem;">{{ prop.instituicaoNome || 'InstituiÁ„o' }}</div>
                                             </div>
                                             <div style="display:flex; gap:0.5rem; flex-shrink:0;">
                                                 <a class="mini-btn" :href="'detalhesPropossta.html?id=' + prop.id">Ver</a>
@@ -74,17 +74,17 @@
                                                     class="mini-btn primary"
                                                     @click.prevent="aceitarProposta(prop)"
                                                     :disabled="prop.aceitando"
-                                                >{{ prop.aceitando ? '...' : '‚úî Aceitar' }}</button>
+                                                >{{ prop.aceitando ? '...' : '? Aceitar' }}</button>
                                             </div>
                                         </div>
                                     </div>
-                                    <p v-else style="margin:1rem 0; color:var(--color-text-muted);">Nenhuma proposta recebida ainda.</p>
+                                    <p v-else style="margin:1rem 0; color:var(--cor-texto-apagado);">Nenhuma proposta recebida ainda.</p>
                                 </div>
                             </div>
 
 
                             <aside class="info-panel">
-                                <h3>Informa√ß√µes</h3>
+                                <h3>InformaÁıes</h3>
 
                                 <div class="info-item">
                                     <div class="info-label">
@@ -99,14 +99,14 @@
                                         {{ msg.detalhesProblema.info.prioridade
                                         }}
                                     </div>
-                                    <div class="info-value" style="color: var(--color-error)">{{ problema.nivelprioridade || 'Alta' }}</div>
+                                    <div class="info-value" style="color: var(--cor-erro)">{{ problema.nivelprioridade || 'Alta' }}</div>
                                 </div>
 
                                 <div class="info-item">
                                     <div class="info-label">
                                         {{ msg.detalhesProblema.info.prazo }}
                                     </div>
-                                    <div class="info-value">{{ prazoFormatado || 'N√£o definido' }}</div>
+                                    <div class="info-value">{{ prazoFormatado || 'N„o definido' }}</div>
                                 </div>
 
                                 <div class="info-item">
@@ -149,7 +149,7 @@
 
         <script>
             if (!window.ensureRole()) {
-                throw new Error('Acesso negado. Voc√™ n√£o tem permiss√£o para acessar esta p√°gina.');
+                throw new Error('Acesso negado. VocÍ n„o tem permiss„o para acessar esta p·gina.');
             }
 
             if (window.messages) {
@@ -217,7 +217,7 @@
                             try {
                                 await window.ApiClient.put(`/propostas/${prop.id}`, { statusproposta: 'aceito' });
                                 await window.ApiClient.put(`/desafios/${this.problema.id}`, { statusdesafio: 'aceito' });
-                                // Notificar institui√ß√£o
+                                // Notificar instituiÁ„o
                                 try {
                                     await window.ApiClient.post('/notificacoes', {
                                         desafioid: this.problema.id,

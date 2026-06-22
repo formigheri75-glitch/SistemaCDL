@@ -57,7 +57,7 @@
                                         <a :href="arquivoInfo.url" target="_blank" class="btn btn-secondary" style="display: inline-flex; align-items: center; gap: 0.5rem;">
                                             Baixar {{ arquivoInfo.nome }}
                                         </a>
-                                        <span style="margin-left: 0.75rem; color: var(--color-text-muted); font-size: 0.85rem;">{{ arquivoInfo.nome }}</span>
+                                        <span style="margin-left: 0.75rem; color: var(--cor-texto-apagado); font-size: 0.85rem;">{{ arquivoInfo.nome }}</span>
                                     </p>
                                 </div>
                             </div>
@@ -89,7 +89,7 @@
                                 <div class="info-item" v-if="arquivoInfo">
                                     <div class="info-label">Arquivo</div>
                                     <div class="info-value">
-                                        <a :href="arquivoInfo.url" target="_blank" style="color: var(--color-primary);">
+                                        <a :href="arquivoInfo.url" target="_blank" style="color: var(--cor-primaria);">
                                             {{ arquivoInfo.nome }}
                                         </a>
                                     </div>
@@ -318,9 +318,9 @@
                         },
                         statusColor() {
                             const s = String(this.proposta.statusproposta || '').toLowerCase();
-                            if (s === 'aceito') return 'var(--color-success)';
-                            if (s === 'rejeitado') return 'var(--color-error)';
-                            return 'var(--color-warning)';
+                            if (s === 'aceito') return 'var(--cor-sucesso)';
+                            if (s === 'rejeitado') return 'var(--cor-erro)';
+                            return 'var(--cor-aviso)';
                         },
                         dataEnvioFormatada() {
                             return window.formatarData(this.proposta?.dataenvio);

@@ -1176,9 +1176,9 @@ const ModalDialog = {
     emits: ['close'],
     template: `
     <div v-if="open" class="modal-overlay" style="position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.6); display:grid; place-items:center;" @click.self="$emit('close')">
-        <div class="modal-card" style="background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:2rem; max-width:' + ' + width + '; width:90%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+        <div class="modal-card" style="background:var(--cor-fundo-secundaria); border:1px solid var(--cor-borda); border-radius:var(--raio-lg); padding:2rem; max-width:' + ' + width + '; width:90%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                <h3 style="font-size:1.15rem; font-weight:700; color:var(--color-text-primary);">{{ title }}</h3>
+                <h3 style="font-size:1.15rem; font-weight:700; color:var(--cor-texto-primaria);">{{ title }}</h3>
                 <button class="mini-btn" @click="$emit('close')" style="font-size:1.2rem;">X</button>
             </div>
             <slot></slot>

@@ -40,9 +40,9 @@
                         ></challenge-card>
                     </div>
                     <div v-if="coordinatorModal.open" class="modal-overlay" style="position:fixed; inset:0; z-index:999; background:rgba(0,0,0,0.6); display:grid; place-items:center;" @click.self="closeCoordinatorManager">
-                        <div class="modal-card" style="background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:2rem; max-width:900px; width:95%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+                        <div class="modal-card" style="background:var(--cor-fundo-secundaria); border:1px solid var(--cor-borda); border-radius:var(--raio-lg); padding:2rem; max-width:900px; width:95%; max-height:85vh; overflow-y:auto; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                                <h3 style="font-size:1.25rem; font-weight:700; color:var(--color-text-primary);">👥 Gerenciar Coordenadores</h3>
+                                <h3 style="font-size:1.25rem; font-weight:700; color:var(--cor-texto-primaria);">👥 Gerenciar Coordenadores</h3>
                                 <button class="mini-btn" @click.prevent="closeCoordinatorManager" style="font-size:1.2rem;">✕</button>
                             </div>
 
@@ -53,28 +53,28 @@
                                 <button class="btn btn-primary" @click.prevent="openNewCoordinator">+ Novo Coordenador</button>
                             </div>
 
-                            <div v-if="coordinatorLoading" style="text-align:center; padding:2rem; color:var(--color-text-muted);">Carregando coordenadores...</div>
+                            <div v-if="coordinatorLoading" style="text-align:center; padding:2rem; color:var(--cor-texto-apagado);">Carregando coordenadores...</div>
                             <div v-else-if="coordinators.length === 0" class="empty-state" style="padding:2rem;">
                                 <p>Nenhum coordenador cadastrado para esta instituição.</p>
                             </div>
                             <div v-else class="overflow-x-auto">
                                 <table class="table" style="width:100%; border-collapse:collapse;">
                                     <thead>
-                                        <tr style="border-bottom:2px solid var(--color-border);">
-                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">ID</th>
-                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">Nome</th>
-                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">Email</th>
-                                            <th style="padding:0.75rem 0.5rem; text-align:right; color:var(--color-text-muted); font-size:0.8rem; text-transform:uppercase;">Ações</th>
+                                        <tr style="border-bottom:2px solid var(--cor-borda);">
+                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--cor-texto-apagado); font-size:0.8rem; text-transform:uppercase;">ID</th>
+                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--cor-texto-apagado); font-size:0.8rem; text-transform:uppercase;">Nome</th>
+                                            <th style="padding:0.75rem 0.5rem; text-align:left; color:var(--cor-texto-apagado); font-size:0.8rem; text-transform:uppercase;">Email</th>
+                                            <th style="padding:0.75rem 0.5rem; text-align:right; color:var(--cor-texto-apagado); font-size:0.8rem; text-transform:uppercase;">Ações</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr v-for="c in coordinators" :key="c.id" style="border-bottom:1px solid var(--color-border); transition:background 0.2s;" @mouseenter="$event.target.style.background='var(--color-primary-10)'" @mouseleave="$event.target.style.background='transparent'">
-                                            <td style="padding:0.75rem 0.5rem; color:var(--color-text-muted);">{{ c.id }}</td>
-                                            <td style="padding:0.75rem 0.5rem; color:var(--color-text-primary); font-weight:500;">{{ c.nome }}</td>
-                                            <td style="padding:0.75rem 0.5rem; color:var(--color-text-secondary);">{{ c.email }}</td>
+                                        <tr v-for="c in coordinators" :key="c.id" style="border-bottom:1px solid var(--cor-borda); transition:background 0.2s;" @mouseenter="$event.target.style.background='var(--cor-primaria-10)'" @mouseleave="$event.target.style.background='transparent'">
+                                            <td style="padding:0.75rem 0.5rem; color:var(--cor-texto-apagado);">{{ c.id }}</td>
+                                            <td style="padding:0.75rem 0.5rem; color:var(--cor-texto-primaria); font-weight:500;">{{ c.nome }}</td>
+                                            <td style="padding:0.75rem 0.5rem; color:var(--cor-texto-secundaria);">{{ c.email }}</td>
                                             <td style="padding:0.75rem 0.5rem; text-align:right;">
                                                 <button class="mini-btn" @click.prevent="editCoordinator(c)" style="margin-right:0.5rem;">✏️ Editar</button>
-                                                <button class="mini-btn danger" @click.prevent="deleteCoordinator(c)" style="background:var(--color-error-light); color:var(--color-error);">🗑️ Excluir</button>
+                                                <button class="mini-btn danger" @click.prevent="deleteCoordinator(c)" style="background:var(--cor-erro-light); color:var(--cor-erro);">🗑️ Excluir</button>
                                             </td>
                                         </tr>
                                     </tbody>
@@ -88,25 +88,25 @@
                     </div>
 
                     <div v-if="coordinatorModal.editOpen" class="modal-overlay" style="position:fixed; inset:0; z-index:1001; background:rgba(0,0,0,0.6); display:grid; place-items:center;" @click.self="closeCoordinatorEdit">
-                        <div class="modal-card" style="background:var(--color-bg-secondary); border:1px solid var(--color-border); border-radius:var(--radius-lg); padding:2rem; max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
+                        <div class="modal-card" style="background:var(--cor-fundo-secundaria); border:1px solid var(--cor-borda); border-radius:var(--raio-lg); padding:2rem; max-width:480px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.4);">
                             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                                <h3 style="font-size:1.15rem; font-weight:700; color:var(--color-text-primary);">{{ coordinatorModal.editMode==='create' ? '➕ Novo Coordenador' : '✏️ Editar Coordenador' }}</h3>
+                                <h3 style="font-size:1.15rem; font-weight:700; color:var(--cor-texto-primaria);">{{ coordinatorModal.editMode==='create' ? '➕ Novo Coordenador' : '✏️ Editar Coordenador' }}</h3>
                                 <button class="mini-btn" @click.prevent="closeCoordinatorEdit" style="font-size:1.2rem;">✕</button>
                             </div>
 
                             <form @submit.prevent="saveCoordinator">
                                 <div class="form-group">
-                                    <label style="display:block; margin-bottom:0.4rem; color:var(--color-text-secondary); font-size:0.9rem;">Nome completo</label>
-                                    <input v-model="coordinatorForm.nome" class="w-full" required style="width:100%; padding:0.65rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Nome do coordenador" />
+                                    <label style="display:block; margin-bottom:0.4rem; color:var(--cor-texto-secundaria); font-size:0.9rem;">Nome completo</label>
+                                    <input v-model="coordinatorForm.nome" class="w-full" required style="width:100%; padding:0.65rem 0.75rem; background:var(--cor-fundo-terciaria); border:1px solid var(--cor-borda); border-radius:var(--raio-md); color:var(--cor-texto-primaria);" placeholder="Nome do coordenador" />
                                 </div>
                                 <div class="form-group" style="margin-top:1rem;">
-                                    <label style="display:block; margin-bottom:0.4rem; color:var(--color-text-secondary); font-size:0.9rem;">Email</label>
-                                    <input v-model="coordinatorForm.email" class="w-full" type="email" required style="width:100%; padding:0.65rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="email@exemplo.com" />
+                                    <label style="display:block; margin-bottom:0.4rem; color:var(--cor-texto-secundaria); font-size:0.9rem;">Email</label>
+                                    <input v-model="coordinatorForm.email" class="w-full" type="email" required style="width:100%; padding:0.65rem 0.75rem; background:var(--cor-fundo-terciaria); border:1px solid var(--cor-borda); border-radius:var(--raio-md); color:var(--cor-texto-primaria);" placeholder="email@exemplo.com" />
                                 </div>
                                 <div class="form-group" style="margin-top:1rem;">
-                                    <label style="display:block; margin-bottom:0.4rem; color:var(--color-text-secondary); font-size:0.9rem;">Senha <span v-if="coordinatorModal.editMode==='create'" style="color:var(--color-error);">*</span></label>
-                                    <input v-model="coordinatorForm.senha" type="password" class="w-full" :required="coordinatorModal.editMode==='create'" style="width:100%; padding:0.65rem 0.75rem; background:var(--color-bg-tertiary); border:1px solid var(--color-border); border-radius:var(--radius-md); color:var(--color-text-primary);" placeholder="Mínimo 6 caracteres" />
-                                    <small v-if="coordinatorModal.editMode==='edit'" style="color:var(--color-text-muted); font-size:0.8rem;">Deixe em branco para manter a senha atual.</small>
+                                    <label style="display:block; margin-bottom:0.4rem; color:var(--cor-texto-secundaria); font-size:0.9rem;">Senha <span v-if="coordinatorModal.editMode==='create'" style="color:var(--cor-erro);">*</span></label>
+                                    <input v-model="coordinatorForm.senha" type="password" class="w-full" :required="coordinatorModal.editMode==='create'" style="width:100%; padding:0.65rem 0.75rem; background:var(--cor-fundo-terciaria); border:1px solid var(--cor-borda); border-radius:var(--raio-md); color:var(--cor-texto-primaria);" placeholder="Mínimo 6 caracteres" />
+                                    <small v-if="coordinatorModal.editMode==='edit'" style="color:var(--cor-texto-apagado); font-size:0.8rem;">Deixe em branco para manter a senha atual.</small>
                                 </div>
                                 <input type="hidden" v-model="coordinatorForm.instituicao" />
                                 <div style="margin-top:1.5rem; display:flex; gap:0.75rem; justify-content:flex-end;">
