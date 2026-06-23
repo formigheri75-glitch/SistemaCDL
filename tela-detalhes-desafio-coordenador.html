@@ -25,7 +25,7 @@
                         <div class="detail-intro"><div class="illustration">{{ challengeIcon }}</div><div><p>{{ challenge.descricao || 'Descrição indisponível' }}</p><div class="button-group"><a class="btn btn-primary" :href="challenge.id ? ('tela-envio-solucao-coordenador.html?id=' + challenge.id) : 'tela-envio-solucao-coordenador.html'">{{ msg.pages.telaDetalhesDesafioCoordenador.enviarSolucao }}</a><a class="btn btn-secondary" :href="challenge.id ? ('tela-propostas-coordenador.html?desafio=' + encodeURIComponent(challenge.id)) : 'tela-propostas-coordenador.html'">{{ msg.pages.telaDetalhesDesafioCoordenador.verPropostas }}</a></div></div></div>
                     </div>
                     <div class="detail-grid">
-                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in requirementsList" :key="item">{{ item }}</li></ul></div>
+                        <div class="detail-box card"><h4>{{ msg.detalhesDesafio.requirements.title }}</h4><ul><li v-for="item in requirementsList" :key="item.id">{{ item.descricao }}</li></ul></div>
                         <div class="detail-box card"><h4>{{ msg.detalhesDesafio.additionalInfo.title }}</h4><ul><li v-for="item in extraInfoList" :key="item" v-html="item"></li></ul></div>
                     </div>
                 </div>
@@ -47,12 +47,12 @@
                             { label: 'Minhas propostas', href: 'tela-propostas-coordenador.html' },
                         ],
                         challenge: {},
+                        requisitos: [],
                     };
                 },
                 computed: {
                     requirementsList() {
-                        if (Array.isArray(this.challenge.requisitos) && this.challenge.requisitos.length) return this.challenge.requisitos;
-                        return [];
+                        return this.requisitos;
                     },
                     challengeIcon() {
                         return window.iconCategoria(this.challenge.categoria || this.challenge.areaconhecimento);
@@ -79,6 +79,10 @@
                         try {
                             if (id) {
                                 this.challenge = await window.loadDesafio(id);
+                                try {
+                                    const todosRequisitos = await window.ApiClient.get('/requisitos');
+                                    this.requisitos = (todosRequisitos || []).filter(r => String(r.desafioid) === String(id));
+                                } catch(e) { this.requisitos = []; }
                             } else {
                                 const list = await window.fetchDesafiosList();
                                 this.challenge = (list && list[0]) ? list[0] : {};
