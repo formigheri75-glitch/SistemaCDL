@@ -20,7 +20,7 @@ app = Flask(__name__)
 
 CORS(app)
 
-app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY", "sua_chave_super_secreta")
+app.config["JWT_SECRET_KEY"] = os.getenv("JWT_SECRET_KEY")
 app.config["JSON_SORT_KEYS"] = False
 
 jwt = JWTManager(app)
@@ -255,56 +255,6 @@ def me():
             "erro": str(e)
         }), 500
 
-def require_roles(*allowed_roles):
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-
-            if not SERVER_AUTH_ENABLED:
-                return fn(*args, **kwargs)
-
-            try:
-                verify_jwt_in_request()
-            except Exception:
-                return jsonify({"erro": "Token ausente ou inválido"}), 401
-            role = None
-
-            try:
-                if AUTH_ROLE_IN_TOKEN:
-
-                    claims = get_jwt() or {}
-                    role = (claims.get('role') or '').lower()
-
-                else:
-
-                    usuario_id = get_jwt_identity()
-
-                    resp = supabase.table('usuario') \
-                        .select('tipousuario') \
-                        .eq('id', usuario_id) \
-                        .execute()
-
-                    data = resp.data
-
-                    if data and len(data) > 0:
-                        role = (data[0].get('tipousuario') or '').lower()
-
-            except Exception:
-                role = None
-
-            if role and role == 'admin':
-                return fn(*args, **kwargs)
-
-            allowed = [r.lower() for r in allowed_roles]
-
-            if not role or role not in allowed:
-                return jsonify({"erro": "Acesso negado"}), 403
-
-            return fn(*args, **kwargs)
-
-        wrapper.__name__ = fn.__name__
-        return wrapper
-
-    return decorator
 
 
 @app.route('/access-control', methods=['GET'])
@@ -630,11 +580,9 @@ def alterar_senha():
         if not usuario:
             return jsonify({"erro": "Usuário não encontrado"}), 404
 
-        # ✅ Verificar senha atual usando bcrypt (hash)
         if not verificar_senha(current_password, usuario["senha"]):
             return jsonify({"erro": "Senha atual incorreta"}), 401
 
-        # ✅ Salvar nova senha com hash
         supabase.table(tabela).update({"senha": gerar_hash(new_password)}).eq("id", usuario_id).execute()
 
         return jsonify({"mensagem": "Senha alterada com sucesso"}), 200
@@ -734,7 +682,6 @@ def atualizar_empresa(id):
 
         dados = request.get_json()
 
-        # Se veio senha, aplicar hash
         if dados.get('senha'):
             dados['senha'] = gerar_hash(dados['senha'])
 
