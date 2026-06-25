@@ -477,10 +477,7 @@ const FormInput = {
 const ProposalCard = {
     computed: {
         statusClass() {
-            const s = this.proposal && this.proposal.status ? String(this.proposal.status).toLowerCase() : '';
-            if (s === 'aprovado') return 'aprovado';
-            if (s === 'rejeitado') return 'rejeitado';
-            return 'analise';
+            return window.classStatusProposta(this.proposal?.status);
         }
     },
     methods: {

@@ -78,27 +78,8 @@
                         const user = window.StorageManager.getUser() || {};
                         let userInstituicaoId = null;
                         if (role !== 'admin') {
-                            if (user.instituicao) {
-                                userInstituicaoId = user.instituicao;
-                            }
-                            if (!userInstituicaoId && user.id) {
-                                try {
-                                    const usuarioRecord = await window.ApiClient.get('/usuarios/' + user.id);
-                                    if (usuarioRecord && usuarioRecord.instituicao) {
-                                        userInstituicaoId = usuarioRecord.instituicao;
-                                    }
-                                } catch(e) {}
-                            }
-                            if (!userInstituicaoId && user.email) {
-                                try {
-                                    const allUsers = await window.ApiClient.get('/usuarios');
-                                    const found = (allUsers || []).find(u =>
-                                        String(u.email || '').toLowerCase() === String(user.email).toLowerCase()
-                                    );
-                                    if (found && found.instituicao) {
-                                        userInstituicaoId = found.instituicao;
-                                    }
-                                } catch(e) {}
+                            if (user.sourceTable === 'usuarios' && user.instituicao) {
+                                userInstituicaoId = Number(user.instituicao);
                             }
                             if (!userInstituicaoId) {
                                 userInstituicaoId = await window.getLoggedInstituicaoId();
@@ -129,11 +110,11 @@
                             .map(p => ({
                                 id: p.id,
                                 titleRaw: p.titulo || 'Proposta',
-                                desafioId: p.desafioid || p.desafioID || p.desafioId || null,
-                                challengeRaw: p.desafioTitulo || p.desafio || p.descricao || '',
-                                status: String(p.statusproposta || p.status || 'analisando').toLowerCase(),
+                                desafioId: p.desafioid,
+                                challengeRaw: p.desafioTitulo || p.descricao,
+                                status: String(p.statusproposta || 'analisando').toLowerCase(),
                                 detailsLink: 'tela-detalhes-proposta-coordenador.html',
-                                instituicaoid: p.instituicaoid || p.instituicaoID || null,
+                                instituicaoid: p.instituicaoid,
                             }));
 
                         const desafioIds = Array.from(new Set(raw.map(r => r.desafioId).filter(Boolean)));

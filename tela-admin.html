@@ -90,7 +90,6 @@
                         this.stats.instituicoes = (instituicoes || []).length;
                         this.stats.coordenadores = (usuarios || []).filter(u => String(u.tipousuario || u.tipo || u.type || '').toLowerCase() === 'coordenador').length;
 
-                        // Calcular pendências
                         const empresasPend = (empresas || []).filter(e => (e.status || '').toLowerCase() === 'pendente').length;
                         const instPend = (instituicoes || []).filter(i => (i.status || '').toLowerCase() === 'pendente').length;
                         this.stats.pendentes = empresasPend + instPend;

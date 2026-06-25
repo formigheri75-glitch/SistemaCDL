@@ -97,7 +97,6 @@
                         this.loading = true;
                         try {
                             this.proposal = await window.ApiClient.get(`/propostas/${id}`);
-                            
                             const desafioId = this.proposal && (this.proposal.desafioid || this.proposal.desafioId || this.proposal.desafioID || this.proposal.desafio) || null;
                             if (desafioId) {
                                 this.desafioId = desafioId;
